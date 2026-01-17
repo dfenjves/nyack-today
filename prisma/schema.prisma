@@ -1,0 +1,97 @@
+// Nyack Today - Database Schema
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Event categories
+enum Category {
+  MUSIC
+  COMEDY
+  MOVIES
+  THEATER
+  FAMILY_KIDS
+  FOOD_DRINK
+  SPORTS_RECREATION
+  COMMUNITY_GOVERNMENT
+  ART_GALLERIES
+  CLASSES_WORKSHOPS
+  OTHER
+}
+
+// One-time or recurring events with specific dates
+model Event {
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime?
+  venue           String
+  address         String?
+  city            String    @default("Nyack")
+  isNyackProper   Boolean   @default(true)
+  category        Category  @default(OTHER)
+  price           String?   // e.g., "Free", "$20", "$15-$30"
+  isFree          Boolean   @default(false)
+  isFamilyFriendly Boolean  @default(false)
+  sourceUrl       String
+  sourceName      String    // e.g., "Visit Nyack", "Levity Live"
+  imageUrl        String?
+  isHidden        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // For deduplication - hash of title + venue + startDate
+  sourceHash      String?   @unique
+
+  @@index([startDate])
+  @@index([category])
+  @@index([isHidden])
+  @@index([isFamilyFriendly])
+}
+
+// Always-available activities (go-karts, bowling, etc.)
+model Activity {
+  id              String    @id @default(cuid())
+  title           String
+  description     String
+  venue           String
+  address         String
+  city            String    @default("Nyack")
+  isNyackProper   Boolean   @default(true)
+  category        Category  @default(OTHER)
+  price           String?
+  isFree          Boolean   @default(false)
+  isFamilyFriendly Boolean  @default(false)
+  hours           String?   // e.g., "Mon-Fri 10am-9pm"
+  websiteUrl      String
+  imageUrl        String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@index([isFamilyFriendly])
+}
+
+// Track scraper runs for debugging
+model ScraperLog {
+  id          String   @id @default(cuid())
+  sourceName  String
+  status      String   // "success", "error", "partial"
+  eventsFound Int      @default(0)
+  eventsAdded Int      @default(0)
+  errorMessage String?
+  runAt       DateTime @default(now())
+
+  @@index([sourceName])
+  @@index([runAt])
+}
