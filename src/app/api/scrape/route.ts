@@ -1,0 +1,103 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { runAllScrapers, runScraper, cleanupOldEvents, scrapers } from '@/lib/scrapers'
+
+/**
+ * POST /api/scrape
+ * Trigger scraping of event sources
+ *
+ * Query params:
+ * - source: Run a specific scraper (e.g., "Visit Nyack")
+ * - cleanup: Set to "true" to also cleanup old events
+ *
+ * Headers:
+ * - x-scraper-key: API key for authentication (optional, for cron jobs)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Optional API key check for cron jobs
+    const apiKey = request.headers.get('x-scraper-key')
+    const expectedKey = process.env.SCRAPER_API_KEY
+
+    // If an API key is configured, require it
+    if (expectedKey && apiKey !== expectedKey) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const source = searchParams.get('source')
+    const cleanup = searchParams.get('cleanup') === 'true'
+
+    // Run cleanup if requested
+    if (cleanup) {
+      const cleaned = await cleanupOldEvents()
+      console.log(`Cleaned up ${cleaned} old events`)
+    }
+
+    // Run specific scraper or all scrapers
+    if (source) {
+      const result = await runScraper(source)
+
+      if (!result) {
+        return NextResponse.json(
+          { error: `Scraper not found: ${source}` },
+          { status: 404 }
+        )
+      }
+
+      return NextResponse.json({
+        message: `Scraper ${source} completed`,
+        result: {
+          sourceName: result.sourceName,
+          status: result.status,
+          eventsFound: result.events.length,
+          errorMessage: result.errorMessage,
+        },
+      })
+    }
+
+    // Run all scrapers
+    const result = await runAllScrapers()
+
+    return NextResponse.json({
+      message: 'All scrapers completed',
+      summary: {
+        totalEventsFound: result.totalEventsFound,
+        totalEventsAdded: result.totalEventsAdded,
+        totalEventsUpdated: result.totalEventsUpdated,
+        totalEventsDuplicate: result.totalEventsDuplicate,
+      },
+      results: result.results.map((r) => ({
+        sourceName: r.sourceName,
+        status: r.status,
+        eventsFound: r.events.length,
+        errorMessage: r.errorMessage,
+      })),
+    })
+  } catch (error) {
+    console.error('Scrape error:', error)
+    const message = error instanceof Error ? error.message : 'Unknown error'
+
+    return NextResponse.json(
+      { error: 'Scraping failed', message },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * GET /api/scrape
+ * Get list of available scrapers
+ */
+export async function GET() {
+  return NextResponse.json({
+    scrapers: scrapers.map((s) => s.name),
+    usage: {
+      runAll: 'POST /api/scrape',
+      runOne: 'POST /api/scrape?source=Visit%20Nyack',
+      withCleanup: 'POST /api/scrape?cleanup=true',
+    },
+  })
+}

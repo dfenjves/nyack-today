@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Header from '@/components/Header'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
+import BottomNav from '@/components/BottomNav'
 import { DateFilter } from '@/lib/utils/dates'
 import { Event } from '@/generated/prisma/client'
 
@@ -202,52 +203,7 @@ export default function Home() {
         )}
       </main>
 
-      {/* Bottom navigation for mobile */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 px-4 py-2">
-        <div className="flex justify-around">
-          <a
-            href="/"
-            className="flex flex-col items-center py-2 px-4 text-orange-500"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <span className="text-xs mt-1">Events</span>
-          </a>
-          <a
-            href="/activities"
-            className="flex flex-col items-center py-2 px-4 text-stone-500"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-              />
-            </svg>
-            <span className="text-xs mt-1">Activities</span>
-          </a>
-        </div>
-      </nav>
-
-      {/* Spacer for mobile bottom nav */}
-      <div className="h-16 md:hidden" />
+      <BottomNav />
     </div>
   )
 }

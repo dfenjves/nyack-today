@@ -55,7 +55,7 @@ A running list of event and activity sources for the Nyack area.
 
 | Source | URL | Status |
 |--------|-----|--------|
-| Village of Nyack | TBD | Need to find official site |
+| Village of Nyack | https://www.nyack.gov/calendar | Need to find official site |
 | Nyack Chamber of Commerce | TBD | Need to find website |
 
 ---
@@ -64,7 +64,7 @@ A running list of event and activity sources for the Nyack area.
 
 Add new sources here as you discover them:
 
--
+- Edward Hopper House
 -
 -
 
