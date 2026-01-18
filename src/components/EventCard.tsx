@@ -1,6 +1,7 @@
 import { Event } from '@/generated/prisma/client'
 import { formatTime, formatDate } from '@/lib/utils/dates'
 import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
+import { decodeHtmlEntities } from '@/lib/utils/text'
 import Link from 'next/link'
 
 interface EventCardProps {
@@ -13,6 +14,7 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
   const categoryIcon = categoryIcons[event.category]
   const categoryLabel = categoryLabels[event.category]
   const categoryColor = getCategoryColor(event.category)
+  const title = decodeHtmlEntities(event.title)
 
   return (
     <Link
@@ -27,7 +29,7 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
           <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-stone-100">
             <img
               src={event.imageUrl}
-              alt={event.title}
+              alt={title}
               className="w-full h-full object-cover"
             />
           </div>
@@ -40,7 +42,7 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
         <div className="flex-1 min-w-0">
           {/* Title */}
           <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
-            {event.title}
+            {title}
           </h3>
 
           {/* Time and date */}

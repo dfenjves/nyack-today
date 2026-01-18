@@ -214,19 +214,14 @@ export function jsonLdToScrapedEvent(
     }
     const { price, isFree } = parsePrice(priceData)
 
-    // Get description - clean HTML entities
+    // Get description - clean HTML entities and strip tags
     let description = jsonLd.description || null
     if (description) {
-      // Basic HTML entity decoding
-      description = description
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/<[^>]*>/g, '') // Strip HTML tags
-        .trim()
+      description = decodeHtmlEntities(stripHtml(description)).trim()
     }
+
+    // Clean title of HTML entities
+    const title = decodeHtmlEntities(jsonLd.name).trim()
 
     // Get image URL
     let imageUrl: string | null = null
@@ -238,7 +233,7 @@ export function jsonLdToScrapedEvent(
     const eventUrl = jsonLd.url || sourceUrl
 
     return {
-      title: jsonLd.name.trim(),
+      title,
       description,
       startDate,
       endDate,
@@ -264,6 +259,25 @@ export function jsonLdToScrapedEvent(
  */
 export function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').trim()
+}
+
+/**
+ * Decode common HTML entities
+ */
+export function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#8211;/g, '–')
+    .replace(/&#8212;/g, '—')
+    .replace(/&#8217;/g, "'")
+    .replace(/&#8216;/g, "'")
+    .replace(/&#8220;/g, '"')
+    .replace(/&#8221;/g, '"')
+    .replace(/&nbsp;/g, ' ')
 }
 
 /**

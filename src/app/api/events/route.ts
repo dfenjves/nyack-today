@@ -13,6 +13,7 @@ import { getDateRange, DateFilter } from '@/lib/utils/dates'
  * - free: 'true' to show only free events
  * - familyFriendly: 'true' to show only family-friendly events
  * - nyackOnly: 'true' to show only Nyack-proper events
+ * - nearbyOnly: 'true' to show only nearby (non-Nyack) events
  * - limit: Max number of events (default 50)
  * - offset: Pagination offset (default 0)
  */
@@ -26,6 +27,7 @@ export async function GET(request: NextRequest) {
     const free = searchParams.get('free') === 'true'
     const familyFriendly = searchParams.get('familyFriendly') === 'true'
     const nyackOnly = searchParams.get('nyackOnly') === 'true'
+    const nearbyOnly = searchParams.get('nearbyOnly') === 'true'
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
 
@@ -63,9 +65,11 @@ export async function GET(request: NextRequest) {
       where.isFamilyFriendly = true
     }
 
-    // Nyack-only filter
+    // Location filters
     if (nyackOnly) {
       where.isNyackProper = true
+    } else if (nearbyOnly) {
+      where.isNyackProper = false
     }
 
     // Fetch events

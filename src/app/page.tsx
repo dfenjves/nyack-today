@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
@@ -9,97 +9,15 @@ import BottomNav from '@/components/BottomNav'
 import { DateFilter } from '@/lib/utils/dates'
 import { Event } from '@/generated/prisma/client'
 
-// Mock events for initial development
-const mockEvents: Event[] = [
-  {
-    id: '1',
-    title: 'Jazz Night at Maureen\'s',
-    description: 'Live jazz performance featuring local musicians',
-    startDate: new Date(),
-    endDate: null,
-    venue: 'Maureen\'s Jazz Cellar',
-    address: '2 N Broadway',
-    city: 'Nyack',
-    isNyackProper: true,
-    category: 'MUSIC',
-    price: '$15',
-    isFree: false,
-    isFamilyFriendly: false,
-    sourceUrl: 'https://example.com',
-    sourceName: 'Visit Nyack',
-    imageUrl: null,
-    isHidden: false,
-    sourceHash: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '2',
-    title: 'Comedy Night with Anthony Rodia',
-    description: 'Stand-up comedy show',
-    startDate: new Date(),
-    endDate: null,
-    venue: 'Levity Live',
-    address: '4210 Palisades Center Dr',
-    city: 'West Nyack',
-    isNyackProper: false,
-    category: 'COMEDY',
-    price: '$25-$45',
-    isFree: false,
-    isFamilyFriendly: false,
-    sourceUrl: 'https://levitylive.com',
-    sourceName: 'Levity Live',
-    imageUrl: null,
-    isHidden: false,
-    sourceHash: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '3',
-    title: 'Family Movie Night: Paddington',
-    description: 'Free outdoor movie screening',
-    startDate: new Date(),
-    endDate: null,
-    venue: 'Memorial Park',
-    address: 'Piermont Ave',
-    city: 'Nyack',
-    isNyackProper: true,
-    category: 'MOVIES',
-    price: null,
-    isFree: true,
-    isFamilyFriendly: true,
-    sourceUrl: 'https://example.com',
-    sourceName: 'Village of Nyack',
-    imageUrl: null,
-    isHidden: false,
-    sourceHash: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: '4',
-    title: 'Yoga in the Park',
-    description: 'Free community yoga class for all levels',
-    startDate: new Date(),
-    endDate: null,
-    venue: 'Memorial Park',
-    address: 'Piermont Ave',
-    city: 'Nyack',
-    isNyackProper: true,
-    category: 'SPORTS_RECREATION',
-    price: null,
-    isFree: true,
-    isFamilyFriendly: true,
-    sourceUrl: 'https://example.com',
-    sourceName: 'Nyack Parks',
-    imageUrl: null,
-    isHidden: false,
-    sourceHash: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
+interface EventsApiResponse {
+  events: Event[]
+  pagination: {
+    total: number
+    limit: number
+    offset: number
+    hasMore: boolean
+  }
+}
 
 export default function Home() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('tonight')
@@ -109,39 +27,80 @@ export default function Home() {
     location: 'all',
     familyFriendly: false,
   })
-  const [events, setEvents] = useState<Event[]>(mockEvents)
-  const [loading, setLoading] = useState(false)
+  const [events, setEvents] = useState<Event[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Filter events based on current filters
-  const filteredEvents = events.filter((event) => {
+  // Build query string from filters
+  const buildQueryString = useCallback(() => {
+    const params = new URLSearchParams()
+
+    // Date filter
+    params.set('date', dateFilter)
+
     // Category filter
-    if (filters.category !== 'ALL' && event.category !== filters.category) {
-      return false
+    if (filters.category !== 'ALL') {
+      params.set('category', filters.category)
     }
 
     // Price filter
-    if (filters.priceFilter === 'free' && !event.isFree) {
-      return false
-    }
-    if (filters.priceFilter === 'paid' && event.isFree) {
-      return false
+    if (filters.priceFilter === 'free') {
+      params.set('free', 'true')
     }
 
     // Location filter
-    if (filters.location === 'nyack' && !event.isNyackProper) {
-      return false
-    }
-    if (filters.location === 'nearby' && event.isNyackProper) {
-      return false
+    if (filters.location === 'nyack') {
+      params.set('nyackOnly', 'true')
+    } else if (filters.location === 'nearby') {
+      params.set('nearbyOnly', 'true')
     }
 
     // Family-friendly filter
-    if (filters.familyFriendly && !event.isFamilyFriendly) {
-      return false
+    if (filters.familyFriendly) {
+      params.set('familyFriendly', 'true')
     }
 
-    return true
-  })
+    return params.toString()
+  }, [dateFilter, filters])
+
+  // Fetch events from API
+  const fetchEvents = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+
+    try {
+      const queryString = buildQueryString()
+      const response = await fetch(`/api/events?${queryString}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch events')
+      }
+
+      const data: EventsApiResponse = await response.json()
+
+      // Convert date strings back to Date objects
+      const eventsWithDates = data.events.map((event) => ({
+        ...event,
+        startDate: new Date(event.startDate),
+        endDate: event.endDate ? new Date(event.endDate) : null,
+        createdAt: new Date(event.createdAt),
+        updatedAt: new Date(event.updatedAt),
+      }))
+
+      setEvents(eventsWithDates)
+    } catch (err) {
+      console.error('Error fetching events:', err)
+      setError('Failed to load events. Please try again.')
+      setEvents([])
+    } finally {
+      setLoading(false)
+    }
+  }, [buildQueryString])
+
+  // Fetch events when filters change
+  useEffect(() => {
+    fetchEvents()
+  }, [fetchEvents])
 
   // Get the heading based on date filter
   const getHeading = () => {
@@ -157,6 +116,20 @@ export default function Home() {
       default:
         return 'Events'
     }
+  }
+
+  // Get empty message based on filters
+  const getEmptyMessage = () => {
+    if (dateFilter === 'tonight') {
+      return "No events tonight"
+    }
+    if (filters.familyFriendly) {
+      return "No family-friendly events found for this time period"
+    }
+    if (filters.priceFilter === 'free') {
+      return "No free events found for this time period"
+    }
+    return "No events found for this time period"
   }
 
   return (
@@ -184,22 +157,33 @@ export default function Home() {
           <FilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
 
-        {/* Events list */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-            <p className="text-stone-500 mt-4">Loading events...</p>
+        {/* Error state */}
+        {error && (
+          <div className="text-center py-8">
+            <p className="text-red-500 mb-4">{error}</p>
+            <button
+              onClick={fetchEvents}
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
-        ) : (
-          <EventList
-            events={filteredEvents}
-            showDate={dateFilter !== 'tonight' && dateFilter !== 'tomorrow'}
-            emptyMessage={
-              dateFilter === 'tonight'
-                ? "No events tonight"
-                : "No events found for this time period"
-            }
-          />
+        )}
+
+        {/* Events list */}
+        {!error && (
+          loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+              <p className="text-stone-500 mt-4">Loading events...</p>
+            </div>
+          ) : (
+            <EventList
+              events={events}
+              showDate={dateFilter !== 'tonight' && dateFilter !== 'tomorrow'}
+              emptyMessage={getEmptyMessage()}
+            />
+          )
         )}
       </main>
 
