@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, isInCoverageArea, isNyackProper, parsePrice, guessFamilyFriendly } from './utils'
+import { fetchWithTimeout, isInCoverageArea, isNyackProper, parsePrice, guessFamilyFriendly, decodeHtmlEntities, stripHtml } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 
 const SOURCE_NAME = 'Eventbrite'
@@ -168,10 +168,12 @@ function convertEventbriteItem(item: EventbriteJsonLdItem): ScrapedEvent | null 
     const { price, isFree } = parsePrice(item.offers?.price)
 
     // Get description if available
-    const description = item.description || null
+    const description = item.description
+      ? decodeHtmlEntities(stripHtml(item.description)).trim()
+      : null
 
     return {
-      title: item.name.trim(),
+      title: decodeHtmlEntities(stripHtml(item.name)).trim(),
       description,
       startDate,
       endDate,

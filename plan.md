@@ -38,6 +38,7 @@ A mobile-friendly events aggregator for Nyack, NY that pulls from 15+ local sour
 | Scheduling | GitHub Actions (daily cron) or Netlify Scheduled Functions |
 | Hosting | Netlify |
 | Auth (Admin) | Simple password protection |
+| Analytics | Plausible (traffic) + Custom event tracking (Supabase) |
 
 ---
 
@@ -47,6 +48,7 @@ A mobile-friendly events aggregator for Nyack, NY that pulls from 15+ local sour
 2. **Admin auth**: Simple password protection - single shared password for /admin routes
 3. **"Always Available" data**: Manual curation via admin dashboard
 4. **Color palette**: Warm sunset tones - oranges, warm yellows, Hudson River sunset vibe
+5. **Analytics approach**: Plausible for privacy-respecting traffic metrics + custom event tracking stored in Supabase for app-specific interactions (filter usage, event clicks, popular categories)
 
 ---
 
@@ -109,6 +111,30 @@ A mobile-friendly events aggregator for Nyack, NY that pulls from 15+ local sour
 - ART_GALLERIES
 - CLASSES_WORKSHOPS
 
+### AnalyticsEvent (Custom Tracking)
+```typescript
+{
+  id: string (uuid)
+  eventType: AnalyticsEventType (enum)
+  eventId: string | null (FK to Event, if applicable)
+  category: Category | null (for filter events)
+  metadata: JSON | null (flexible additional data)
+  sessionId: string (anonymous session identifier)
+  createdAt: DateTime
+}
+```
+
+### AnalyticsEventType (Enum)
+- PAGE_VIEW (page: home, activities, event_detail, admin)
+- DATE_TAB_CLICK (tab: tonight, tomorrow, weekend, week)
+- CATEGORY_FILTER (category selected)
+- FAMILY_FRIENDLY_TOGGLE (enabled/disabled)
+- FREE_FILTER_TOGGLE (enabled/disabled)
+- NYACK_ONLY_TOGGLE (enabled/disabled)
+- EVENT_CARD_CLICK (which event was clicked)
+- SOURCE_LINK_CLICK (user clicked through to source URL)
+- ACTIVITY_CARD_CLICK (which activity was clicked)
+
 ---
 
 ## Data Source Strategy
@@ -162,7 +188,8 @@ nyack-today/
 │   │   └── layout.tsx           # Admin auth wrapper
 │   └── api/
 │       ├── events/route.ts      # Events API
-│       └── scrape/route.ts      # Manual scrape trigger
+│       ├── scrape/route.ts      # Manual scrape trigger
+│       └── analytics/route.ts   # Analytics event ingestion
 ├── components/
 │   ├── EventCard.tsx
 │   ├── EventList.tsx
@@ -182,7 +209,8 @@ nyack-today/
 │   │   └── utils.ts             # Shared parsing utilities
 │   └── utils/
 │       ├── dates.ts             # Date helpers
-│       └── categories.ts        # Category mapping
+│       ├── categories.ts        # Category mapping
+│       └── analytics.ts         # Analytics tracking helpers
 ├── prisma/
 │   └── schema.prisma
 ├── public/
@@ -306,6 +334,15 @@ nyack-today/
 - Tarrytown Music Hall
 - Movie showtimes
 
+### Phase 8: Analytics Implementation
+- Add Plausible script to root layout
+- Create AnalyticsEvent model and migration
+- Build analytics API endpoint for custom events
+- Create client-side tracking utility (useAnalytics hook)
+- Instrument key interactions (date tabs, filters, event clicks)
+- Add analytics dashboard view in admin panel
+- Set up basic reports (popular events, peak usage times, filter preferences)
+
 ---
 
 ## Key Files to Create
@@ -320,6 +357,10 @@ nyack-today/
 | `lib/scrapers/visitnyack.ts` | First scraper implementation |
 | `prisma/schema.prisma` | Database schema |
 | `netlify.toml` | Deployment config |
+| `lib/utils/analytics.ts` | Client-side tracking utility |
+| `app/api/analytics/route.ts` | Analytics event ingestion API |
+| `components/AnalyticsProvider.tsx` | Context provider for tracking |
+| `app/admin/analytics/page.tsx` | Admin analytics dashboard |
 
 ---
 
@@ -343,6 +384,13 @@ nyack-today/
 2. Verify environment variables set
 3. Test production scraper execution
 4. Verify database connectivity
+
+### Analytics Testing
+1. Verify Plausible script loads (check Network tab)
+2. Click through app and verify events appear in AnalyticsEvent table
+3. Test session ID persistence across page navigations
+4. Verify admin analytics dashboard shows correct aggregations
+5. Test that tracking doesn't block UI interactions (async)
 
 ---
 
@@ -372,3 +420,83 @@ nyack-today/
 
 ### Movies
 - Palisades Center theater
+
+---
+
+## Analytics Strategy
+
+### Overview
+Two-tier approach balancing simplicity with actionable insights:
+1. **Plausible Analytics** - Privacy-focused traffic metrics (page views, referrers, devices)
+2. **Custom Event Tracking** - App-specific interactions stored in Supabase
+
+### Why This Approach
+- **Privacy-respecting**: No cookies, GDPR-compliant (important for community trust)
+- **Lightweight**: Plausible script is < 1KB (fast page loads)
+- **Actionable data**: Custom tracking captures what matters for this specific app
+- **Cost-effective**: Plausible ~$9/month + custom tracking uses existing Supabase
+
+### Plausible Setup
+```html
+<!-- Add to app/layout.tsx <head> -->
+<script defer data-domain="nyacktoday.com" src="https://plausible.io/js/script.js"></script>
+```
+
+Provides out-of-the-box:
+- Page views and unique visitors
+- Traffic sources and referrers
+- Device types and browsers
+- Geographic location (country/region)
+- Top pages
+
+### Custom Events to Track
+
+| Event | Data Captured | Business Value |
+|-------|---------------|----------------|
+| `DATE_TAB_CLICK` | Which tab (tonight/tomorrow/weekend/week) | Understand planning horizons |
+| `CATEGORY_FILTER` | Selected category | Know popular event types |
+| `FAMILY_FRIENDLY_TOGGLE` | Enabled/disabled | Size the family audience |
+| `FREE_FILTER_TOGGLE` | Enabled/disabled | Price sensitivity insights |
+| `NYACK_ONLY_TOGGLE` | Enabled/disabled | Geographic preferences |
+| `EVENT_CARD_CLICK` | Event ID | Popular events/venues |
+| `SOURCE_LINK_CLICK` | Event ID + source URL | Conversion to source sites |
+| `ACTIVITY_CARD_CLICK` | Activity ID | Popular always-available items |
+
+### Implementation Pattern
+```typescript
+// lib/utils/analytics.ts
+export async function trackEvent(
+  eventType: AnalyticsEventType,
+  metadata?: Record<string, unknown>
+) {
+  const sessionId = getOrCreateSessionId(); // Anonymous, stored in localStorage
+
+  await fetch('/api/analytics', {
+    method: 'POST',
+    body: JSON.stringify({ eventType, metadata, sessionId }),
+  });
+}
+
+// Usage in components
+<button onClick={() => {
+  trackEvent('DATE_TAB_CLICK', { tab: 'tonight' });
+  setActiveTab('tonight');
+}}>
+  Tonight
+</button>
+```
+
+### Admin Analytics Dashboard
+Display in `/admin/analytics`:
+- **Top events this week** - Most clicked event cards
+- **Popular categories** - Filter usage breakdown
+- **Peak usage times** - Hour-by-hour activity
+- **Date tab preferences** - Tonight vs Weekend planners
+- **Source click-through rate** - Events → external site conversions
+- **Family audience size** - % using family-friendly filter
+
+### Privacy Considerations
+- No personal data collected (no emails, names, IPs stored)
+- Session IDs are anonymous and not linked to users
+- Data retained for 90 days, then aggregated/purged
+- No third-party data sharing

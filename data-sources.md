@@ -39,24 +39,51 @@ A running list of event and activity sources for the Nyack area.
 
 ---
 
+## Central Hubs and Government
+Best for: Street fairs, official holidays, and community-wide announcements.
+
+| Source | URL | Notes |
+| :--- | :--- | :--- |
+| Chamber of Commerce | https://www.nyackchamber.org/ | Focuses on Farmers Markets and Street Fairs. |
+| Village of Nyack | https://www.nyack-ny.gov/ | Official public meetings and park events. |
+
+---
+
+## Music, Nightlife and Performance
+Best for: Live bands, jazz, theater, and evening entertainment.
+
+* Maureen's Jazz Cellar: https://www.maureensjazzcellar.com/ - Jazz, cabaret, and classical.
+* The Bridge Nyack: https://thebridgenyack.com/ - Nightlife, DJs, and live performances.
+* Elmwood Playhouse: https://www.elmwoodplayhouse.com/ - Local theater productions.
+* Olde Village Inne (OVI): https://www.nyackovi.com/ - Pub music and open mic nights.
+
+---
+
+## Arts, Culture and Film
+Best for: Gallery openings, independent film, and historical tours.
+
+* Edward Hopper House: https://www.edwardhopperhouse.org/ - Art exhibitions and summer garden concerts.
+* Rivertown Film Society: https://rivertownfilm.org/ - Independent and documentary screenings.
+* Perry Lawson Fine Art: https://www.perrylawsonfineart.com/ - Gallery-specific events.
+
+---
+
+## Kids, Families and Community
+Best for: Library programs, youth sports, and local community gatherings.
+
+* The Nyack Center: https://nyackcenter.org/ - Major community festivals and fundraisers.
+* Explore Rockland: https://explorerocklandny.com/events/ - Regional events near Nyack Beach and Rockland Lake.
+* Palisades Center: https://www.palisadescenter.com/events/ - Large scale commercial events and Levity Live comedy.
+
+---
+
 ## Other Venues to Research
 
 | Venue | URL | Status |
 |-------|-----|--------|
-| Maureen's Jazz Cellar | TBD | Need to find website |
 | Olive's | TBD | Need to find website |
-| Nyack Center | TBD | Need to find website |
 | Piermont Club | https://piermont.club/shop/ | Need to investigate |
 | Palisades Center Movies | TBD | Need to find showtimes source |
-
----
-
-## Community/Government Sources
-
-| Source | URL | Status |
-|--------|-----|--------|
-| Village of Nyack | https://www.nyack.gov/calendar | Need to find official site |
-| Nyack Chamber of Commerce | TBD | Need to find website |
 
 ---
 
@@ -64,9 +91,6 @@ A running list of event and activity sources for the Nyack area.
 
 Add new sources here as you discover them:
 
-- Edward Hopper House
--
--
 
 ---
 

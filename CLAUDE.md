@@ -17,6 +17,9 @@ npx prisma generate       # Regenerate Prisma client after schema changes
 npx prisma studio         # Open database GUI
 ```
 
+## Planning
+Ensure you are looking at plan.md for the most up to date plan. For any changes to the plan, ensure that plan.md gets updated accordingly.
+
 ## Architecture
 
 ```
