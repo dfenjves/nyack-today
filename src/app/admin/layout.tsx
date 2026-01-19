@@ -15,11 +15,16 @@ export default function AdminLayout({
   const [error, setError] = useState('')
   const pathname = usePathname()
 
-  // Check if already authenticated
+  // Check if already authenticated (must have both auth flag AND password stored)
   useEffect(() => {
     const auth = sessionStorage.getItem('admin_auth')
-    if (auth === 'true') {
+    const storedPassword = sessionStorage.getItem('admin_password')
+    // Require both auth flag AND password to be stored (password needed for API calls)
+    if (auth === 'true' && storedPassword) {
       setIsAuthenticated(true)
+    } else if (auth === 'true' && !storedPassword) {
+      // Clear stale auth if password is missing (from before password storage was added)
+      sessionStorage.removeItem('admin_auth')
     }
     setIsLoading(false)
   }, [])
@@ -49,6 +54,7 @@ export default function AdminLayout({
 
   const handleLogout = () => {
     sessionStorage.removeItem('admin_auth')
+    sessionStorage.removeItem('admin_password')
     setIsAuthenticated(false)
     setPassword('')
   }
