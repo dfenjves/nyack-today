@@ -26,11 +26,21 @@ export async function POST(request: NextRequest) {
 
     // Allow if: no API key configured, OR valid API key, OR valid admin password
     const hasValidApiKey = !expectedKey || apiKey === expectedKey
-    const hasValidAdminAuth = expectedAdminPassword && adminPassword === expectedAdminPassword
+    const hasValidAdminAuth = Boolean(expectedAdminPassword && adminPassword && adminPassword === expectedAdminPassword)
+
+    console.log('Scrape auth debug:', {
+      hasApiKey: !!apiKey,
+      hasExpectedKey: !!expectedKey,
+      hasValidApiKey,
+      hasAdminPassword: !!adminPassword,
+      adminPasswordLength: adminPassword?.length || 0,
+      hasExpectedAdminPassword: !!expectedAdminPassword,
+      hasValidAdminAuth,
+    })
 
     if (!hasValidApiKey && !hasValidAdminAuth) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', debug: { hasValidApiKey, hasValidAdminAuth, hasAdminPassword: !!adminPassword } },
         { status: 401 }
       )
     }
