@@ -5,6 +5,7 @@ import Header from '@/components/Header'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
+import { EventListSkeleton } from '@/components/EventCardSkeleton'
 import BottomNav from '@/components/BottomNav'
 import { DateFilter } from '@/lib/utils/dates'
 import { Event } from '@/generated/prisma/client'
@@ -173,10 +174,7 @@ export default function Home() {
         {/* Events list */}
         {!error && (
           loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
-              <p className="text-stone-500 mt-4">Loading events...</p>
-            </div>
+            <EventListSkeleton count={5} />
           ) : (
             <EventList
               events={events}

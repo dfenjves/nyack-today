@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runAllScrapers, runScraper, cleanupOldEvents, scrapers } from '@/lib/scrapers'
+import { notifyScraperError } from '@/lib/utils/notifications'
 
 /**
  * POST /api/scrape
@@ -9,17 +10,25 @@ import { runAllScrapers, runScraper, cleanupOldEvents, scrapers } from '@/lib/sc
  * - source: Run a specific scraper (e.g., "Visit Nyack")
  * - cleanup: Set to "true" to also cleanup old events
  *
- * Headers:
- * - x-scraper-key: API key for authentication (optional, for cron jobs)
+ * Authentication (one of):
+ * - Header x-scraper-key: API key for cron jobs
+ * - Header x-admin-password: Admin password for dashboard access
  */
 export async function POST(request: NextRequest) {
   try {
-    // Optional API key check for cron jobs
+    // Check for API key (cron jobs)
     const apiKey = request.headers.get('x-scraper-key')
     const expectedKey = process.env.SCRAPER_API_KEY
 
-    // If an API key is configured, require it
-    if (expectedKey && apiKey !== expectedKey) {
+    // Check for admin password (dashboard)
+    const adminPassword = request.headers.get('x-admin-password')
+    const expectedAdminPassword = process.env.ADMIN_PASSWORD
+
+    // Allow if: no API key configured, OR valid API key, OR valid admin password
+    const hasValidApiKey = !expectedKey || apiKey === expectedKey
+    const hasValidAdminAuth = expectedAdminPassword && adminPassword === expectedAdminPassword
+
+    if (!hasValidApiKey && !hasValidAdminAuth) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -79,6 +88,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Scrape error:', error)
     const message = error instanceof Error ? error.message : 'Unknown error'
+
+    // Send critical error notification
+    await notifyScraperError(message)
 
     return NextResponse.json(
       { error: 'Scraping failed', message },

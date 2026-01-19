@@ -288,45 +288,52 @@ nyack-today/
 
 ## Implementation Phases
 
-### Phase 1: Project Setup & Core Infrastructure
+### Phase 1: Project Setup & Core Infrastructure ✅
 - Initialize Next.js project with Tailwind
 - Set up Prisma with PostgreSQL (Supabase)
 - Create database schema and migrations
 - Basic project structure
 
-### Phase 2: Frontend Shell
+### Phase 2: Frontend Shell ✅
 - Homepage layout with date tabs
 - Event card component
 - Filter bar (non-functional initially)
 - Mobile-responsive design
 - "Always Available" page shell
 
-### Phase 3: First Scrapers (MVP Sources)
+### Phase 3: First Scrapers (MVP Sources) ✅
 - Build scraper for visitnyack.org
 - Build scraper for Eventbrite (API or scrape)
 - Build scraper for theangelnyack.com
 - Scraper orchestration and deduplication logic
 - Manual trigger endpoint for testing
 
-### Phase 4: Data Flow & Display
+### Phase 4: Data Flow & Display ✅
 - Connect frontend to database
 - Implement filtering logic
 - Date-based queries (tonight, tomorrow, weekend, week)
 - Category and price filters
 - Family-friendly filter
 
-### Phase 5: Admin Dashboard
+### Phase 5: Admin Dashboard ✅
 - Protected admin route
 - Event list with hide/unhide functionality
 - Manual event entry form
 - Scraper status/logs view
 
-### Phase 6: Automation & Polish
-- Set up daily cron job (GitHub Actions or Netlify)
-- Error handling and notifications
-- Loading states and empty states
-- SEO metadata
-- Favicon and branding
+### Phase 6: Automation & Polish ✅
+- Set up daily cron job (GitHub Actions workflow: `.github/workflows/daily-scrape.yml`)
+- Error handling and notifications (`lib/utils/notifications.ts` - Discord/Slack webhook support)
+- Loading states (skeleton loading component: `components/EventCardSkeleton.tsx`)
+- Empty states (contextual empty messages)
+- SEO metadata (Open Graph, Twitter cards, robots.txt)
+- Favicon and branding (SVG favicon, web manifest)
+
+**Deployment Requirements for Phase 6:**
+- Set GitHub secrets: `SITE_URL`, `SCRAPER_API_KEY`
+- Optional webhook secrets: `DISCORD_WEBHOOK_URL`, `SLACK_WEBHOOK_URL`
+- Generate PNG favicons from `public/favicon.svg` (favicon.ico, apple-touch-icon.png, android-chrome-*.png)
+- Generate `public/og-image.png` (1200x630) for social sharing
 
 ### Phase 7: Additional Scrapers (Post-MVP)
 - Levity Live

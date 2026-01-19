@@ -4,6 +4,7 @@ import { generateEventHash } from './utils'
 import { visitNyackScraper } from './visitnyack'
 import { theAngelNyackScraper } from './theangelnyack'
 import { eventbriteScraper } from './eventbrite'
+import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 
 /**
  * All registered scrapers
@@ -82,6 +83,18 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
   console.log(`  Added: ${totalEventsAdded}`)
   console.log(`  Updated: ${totalEventsUpdated}`)
   console.log(`  Duplicates: ${totalEventsDuplicate}`)
+
+  // Send notification with summary
+  const failedScrapers = results
+    .filter((r) => r.status === 'error')
+    .map((r) => r.sourceName)
+
+  await notifyScraperComplete({
+    totalEventsFound,
+    totalEventsAdded,
+    totalEventsUpdated,
+    failedScrapers,
+  })
 
   return {
     results,

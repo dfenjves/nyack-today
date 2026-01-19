@@ -37,6 +37,7 @@ export default function AdminLayout({
 
       if (response.ok) {
         sessionStorage.setItem('admin_auth', 'true')
+        sessionStorage.setItem('admin_password', password)
         setIsAuthenticated(true)
       } else {
         setError('Invalid password')

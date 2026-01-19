@@ -44,10 +44,18 @@ export default function AdminDashboard() {
   const runScrapers = async () => {
     setScraping(true)
     try {
-      const response = await fetch('/api/scrape', { method: 'POST' })
+      const adminPassword = sessionStorage.getItem('admin_password') || ''
+      const response = await fetch('/api/scrape', {
+        method: 'POST',
+        headers: {
+          'x-admin-password': adminPassword,
+        },
+      })
       if (response.ok) {
         // Refresh stats after scraping
         await fetchStats()
+      } else {
+        console.error('Scraping failed:', await response.text())
       }
     } catch (error) {
       console.error('Scraping failed:', error)

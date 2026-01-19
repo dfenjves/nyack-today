@@ -1,0 +1,21 @@
+{
+  "name": "Nyack Today",
+  "short_name": "Nyack Today",
+  "description": "Find events, shows, and things to do in and around Nyack, NY",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#f97316",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

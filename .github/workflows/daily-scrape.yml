@@ -1,0 +1,60 @@
+name: Daily Event Scraper
+
+on:
+  schedule:
+    # Run daily at 6 AM ET (11:00 UTC)
+    - cron: '0 11 * * *'
+  workflow_dispatch:
+    # Allow manual triggers from GitHub UI
+    inputs:
+      cleanup:
+        description: 'Clean up old events'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger scraper
+        run: |
+          CLEANUP="${{ github.event.inputs.cleanup || 'true' }}"
+
+          echo "Running scrapers with cleanup=$CLEANUP"
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SITE_URL }}/api/scrape?cleanup=$CLEANUP" \
+            -H "Content-Type: application/json" \
+            -H "x-scraper-key: ${{ secrets.SCRAPER_API_KEY }}")
+
+          # Extract HTTP status code (last line)
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          # Extract response body (everything except last line)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response status: $HTTP_CODE"
+          echo "Response body: $BODY"
+
+          # Check if request was successful
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Scraper failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+          # Parse and display results
+          echo ""
+          echo "=== Scraper Results ==="
+          echo "$BODY" | jq -r '.summary // empty'
+          echo ""
+          echo "=== Per-Source Results ==="
+          echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) - \(.eventsFound) events found"'
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Scraper job failed! Check the logs above for details."
+          # Future: Add Slack/Discord/email notification here

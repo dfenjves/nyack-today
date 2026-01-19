@@ -1,0 +1,9 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow admin section
+Disallow: /admin
+
+# Sitemap
+Sitemap: https://nyacktoday.com/sitemap.xml

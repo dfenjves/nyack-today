@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#f97316"/>
+
+  <!-- Sun rays -->
+  <g fill="#fff" opacity="0.9">
+    <rect x="15" y="4" width="2" height="5" rx="1"/>
+    <rect x="15" y="23" width="2" height="5" rx="1"/>
+    <rect x="4" y="15" width="5" height="2" rx="1"/>
+    <rect x="23" y="15" width="5" height="2" rx="1"/>
+    <rect x="6.5" y="6.5" width="2" height="5" rx="1" transform="rotate(45 7.5 9)"/>
+    <rect x="23.5" y="6.5" width="2" height="5" rx="1" transform="rotate(-45 24.5 9)"/>
+    <rect x="6.5" y="20.5" width="2" height="5" rx="1" transform="rotate(-45 7.5 23)"/>
+    <rect x="23.5" y="20.5" width="2" height="5" rx="1" transform="rotate(45 24.5 23)"/>
+  </g>
+
+  <!-- Center sun -->
+  <circle cx="16" cy="16" r="6" fill="#fff"/>
+</svg>
