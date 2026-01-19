@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Activity } from '@/generated/prisma/client'
-import { Category } from '@/generated/prisma/enums'
+import { Activity } from '@prisma/client'
+import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 
 export default function EditActivityPage() {

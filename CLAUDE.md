@@ -27,9 +27,9 @@ Data Sources → Scrapers (lib/scrapers/) → Database (Prisma/SQLite) → Next.
 ```
 
 **Key architectural decisions:**
-- **Database**: SQLite for local dev, Supabase PostgreSQL for production
-- **Prisma client output**: Generated to `src/generated/prisma/` (not node_modules)
-- **Imports**: Use `@/generated/prisma/client` for PrismaClient/types, `@/generated/prisma/enums` for Category enum
+- **Database**: Supabase PostgreSQL for both local dev and production
+- **Prisma client**: Standard output to `node_modules/@prisma/client`
+- **Imports**: Use `@prisma/client` for PrismaClient, types, and Category enum
 - **Admin auth**: Simple password protection via `ADMIN_PASSWORD` env var
 
 ## Data Model

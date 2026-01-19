@@ -1,4 +1,4 @@
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 
 /**
  * Represents an event scraped from an external source

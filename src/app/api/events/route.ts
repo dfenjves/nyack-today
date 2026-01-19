@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { getDateRange, DateFilter } from '@/lib/utils/dates'
 
 /**

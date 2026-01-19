@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 
 export default function NewEventPage() {

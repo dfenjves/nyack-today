@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
-import { Event } from '@/generated/prisma/client'
+import { Event } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { decodeHtmlEntities } from '@/lib/utils/text'
 
 export default function AdminEventsPage() {

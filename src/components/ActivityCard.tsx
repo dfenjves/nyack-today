@@ -1,4 +1,4 @@
-import { Activity } from '@/generated/prisma/client'
+import { Activity } from '@prisma/client'
 import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
 import Link from 'next/link'
 

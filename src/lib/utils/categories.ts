@@ -1,4 +1,4 @@
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 
 export const categoryLabels: Record<Category, string> = {
   MUSIC: 'Music',

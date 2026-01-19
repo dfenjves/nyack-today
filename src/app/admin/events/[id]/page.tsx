@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Event } from '@/generated/prisma/client'
-import { Category } from '@/generated/prisma/enums'
+import { Event } from '@prisma/client'
+import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
 

@@ -1,4 +1,4 @@
-import { Event } from '@/generated/prisma/client'
+import { Event } from '@prisma/client'
 import { formatTime, formatDate } from '@/lib/utils/dates'
 import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'

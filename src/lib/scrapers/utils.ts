@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import crypto from 'crypto'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { guessCategory } from '@/lib/utils/categories'
 import { JsonLdEvent, ScrapedEvent } from './types'
 

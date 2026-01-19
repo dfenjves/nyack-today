@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 
 /**
  * GET /api/admin/events

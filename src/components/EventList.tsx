@@ -1,4 +1,4 @@
-import { Event } from '@/generated/prisma/client'
+import { Event } from '@prisma/client'
 import EventCard from './EventCard'
 
 interface EventListProps {

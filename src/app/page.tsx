@@ -8,7 +8,7 @@ import EventList from '@/components/EventList'
 import { EventListSkeleton } from '@/components/EventCardSkeleton'
 import BottomNav from '@/components/BottomNav'
 import { DateFilter } from '@/lib/utils/dates'
-import { Event } from '@/generated/prisma/client'
+import { Event } from '@prisma/client'
 
 interface EventsApiResponse {
   events: Event[]

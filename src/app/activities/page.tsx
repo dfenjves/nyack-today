@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Header from '@/components/Header'
 import ActivityCard from '@/components/ActivityCard'
 import BottomNav from '@/components/BottomNav'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
-import { Activity } from '@/generated/prisma/client'
+import { Activity } from '@prisma/client'
 
 // Mock activities for initial development
 const mockActivities: Activity[] = [

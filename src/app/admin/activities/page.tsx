@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Activity } from '@/generated/prisma/client'
+import { Activity } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 
 type ActivityFilter = 'active' | 'all' | 'inactive'
 

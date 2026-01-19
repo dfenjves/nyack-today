@@ -1,6 +1,6 @@
 'use client'
 
-import { Category } from '@/generated/prisma/enums'
+import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 
 export interface Filters {
