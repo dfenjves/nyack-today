@@ -4,15 +4,17 @@ A running list of event and activity sources for the Nyack area.
 
 ---
 
-## Active Sources (MVP)
+## Active Sources (Built)
 
-### Tier 1: Structured Data (Easy to scrape)
-| Source | URL | Type | Notes |
-|--------|-----|------|-------|
-| Visit Nyack | https://visitnyack.org/calendar/ | Calendar | The Events Calendar plugin, JSON-LD |
-| The Angel Nyack | https://theangelnyack.com/ | Venue | Clean event listings |
-| Levity Live | https://www.levitylive.com/nyack | Venue | Schema markup |
-| Eventbrite | https://www.eventbrite.com/d/ny--nyack/events/ | Aggregator | Schema.org JSON-LD, API available |
+### Tier 1: Structured Data (Cheerio-based)
+| Source | URL | Type | Status | Notes |
+|--------|-----|------|--------|-------|
+| Visit Nyack | https://visitnyack.org/calendar/ | Calendar | ✅ Built | The Events Calendar plugin, JSON-LD |
+| The Angel Nyack | https://theangelnyack.com/ | Venue | ✅ Built | JSON-LD |
+| Eventbrite | https://www.eventbrite.com/d/ny--nyack/events/ | Aggregator | ✅ Built | Schema.org JSON-LD ItemList |
+| Levity Live | https://www.levitylive.com/nyack | Venue | ✅ Built | JSON-LD @graph format, COMEDY category |
+| Elmwood Playhouse | https://www.elmwoodplayhouse.com/ | Venue | ✅ Built | MEC plugin JSON-LD, THEATER category |
+| Rivertown Film | https://rivertownfilm.org/ | Venue | ✅ Built | HTML parsing (no JSON-LD), MOVIES category |
 
 ---
 
@@ -30,6 +32,9 @@ A running list of event and activity sources for the Nyack area.
 | Nyack News and Views | https://nyacknewsandviews.com | Blog | Parse "Weekly Rec" articles |
 | ArtsRock | https://artsrock.org/ | Venue | Returns 403, may need alternative approach |
 | West Gate Lounge | https://www.facebook.com/WestGateLounge/ | Venue | Facebook page - unreliable scraping |
+| Maureen's Jazz Cellar | https://www.maureensjazzcellar.com/ | Venue | Uses Inffuse widget (JS-rendered) |
+| Edward Hopper House | https://www.edwardhopperhouse.org/ | Venue | Multi-page crawl needed, no JSON-LD |
+| Palisades Center | https://www.palisadescenter.com/events/ | Venue | 403 - anti-bot protection |
 
 ### Tier 4: APIs
 | Source | URL | Type | Notes |

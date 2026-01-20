@@ -4,6 +4,9 @@ import { generateEventHash } from './utils'
 import { visitNyackScraper } from './visitnyack'
 import { theAngelNyackScraper } from './theangelnyack'
 import { eventbriteScraper } from './eventbrite'
+import { levityLiveScraper } from './levitylive'
+import { elmwoodPlayhouseScraper } from './elmwoodplayhouse'
+import { rivertownFilmScraper } from './rivertownfilm'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 
 /**
@@ -13,6 +16,9 @@ export const scrapers: Scraper[] = [
   visitNyackScraper,
   theAngelNyackScraper,
   eventbriteScraper,
+  levityLiveScraper,
+  elmwoodPlayhouseScraper,
+  rivertownFilmScraper,
 ]
 
 /**
