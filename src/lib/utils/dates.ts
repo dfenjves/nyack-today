@@ -1,7 +1,20 @@
 // Date utilities for filtering events
+// All dates use Eastern Time (America/New_York) for Nyack, NY
+
+const TIMEZONE = 'America/New_York'
+
+/**
+ * Get the current date/time in Eastern Time
+ */
+export function getNowInEastern(): Date {
+  // Get current time as ISO string in Eastern timezone
+  const now = new Date()
+  const easternString = now.toLocaleString('en-US', { timeZone: TIMEZONE })
+  return new Date(easternString)
+}
 
 export function getToday(): Date {
-  const now = new Date()
+  const now = getNowInEastern()
   now.setHours(0, 0, 0, 0)
   return now
 }
@@ -59,7 +72,7 @@ export function getWeekEnd(): Date {
 export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week'
 
 export function getDateRange(filter: DateFilter): { start: Date; end: Date } {
-  const now = new Date()
+  const now = getNowInEastern()
 
   switch (filter) {
     case 'tonight':
@@ -80,6 +93,7 @@ export function formatTime(date: Date): string {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
+    timeZone: TIMEZONE,
   })
 }
 
@@ -88,6 +102,7 @@ export function formatDate(date: Date): string {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
+    timeZone: TIMEZONE,
   })
 }
 
