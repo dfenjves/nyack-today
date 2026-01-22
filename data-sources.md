@@ -15,6 +15,7 @@ A running list of event and activity sources for the Nyack area.
 | Levity Live | https://www.levitylive.com/nyack | Venue | ✅ Built | JSON-LD @graph format, COMEDY category |
 | Elmwood Playhouse | https://www.elmwoodplayhouse.com/ | Venue | ✅ Built | MEC plugin JSON-LD, THEATER category |
 | Rivertown Film | https://rivertownfilm.org/ | Venue | ✅ Built | HTML parsing (no JSON-LD), MOVIES category |
+| Village of Nyack | https://www.nyack.gov/ | Government | ✅ Built | RSS feeds, COMMUNITY_GOVERNMENT category |
 
 ---
 
@@ -50,7 +51,7 @@ Best for: Street fairs, official holidays, and community-wide announcements.
 | Source | URL | Notes |
 | :--- | :--- | :--- |
 | Chamber of Commerce | https://www.nyackchamber.org/ | Focuses on Farmers Markets and Street Fairs. |
-| Village of Nyack | https://www.nyack-ny.gov/ | Official public meetings and park events. |
+| Village of Nyack | https://www.nyack.gov/ | ✅ Built - Official public meetings and park events. |
 
 ---
 
@@ -95,6 +96,7 @@ Best for: Library programs, youth sports, and local community gatherings.
 ## Ideas / To Investigate
 
 Add new sources here as you discover them:
+Rockland Chess CLub (rocklandchess.org)
 
 
 ---

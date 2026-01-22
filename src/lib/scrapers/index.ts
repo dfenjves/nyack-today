@@ -7,6 +7,7 @@ import { eventbriteScraper } from './eventbrite'
 import { levityLiveScraper } from './levitylive'
 import { elmwoodPlayhouseScraper } from './elmwoodplayhouse'
 import { rivertownFilmScraper } from './rivertownfilm'
+import { nyackVillageScraper } from './nyackvillage'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 
 /**
@@ -19,6 +20,7 @@ export const scrapers: Scraper[] = [
   levityLiveScraper,
   elmwoodPlayhouseScraper,
   rivertownFilmScraper,
+  nyackVillageScraper,
 ]
 
 /**
