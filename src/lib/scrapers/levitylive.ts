@@ -150,12 +150,52 @@ interface LevityJsonLdEvent {
 }
 
 /**
+ * Check if the event is at the Nyack/West Nyack location
+ */
+function isNyackLocation(jsonLd: LevityJsonLdEvent): boolean {
+  const location = jsonLd.location
+  if (!location) return false
+
+  // Check location name
+  const locationName = location.name?.toLowerCase() || ''
+  if (locationName.includes('nyack') || locationName.includes('palisades')) {
+    return true
+  }
+
+  // Check address
+  const address = location.address
+  if (typeof address === 'string') {
+    const addrLower = address.toLowerCase()
+    return addrLower.includes('nyack') || addrLower.includes('palisades')
+  }
+
+  if (address && typeof address === 'object') {
+    const locality = address.addressLocality?.toLowerCase() || ''
+    const street = address.streetAddress?.toLowerCase() || ''
+    return (
+      locality.includes('nyack') ||
+      locality.includes('west nyack') ||
+      street.includes('palisades')
+    )
+  }
+
+  // Check event URL as fallback
+  const url = jsonLd.url?.toLowerCase() || ''
+  return url.includes('/nyack')
+}
+
+/**
  * Convert a Levity Live JSON-LD event to our ScrapedEvent format
  */
 function convertLevityEvent(jsonLd: LevityJsonLdEvent): ScrapedEvent | null {
   try {
     // Required fields
     if (!jsonLd.name || !jsonLd.startDate) {
+      return null
+    }
+
+    // Filter to only Nyack location
+    if (!isNyackLocation(jsonLd)) {
       return null
     }
 
