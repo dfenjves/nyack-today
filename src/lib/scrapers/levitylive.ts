@@ -150,38 +150,72 @@ interface LevityJsonLdEvent {
 }
 
 /**
+ * Other Levity Live locations to exclude
+ */
+const OTHER_LEVITY_LOCATIONS = [
+  'oxnard',
+  'huntsville',
+  'west palm',
+  'palm beach',
+  'ontario',
+  'brea',
+]
+
+/**
  * Check if the event is at the Nyack/West Nyack location
  */
 function isNyackLocation(jsonLd: LevityJsonLdEvent): boolean {
   const location = jsonLd.location
-  if (!location) return false
 
-  // Check location name
-  const locationName = location.name?.toLowerCase() || ''
+  // Check location name for other venues first (reject if found)
+  const locationName = location?.name?.toLowerCase() || ''
+  for (const otherLocation of OTHER_LEVITY_LOCATIONS) {
+    if (locationName.includes(otherLocation)) {
+      return false
+    }
+  }
+
+  // Check event URL for other venues
+  const url = jsonLd.url?.toLowerCase() || ''
+  for (const otherLocation of OTHER_LEVITY_LOCATIONS) {
+    if (url.includes(`/${otherLocation}`)) {
+      return false
+    }
+  }
+
+  // Now check for positive Nyack identification
   if (locationName.includes('nyack') || locationName.includes('palisades')) {
     return true
   }
 
   // Check address
-  const address = location.address
+  const address = location?.address
   if (typeof address === 'string') {
     const addrLower = address.toLowerCase()
-    return addrLower.includes('nyack') || addrLower.includes('palisades')
+    if (addrLower.includes('nyack') || addrLower.includes('palisades')) {
+      return true
+    }
   }
 
   if (address && typeof address === 'object') {
     const locality = address.addressLocality?.toLowerCase() || ''
     const street = address.streetAddress?.toLowerCase() || ''
-    return (
+    if (
       locality.includes('nyack') ||
       locality.includes('west nyack') ||
       street.includes('palisades')
-    )
+    ) {
+      return true
+    }
   }
 
-  // Check event URL as fallback
-  const url = jsonLd.url?.toLowerCase() || ''
-  return url.includes('/nyack')
+  // Check event URL for Nyack
+  if (url.includes('/nyack/') || url.includes('/nyack-')) {
+    return true
+  }
+
+  // If we can't positively identify as Nyack, reject it
+  return false
 }
 
 /**
