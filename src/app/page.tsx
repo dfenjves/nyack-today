@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Header from '@/components/Header'
-import WelcomeBanner from '@/components/WelcomeBanner'
+import Hero from '@/components/Hero'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
@@ -137,9 +137,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50">
       <Header />
-      <WelcomeBanner />
+      <Hero />
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
+      <main id="events-section" className="max-w-4xl mx-auto px-4 py-12">
         {/* Hero section */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-stone-900 mb-2">
