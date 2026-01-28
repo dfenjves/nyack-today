@@ -15,7 +15,7 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-br from-orange-200 via-amber-300 to-orange-400 -z-10" />
 
       {/* Content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-6xl mx-auto w-full pb-24">
         {/* Hero headline */}
         <div className="text-center mb-12">
           <h1 className="text-5xl md:text-7xl font-bold text-stone-900 mb-4">
@@ -32,7 +32,7 @@ export default function Hero() {
         </div>
 
         {/* Tonight's featured events */}
-        <div className="w-full">
+        <div className="w-full mb-16">
           <FeaturedEvents />
         </div>
       </div>

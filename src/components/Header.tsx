@@ -1,10 +1,27 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const handleEventsClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setMenuOpen(false)
+
+    if (pathname === '/') {
+      // Already on homepage, scroll to events section
+      const eventsSection = document.getElementById('events-section')
+      eventsSection?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      // On another page, navigate to homepage
+      router.push('/')
+    }
+  }
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-stone-200 shadow-sm">
@@ -46,12 +63,12 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-6">
-          <Link
-            href="/"
-            className="text-stone-600 hover:text-orange-500 transition-colors"
+          <button
+            onClick={handleEventsClick}
+            className="text-stone-600 hover:text-orange-500 transition-colors cursor-pointer"
           >
             Events
-          </Link>
+          </button>
           <Link
             href="/activities"
             className="text-stone-600 hover:text-orange-500 transition-colors"
@@ -64,13 +81,12 @@ export default function Header() {
       {/* Mobile nav */}
       {menuOpen && (
         <nav className="md:hidden border-t border-stone-200 bg-white">
-          <Link
-            href="/"
-            className="block px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
-            onClick={() => setMenuOpen(false)}
+          <button
+            onClick={handleEventsClick}
+            className="block w-full text-left px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
           >
             Events
-          </Link>
+          </button>
           <Link
             href="/activities"
             className="block px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
