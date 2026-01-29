@@ -5,10 +5,72 @@ import { guessCategory } from '@/lib/utils/categories'
 import { JsonLdEvent, ScrapedEvent } from './types'
 
 /**
+ * Normalize a title by removing common prefixes and extra whitespace
+ */
+function normalizeTitle(title: string): string {
+  const prefixes = [
+    'film screening:',
+    'movie screening:',
+    'live music:',
+    'concert:',
+    'performance:',
+    'event:',
+  ]
+
+  let normalized = title.toLowerCase().trim()
+
+  // Remove common prefixes
+  for (const prefix of prefixes) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.substring(prefix.length).trim()
+      break
+    }
+  }
+
+  // Normalize whitespace
+  normalized = normalized.replace(/\s+/g, ' ')
+
+  return normalized
+}
+
+/**
+ * Normalize a venue by extracting just the venue name (before address)
+ */
+function normalizeVenue(venue: string): string {
+  let normalized = venue.toLowerCase().trim()
+
+  // Extract venue name before comma (often followed by address)
+  const commaIndex = normalized.indexOf(',')
+  if (commaIndex > 0) {
+    normalized = normalized.substring(0, commaIndex).trim()
+  }
+
+  // Remove common words like "the" at the beginning
+  if (normalized.startsWith('the ')) {
+    normalized = normalized.substring(4)
+  }
+
+  // Normalize whitespace
+  normalized = normalized.replace(/\s+/g, ' ')
+
+  return normalized
+}
+
+/**
  * Generate a hash for deduplication based on title, venue, and startDate
+ * Uses normalized title/venue and date (without time) for better duplicate detection
  */
 export function generateEventHash(title: string, venue: string, startDate: Date): string {
-  const normalized = `${title.toLowerCase().trim()}|${venue.toLowerCase().trim()}|${startDate.toISOString()}`
+  const normalizedTitle = normalizeTitle(title)
+  const normalizedVenue = normalizeVenue(venue)
+
+  // Use local date (YYYY-MM-DD format) to avoid timezone issues
+  const year = startDate.getFullYear()
+  const month = String(startDate.getMonth() + 1).padStart(2, '0')
+  const day = String(startDate.getDate()).padStart(2, '0')
+  const dateOnly = `${year}-${month}-${day}`
+
+  const normalized = `${normalizedTitle}|${normalizedVenue}|${dateOnly}`
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 32)
 }
 
