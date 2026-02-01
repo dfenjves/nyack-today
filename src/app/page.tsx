@@ -115,6 +115,8 @@ export default function Home() {
         return 'This Weekend'
       case 'week':
         return 'This Week'
+      case 'month':
+        return 'This Month'
       default:
         return 'Events'
     }

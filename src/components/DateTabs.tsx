@@ -12,6 +12,7 @@ const tabs: { value: DateFilter; label: string }[] = [
   { value: 'tomorrow', label: 'Tomorrow' },
   { value: 'weekend', label: 'Weekend' },
   { value: 'week', label: 'This Week' },
+  { value: 'month', label: 'This Month' },
 ]
 
 export default function DateTabs({ activeFilter, onFilterChange }: DateTabsProps) {

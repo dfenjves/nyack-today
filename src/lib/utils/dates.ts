@@ -185,7 +185,16 @@ export function getNowInEastern(): Date {
   return new Date()
 }
 
-export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week'
+/**
+ * Get end of the month (30 days from now) in Eastern Time
+ */
+export function getMonthEnd(): Date {
+  const { year, month, day } = getEasternDateParts()
+  const monthEnd = new Date(Date.UTC(year, month, day + 30))
+  return easternToUtc(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999)
+}
+
+export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week' | 'month'
 
 export function getDateRange(filter: DateFilter): { start: Date; end: Date } {
   const now = new Date()
@@ -199,6 +208,8 @@ export function getDateRange(filter: DateFilter): { start: Date; end: Date } {
       return { start: getWeekendStart(), end: getWeekendEnd() }
     case 'week':
       return { start: now, end: getWeekEnd() }
+    case 'month':
+      return { start: now, end: getMonthEnd() }
     default:
       return { start: now, end: getWeekEnd() }
   }
