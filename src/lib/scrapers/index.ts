@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { generateEventHash } from './utils'
+import { generateEventHash, areEventsDuplicates } from './utils'
 import { visitNyackScraper } from './visitnyack'
 import { theAngelNyackScraper } from './theangelnyack'
 import { eventbriteScraper } from './eventbrite'
@@ -160,7 +160,7 @@ async function saveEvent(event: ScrapedEvent): Promise<SaveResult> {
     // Generate hash for deduplication
     const sourceHash = generateEventHash(event.title, event.venue, event.startDate)
 
-    // Check if event already exists
+    // Check if event already exists by hash
     const existing = await prisma.event.findUnique({
       where: { sourceHash },
     })
@@ -180,6 +180,57 @@ async function saveEvent(event: ScrapedEvent): Promise<SaveResult> {
             isFamilyFriendly: event.isFamilyFriendly,
             imageUrl: event.imageUrl,
             sourceUrl: event.sourceUrl,
+          },
+        })
+        return 'updated'
+      }
+      // Different source, skip (keep first source)
+      return 'duplicate'
+    }
+
+    // Also check for fuzzy duplicates on the same day
+    const startOfDay = new Date(event.startDate)
+    startOfDay.setHours(0, 0, 0, 0)
+    const endOfDay = new Date(event.startDate)
+    endOfDay.setHours(23, 59, 59, 999)
+
+    const eventsOnSameDay = await prisma.event.findMany({
+      where: {
+        startDate: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    })
+
+    // Check if any existing event is a fuzzy duplicate
+    const fuzzyDuplicate = eventsOnSameDay.find(existing =>
+      areEventsDuplicates(
+        event.title,
+        event.venue,
+        event.startDate,
+        existing.title,
+        existing.venue,
+        existing.startDate
+      )
+    )
+
+    if (fuzzyDuplicate) {
+      // Update if from same source
+      if (fuzzyDuplicate.sourceName === event.sourceName) {
+        await prisma.event.update({
+          where: { id: fuzzyDuplicate.id },
+          data: {
+            title: event.title,
+            description: event.description,
+            endDate: event.endDate,
+            address: event.address,
+            price: event.price,
+            isFree: event.isFree,
+            isFamilyFriendly: event.isFamilyFriendly,
+            imageUrl: event.imageUrl,
+            sourceUrl: event.sourceUrl,
+            sourceHash, // Update hash to new one
           },
         })
         return 'updated'

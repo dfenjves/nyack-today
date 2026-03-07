@@ -5,9 +5,55 @@ import { guessCategory } from '@/lib/utils/categories'
 import { JsonLdEvent, ScrapedEvent } from './types'
 
 /**
- * Normalize a title by removing common prefixes and extra whitespace
+ * Calculate Levenshtein distance between two strings
  */
-function normalizeTitle(title: string): string {
+export function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = []
+
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i]
+  }
+
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j
+  }
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1]
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1,     // insertion
+          matrix[i - 1][j] + 1      // deletion
+        )
+      }
+    }
+  }
+
+  return matrix[b.length][a.length]
+}
+
+/**
+ * Calculate similarity ratio between two strings (0-1)
+ */
+export function stringSimilarity(a: string, b: string): number {
+  const longer = a.length > b.length ? a : b
+  const shorter = a.length > b.length ? b : a
+
+  if (longer.length === 0) {
+    return 1.0
+  }
+
+  const distance = levenshteinDistance(longer, shorter)
+  return (longer.length - distance) / longer.length
+}
+
+/**
+ * Normalize a title by removing common prefixes, venue names, and extra whitespace
+ */
+function normalizeTitle(title: string, venue?: string): string {
   const prefixes = [
     'film screening:',
     'movie screening:',
@@ -15,6 +61,17 @@ function normalizeTitle(title: string): string {
     'concert:',
     'performance:',
     'event:',
+    'special event:',
+  ]
+
+  const locationNames = [
+    'nyack',
+    'south nyack',
+    'upper nyack',
+    'west nyack',
+    'piermont',
+    'tarrytown',
+    'sleepy hollow',
   ]
 
   let normalized = title.toLowerCase().trim()
@@ -27,8 +84,38 @@ function normalizeTitle(title: string): string {
     }
   }
 
+  // Remove venue name from title if present
+  if (venue) {
+    const venueLower = venue.toLowerCase().trim()
+    const venueWords = venueLower.split(/\s+/)
+
+    // Try to remove full venue name
+    if (normalized.includes(venueLower)) {
+      normalized = normalized.replace(venueLower, '').trim()
+    }
+
+    // Try to remove significant parts of venue name (3+ char words)
+    for (const word of venueWords) {
+      if (word.length >= 3) {
+        const regex = new RegExp(`\\b${word}\\b`, 'gi')
+        normalized = normalized.replace(regex, '').trim()
+      }
+    }
+  }
+
+  // Remove location names
+  for (const location of locationNames) {
+    const regex = new RegExp(`\\b${location}\\b`, 'gi')
+    normalized = normalized.replace(regex, '').trim()
+  }
+
+  // Remove common words that don't help identify events
+  const fillerWords = ['the', 'a', 'an', 'at', 'in', 'on', 'presents', 'featuring']
+  const words = normalized.split(/\s+/)
+  normalized = words.filter(w => !fillerWords.includes(w)).join(' ')
+
   // Normalize whitespace
-  normalized = normalized.replace(/\s+/g, ' ')
+  normalized = normalized.replace(/\s+/g, ' ').trim()
 
   return normalized
 }
@@ -61,7 +148,7 @@ function normalizeVenue(venue: string): string {
  * Uses normalized title/venue and date (without time) for better duplicate detection
  */
 export function generateEventHash(title: string, venue: string, startDate: Date): string {
-  const normalizedTitle = normalizeTitle(title)
+  const normalizedTitle = normalizeTitle(title, venue)
   const normalizedVenue = normalizeVenue(venue)
 
   // Use local date (YYYY-MM-DD format) to avoid timezone issues
@@ -72,6 +159,50 @@ export function generateEventHash(title: string, venue: string, startDate: Date)
 
   const normalized = `${normalizedTitle}|${normalizedVenue}|${dateOnly}`
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 32)
+}
+
+/**
+ * Check if two events are likely duplicates using fuzzy matching
+ * Returns true if events are similar enough to be considered duplicates
+ */
+export function areEventsDuplicates(
+  title1: string,
+  venue1: string,
+  date1: Date,
+  title2: string,
+  venue2: string,
+  date2: Date,
+  similarityThreshold: number = 0.8
+): boolean {
+  // Dates must match (same day)
+  const date1Str = date1.toISOString().split('T')[0]
+  const date2Str = date2.toISOString().split('T')[0]
+  if (date1Str !== date2Str) {
+    return false
+  }
+
+  // Venues must be similar
+  const normalizedVenue1 = normalizeVenue(venue1)
+  const normalizedVenue2 = normalizeVenue(venue2)
+  const venueSimilarity = stringSimilarity(normalizedVenue1, normalizedVenue2)
+
+  // If venues are very different, not duplicates
+  if (venueSimilarity < 0.7) {
+    return false
+  }
+
+  // Check title similarity
+  const normalizedTitle1 = normalizeTitle(title1, venue1)
+  const normalizedTitle2 = normalizeTitle(title2, venue2)
+
+  // If one title contains the other after normalization, likely duplicate
+  if (normalizedTitle1.includes(normalizedTitle2) || normalizedTitle2.includes(normalizedTitle1)) {
+    return true
+  }
+
+  // Use fuzzy matching for titles
+  const titleSimilarity = stringSimilarity(normalizedTitle1, normalizedTitle2)
+  return titleSimilarity >= similarityThreshold
 }
 
 /**
