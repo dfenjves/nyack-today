@@ -27,6 +27,13 @@ enum Category {
   OTHER
 }
 
+// Event submission status
+enum SubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 // One-time or recurring events with specific dates
 model Event {
   id              String    @id @default(cuid())
@@ -51,6 +58,9 @@ model Event {
 
   // For deduplication - hash of title + venue + startDate
   sourceHash      String?   @unique
+
+  // Link from approved submission
+  submission      EventSubmission?
 
   @@index([startDate])
   @@index([category])
@@ -95,4 +105,40 @@ model ScraperLog {
 
   @@index([sourceName])
   @@index([runAt])
+}
+
+// User-submitted events pending admin review
+model EventSubmission {
+  id              String    @id @default(cuid())
+
+  // Required fields
+  title           String
+  startDate       DateTime
+  venue           String
+  submitterEmail  String
+
+  // Optional event details
+  description     String?
+  endDate         DateTime?
+  address         String?
+  city            String    @default("Nyack")
+  category        Category  @default(OTHER)
+  price           String?
+  isFree          Boolean   @default(false)
+  isFamilyFriendly Boolean  @default(false)
+  sourceUrl       String?
+  imageUrl        String?
+
+  // Admin workflow fields
+  status          SubmissionStatus @default(PENDING)
+  submittedAt     DateTime  @default(now())
+  reviewedAt      DateTime?
+  rejectionReason String?
+
+  // Link to approved event
+  approvedEventId String?   @unique
+  approvedEvent   Event?    @relation(fields: [approvedEventId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([submittedAt])
 }

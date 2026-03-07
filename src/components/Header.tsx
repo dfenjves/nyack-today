@@ -75,6 +75,12 @@ export default function Header() {
           >
             Always Available
           </Link>
+          <Link
+            href="/submit"
+            className="text-stone-600 hover:text-orange-500 transition-colors"
+          >
+            Submit Event
+          </Link>
         </nav>
       </div>
 
@@ -93,6 +99,13 @@ export default function Header() {
             onClick={() => setMenuOpen(false)}
           >
             Always Available
+          </Link>
+          <Link
+            href="/submit"
+            className="block px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
+            onClick={() => setMenuOpen(false)}
+          >
+            Submit Event
           </Link>
         </nav>
       )}
