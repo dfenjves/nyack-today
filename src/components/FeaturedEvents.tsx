@@ -63,7 +63,7 @@ export default function FeaturedEvents() {
         {events.map((event) => (
           <a
             key={event.id}
-            href={event.url}
+            href={event.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer block"

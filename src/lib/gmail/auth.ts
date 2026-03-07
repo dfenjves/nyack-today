@@ -12,8 +12,8 @@ import { google } from 'googleapis';
 export interface GmailTokens {
   access_token?: string | null;
   refresh_token?: string | null;
-  scope?: string;
-  token_type?: string;
+  scope?: string | null;
+  token_type?: string | null;
   expiry_date?: number | null;
 }
 
@@ -63,7 +63,15 @@ export function setTokens(
   oauth2Client: ReturnType<typeof createOAuth2Client>,
   tokens: GmailTokens
 ): void {
-  oauth2Client.setCredentials(tokens);
+  // Filter out null values to match Credentials type
+  const credentials = {
+    access_token: tokens.access_token ?? undefined,
+    refresh_token: tokens.refresh_token ?? undefined,
+    scope: tokens.scope ?? undefined,
+    token_type: tokens.token_type ?? undefined,
+    expiry_date: tokens.expiry_date ?? undefined,
+  };
+  oauth2Client.setCredentials(credentials);
 }
 
 /**

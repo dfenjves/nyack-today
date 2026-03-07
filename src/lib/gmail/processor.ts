@@ -115,11 +115,11 @@ function extractedEventToScrapedEvent(
 
     return {
       title: extracted.title,
-      description: extracted.description,
+      description: extracted.description ?? null,
       startDate,
       endDate,
       venue: extracted.venue,
-      address: extracted.address,
+      address: extracted.address ?? null,
       city: extracted.city,
       isNyackProper: isNyackProper(extracted.city),
       category,
@@ -128,7 +128,7 @@ function extractedEventToScrapedEvent(
       isFamilyFriendly,
       sourceUrl: `gmail:${emailMetadata.messageId}`,
       sourceName: 'Email Newsletters',
-      imageUrl: extracted.imageUrl,
+      imageUrl: extracted.imageUrl ?? null,
     };
   } catch (error) {
     console.error('Error converting extracted event to ScrapedEvent:', error);
