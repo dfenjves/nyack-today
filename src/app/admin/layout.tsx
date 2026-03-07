@@ -111,6 +111,7 @@ export default function AdminLayout({
     { href: '/admin', label: 'Dashboard' },
     { href: '/admin/events', label: 'Events' },
     { href: '/admin/activities', label: 'Activities' },
+    { href: '/admin/submissions', label: 'Submissions' },
     { href: '/admin/scrapers', label: 'Scrapers' },
   ]
 

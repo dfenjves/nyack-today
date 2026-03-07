@@ -31,6 +31,11 @@ export async function GET() {
       }),
     ])
 
+    // Count pending submissions
+    const pendingSubmissions = await prisma.eventSubmission.count({
+      where: { status: 'PENDING' },
+    })
+
     // Get recent scraper runs
     const recentScraperRuns = await prisma.scraperLog.findMany({
       orderBy: { runAt: 'desc' },
@@ -50,6 +55,7 @@ export async function GET() {
       hiddenEvents,
       totalActivities,
       activeActivities,
+      pendingSubmissions,
       recentScraperRuns,
     })
   } catch (error) {

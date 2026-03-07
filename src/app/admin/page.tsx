@@ -9,6 +9,7 @@ interface DashboardStats {
   hiddenEvents: number
   totalActivities: number
   activeActivities: number
+  pendingSubmissions: number
   recentScraperRuns: {
     sourceName: string
     status: string
@@ -99,10 +100,10 @@ export default function AdminDashboard() {
           color="green"
         />
         <StatCard
-          label="Hidden Events"
-          value={stats?.hiddenEvents ?? 0}
-          color="red"
-          href="/admin/events?hidden=true"
+          label="Pending Submissions"
+          value={stats?.pendingSubmissions ?? 0}
+          color="orange"
+          href="/admin/submissions"
         />
         <StatCard
           label="Activities"
