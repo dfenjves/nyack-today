@@ -70,7 +70,13 @@ export default function AdminScrapersPage() {
     setError('')
     try {
       const url = source ? `/api/scrape?source=${encodeURIComponent(source)}` : '/api/scrape'
-      const response = await fetch(url, { method: 'POST' })
+      const adminPassword = sessionStorage.getItem('admin_password')
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'x-admin-password': adminPassword || '',
+        },
+      })
       if (!response.ok) {
         const data = await response.json()
         setError(data.error || 'Failed to run scraper')
