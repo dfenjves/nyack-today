@@ -55,11 +55,18 @@ export default function FeaturedEvents() {
       <h2 className="text-2xl font-bold text-stone-900 mb-6 text-center">
         Tonight&rsquo;s Featured Events
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className={`grid grid-cols-1 gap-6 ${
+        events.length === 3 ? 'md:grid-cols-3' :
+        events.length === 2 ? 'md:grid-cols-2 max-w-2xl mx-auto' :
+        'md:grid-cols-1 max-w-md mx-auto'
+      }`}>
         {events.map((event) => (
-          <div
+          <a
             key={event.id}
-            className="bg-white/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+            href={event.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-white/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer block"
           >
             {event.imageUrl && (
               <div className="h-48 bg-stone-200 relative">
@@ -79,7 +86,7 @@ export default function FeaturedEvents() {
                 {formatTime(event.startDate)}
               </p>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>

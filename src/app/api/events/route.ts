@@ -1,7 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { Category } from '@prisma/client'
+import { Category, Event } from '@prisma/client'
 import { getDateRange, DateFilter } from '@/lib/utils/dates'
+import { areEventsDuplicates } from '@/lib/scrapers/utils'
+
+/**
+ * Deduplicate events using fuzzy matching
+ * Keeps the first occurrence of each unique event
+ */
+function deduplicateEvents(events: Event[]): Event[] {
+  const deduplicated: Event[] = []
+
+  for (const event of events) {
+    // Check if this event is a duplicate of any already added event
+    const isDuplicate = deduplicated.some(existingEvent =>
+      areEventsDuplicates(
+        event.title,
+        event.venue,
+        event.startDate,
+        existingEvent.title,
+        existingEvent.venue,
+        existingEvent.startDate
+      )
+    )
+
+    if (!isDuplicate) {
+      deduplicated.push(event)
+    }
+  }
+
+  return deduplicated
+}
 
 /**
  * GET /api/events
@@ -82,16 +111,19 @@ export async function GET(request: NextRequest) {
       skip: offset,
     })
 
+    // Deduplicate events based on title, venue, and date
+    const deduplicatedEvents = deduplicateEvents(events)
+
     // Get total count for pagination
     const total = await prisma.event.count({ where })
 
     return NextResponse.json({
-      events,
+      events: deduplicatedEvents,
       pagination: {
         total,
         limit,
         offset,
-        hasMore: offset + events.length < total,
+        hasMore: offset + deduplicatedEvents.length < total,
       },
     })
   } catch (error) {
