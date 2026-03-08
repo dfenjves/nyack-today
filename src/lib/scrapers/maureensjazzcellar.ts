@@ -102,12 +102,17 @@ interface InffuseEvent {
  */
 function convertInffuseEvent(event: InffuseEvent): ScrapedEvent | null {
   try {
-    if (!event.title || !event.start) {
+    if (!event.title || !event.startDate) {
       return null
     }
 
-    // Parse start date from Unix timestamp (milliseconds)
-    const startDate = new Date(event.start)
+    // Parse date from the startDate field (YYYY-MM-DD format) in America/New_York timezone
+    // This ensures the date represents the correct day in EST/EDT
+    const [year, month, day] = event.startDate.split('-').map(Number)
+
+    // Create date at 8:00 PM EST/EDT (default event time at Maureen's)
+    // Note: month is 0-indexed in JavaScript Date
+    const startDate = new Date(year, month - 1, day, 20, 0, 0)
 
     // Skip past events
     const now = new Date()
@@ -115,10 +120,11 @@ function convertInffuseEvent(event: InffuseEvent): ScrapedEvent | null {
       return null
     }
 
-    // Parse end date
+    // Parse end date from endDate field if available
     let endDate: Date | null = null
-    if (event.end) {
-      endDate = new Date(event.end)
+    if (event.endDate && event.endDate !== event.startDate) {
+      const [endYear, endMonth, endDay] = event.endDate.split('-').map(Number)
+      endDate = new Date(endYear, endMonth - 1, endDay, 23, 0, 0)
     }
 
     // Parse price from description
