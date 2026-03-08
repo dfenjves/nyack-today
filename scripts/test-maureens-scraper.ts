@@ -1,6 +1,4 @@
 import { maureensJazzCellarScraper } from '../src/lib/scrapers/maureensjazzcellar'
-import { prisma } from '../src/lib/db'
-import { deduplicateAndSave } from '../src/lib/scrapers/utils'
 
 async function main() {
   console.log('Running Maureen\'s Jazz Cellar scraper...\n')
@@ -30,13 +28,7 @@ async function main() {
       console.log(`  Date: ${dateStr}`)
       console.log(`  ISO: ${event.startDate.toISOString()}`)
     }
-
-    console.log('\n\nSaving to database...')
-    const saveResult = await deduplicateAndSave(result.events, result.sourceName)
-    console.log(`Added: ${saveResult.added}, Updated: ${saveResult.updated}, Duplicate: ${saveResult.duplicate}`)
   }
 }
 
-main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect())
+main().catch(console.error)
