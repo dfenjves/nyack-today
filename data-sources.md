@@ -16,6 +16,12 @@ A running list of event and activity sources for the Nyack area.
 | Elmwood Playhouse | https://www.elmwoodplayhouse.com/ | Venue | ✅ Built | MEC plugin JSON-LD, THEATER category |
 | Rivertown Film | https://rivertownfilm.org/ | Venue | ✅ Built | HTML parsing (no JSON-LD), MOVIES category |
 | Village of Nyack | https://www.nyack.gov/ | Government | ✅ Built | RSS feeds, COMMUNITY_GOVERNMENT category |
+| Maureen's Jazz Cellar | https://www.maureensjazzcellar.com/ | Venue | ✅ Built | Inffuse calendar API, MUSIC category, fixed timezone handling |
+
+### Tier 2: JavaScript-Rendered (Puppeteer)
+| Source | URL | Type | Status | Notes |
+|--------|-----|------|--------|-------|
+| Explore Rockland | https://explorerocklandny.com/events | Calendar | ✅ Built | The Events Calendar plugin, filtered for Nyack/West Nyack/Upper Nyack only |
 
 ---
 
@@ -33,7 +39,6 @@ A running list of event and activity sources for the Nyack area.
 | Nyack News and Views | https://nyacknewsandviews.com | Blog | Parse "Weekly Rec" articles |
 | ArtsRock | https://artsrock.org/ | Venue | Returns 403, may need alternative approach |
 | West Gate Lounge | https://www.facebook.com/WestGateLounge/ | Venue | Facebook page - unreliable scraping |
-| Maureen's Jazz Cellar | https://www.maureensjazzcellar.com/ | Venue | Uses Inffuse widget (JS-rendered) |
 | Edward Hopper House | https://www.edwardhopperhouse.org/ | Venue | Multi-page crawl needed, no JSON-LD |
 | Palisades Center | https://www.palisadescenter.com/events/ | Venue | 403 - anti-bot protection |
 
@@ -78,7 +83,6 @@ Best for: Gallery openings, independent film, and historical tours.
 Best for: Library programs, youth sports, and local community gatherings.
 
 * The Nyack Center: https://nyackcenter.org/ - Major community festivals and fundraisers.
-* Explore Rockland: https://explorerocklandny.com/events/ - Regional events near Nyack Beach and Rockland Lake.
 * Palisades Center: https://www.palisadescenter.com/events/ - Large scale commercial events and Levity Live comedy.
 
 ---
