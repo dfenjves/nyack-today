@@ -9,14 +9,14 @@ import { Category } from '@prisma/client'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category') as Category | null
+    const categoryParam = searchParams.get('category')
 
     const where: Record<string, unknown> = {
       isActive: true,
     }
 
-    if (category && category !== 'ALL') {
-      where.category = category
+    if (categoryParam && categoryParam !== 'ALL') {
+      where.category = categoryParam as Category
     }
 
     const activities = await prisma.activity.findMany({
