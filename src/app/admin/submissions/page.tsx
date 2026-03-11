@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
+import { formatRecurrencePattern } from '@/lib/utils/recurrence-display'
 
 type SubmissionStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
 
@@ -27,6 +28,10 @@ interface EventSubmission {
   reviewedAt: string | null
   rejectionReason: string | null
   approvedEventId: string | null
+  // Recurrence fields
+  isRecurring: boolean
+  recurrenceDays: number[]
+  recurrenceEndDate: string | null
 }
 
 export default function AdminSubmissionsPage() {
@@ -204,6 +209,28 @@ export default function AdminSubmissionsPage() {
                   )}
                 </div>
               </div>
+
+              {/* Recurring Event Badge */}
+              {submission.isRecurring && submission.recurrenceDays && submission.recurrenceDays.length > 0 && (
+                <div className="bg-purple-50 border-l-4 border-purple-500 rounded-r-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-purple-700 font-semibold text-sm">🔁 Recurring Event</span>
+                  </div>
+                  <div className="text-sm text-purple-600">
+                    {formatRecurrencePattern(
+                      submission.recurrenceDays,
+                      submission.recurrenceEndDate ? new Date(submission.recurrenceEndDate) : null
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Debug info - remove later */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="text-xs text-gray-500 mb-2">
+                  Debug: isRecurring={String(submission.isRecurring)}, days={JSON.stringify(submission.recurrenceDays)}
+                </div>
+              )}
 
               <div className="grid md:grid-cols-2 gap-4 mb-4 text-sm">
                 <div>

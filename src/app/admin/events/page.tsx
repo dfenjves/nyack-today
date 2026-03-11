@@ -68,7 +68,11 @@ export default function AdminEventsPage() {
   }
 
   const deleteEvent = async (event: Event) => {
-    if (!confirm(`Delete "${event.title}"? This cannot be undone.`)) {
+    const message = event.isRecurring
+      ? `Delete entire recurring series "${event.title}"? This will remove all future occurrences. This cannot be undone.`
+      : `Delete "${event.title}"? This cannot be undone.`
+
+    if (!confirm(message)) {
       return
     }
 
@@ -150,9 +154,16 @@ export default function AdminEventsPage() {
                 <tr key={event.id} className={event.isHidden ? 'bg-red-50' : ''}>
                   <td className="px-4 py-3">
                     <div>
-                      <p className="font-medium text-stone-900 line-clamp-1">
-                        {decodeHtmlEntities(event.title)}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-stone-900 line-clamp-1">
+                          {decodeHtmlEntities(event.title)}
+                        </p>
+                        {event.isRecurring && (
+                          <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium flex-shrink-0">
+                            🔁
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-stone-500">
                         {event.venue}, {event.city}
                       </p>

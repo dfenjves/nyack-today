@@ -66,7 +66,9 @@ Best for: Live bands, jazz, theater, and evening entertainment.
 * Maureen's Jazz Cellar: https://www.maureensjazzcellar.com/ - Jazz, cabaret, and classical.
 * The Bridge Nyack: https://thebridgenyack.com/ - Nightlife, DJs, and live performances.
 * Elmwood Playhouse: https://www.elmwoodplayhouse.com/ - Local theater productions.
+* Helen Hayes Theater: TBD - Professional theater productions.
 * Olde Village Inne (OVI): https://www.nyackovi.com/ - Pub music and open mic nights.
+* Olive's Nyack Bar: https://www.olivesnyackbar.com/ - Bar and live music venue.
 
 ---
 
@@ -76,6 +78,9 @@ Best for: Gallery openings, independent film, and historical tours.
 * Edward Hopper House: https://www.edwardhopperhouse.org/ - Art exhibitions and summer garden concerts.
 * Rivertown Film Society: https://rivertownfilm.org/ - Independent and documentary screenings.
 * Perry Lawson Fine Art: https://www.perrylawsonfineart.com/ - Gallery-specific events.
+* Creative Arts Workshop: TBD - Arts classes and workshops.
+* Homebody Books: TBD - Bookstore readings and literary events.
+* Big Red Books: TBD - Bookstore readings and events.
 
 ---
 
@@ -84,6 +89,9 @@ Best for: Library programs, youth sports, and local community gatherings.
 
 * The Nyack Center: https://nyackcenter.org/ - Major community festivals and fundraisers.
 * Palisades Center: https://www.palisadescenter.com/events/ - Large scale commercial events and Levity Live comedy.
+* Nyack Library: https://www.nyacklibrary.org/eventscalendar.html#/events/ - Library programs and community events.
+* Peas Playcare: TBD - Children's play space and events.
+* Nursery School of the Nyacks: TBD - Preschool events and programs.
 
 ---
 
@@ -91,9 +99,11 @@ Best for: Library programs, youth sports, and local community gatherings.
 
 | Venue | URL | Status |
 |-------|-----|--------|
-| Olive's | TBD | Need to find website |
+| Olive's Nyack Bar | https://www.olivesnyackbar.com/ | Need to investigate scraping approach |
 | Piermont Club | https://piermont.club/shop/ | Need to investigate |
 | Palisades Center Movies | TBD | Need to find showtimes source |
+| Scott and Joe | TBD | Need to identify venue type and find website |
+| Marydell | TBD | Need to identify venue type and find website |
 
 ---
 
