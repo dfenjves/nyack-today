@@ -50,6 +50,10 @@ export async function POST(
         sourceName: 'User Submission',
         imageUrl: submission.imageUrl,
         isHidden: false,
+        // Recurrence fields
+        isRecurring: submission.isRecurring,
+        recurrenceDays: submission.recurrenceDays,
+        recurrenceEndDate: submission.recurrenceEndDate,
       },
     })
 

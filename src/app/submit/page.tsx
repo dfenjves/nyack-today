@@ -34,6 +34,11 @@ export default function SubmitEventPage() {
     isFamilyFriendly: false,
     sourceUrl: '',
     imageUrl: '',
+
+    // Recurrence fields
+    isRecurring: false,
+    recurrenceDays: [] as number[],
+    recurrenceEndDate: '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,10 +55,69 @@ export default function SubmitEventPage() {
         return
       }
 
-      // Combine date and time
-      const startDateTime = formData.startTime
-        ? `${formData.startDate}T${formData.startTime}`
-        : `${formData.startDate}T00:00`
+      // Validate recurring event fields
+      if (formData.isRecurring) {
+        if (formData.recurrenceDays.length === 0) {
+          setError('Please select at least one day for recurring events')
+          setSaving(false)
+          return
+        }
+      }
+
+      // Calculate start date
+      let startDateTime: string
+
+      if (formData.isRecurring) {
+        // For recurring events, calculate the next occurrence of the first selected day
+        const now = new Date()
+        const currentDay = now.getDay()
+        const firstRecurringDay = Math.min(...formData.recurrenceDays)
+
+        // Calculate days until next occurrence
+        let daysUntilNext = firstRecurringDay - currentDay
+
+        // If the day is today or already passed this week, go to next week
+        if (daysUntilNext < 0) {
+          daysUntilNext += 7
+        } else if (daysUntilNext === 0) {
+          // If it's today, check if the time has passed
+          const [hours, minutes] = (formData.startTime || '00:00').split(':').map(Number)
+          if (now.getHours() > hours || (now.getHours() === hours && now.getMinutes() >= minutes)) {
+            daysUntilNext = 7 // Next week same day
+          }
+        }
+
+        // Create date for next occurrence
+        const nextOccurrence = new Date(now)
+        nextOccurrence.setDate(now.getDate() + daysUntilNext)
+        nextOccurrence.setHours(0, 0, 0, 0) // Reset to start of day
+
+        // Format date as YYYY-MM-DD in local timezone
+        const year = nextOccurrence.getFullYear()
+        const month = String(nextOccurrence.getMonth() + 1).padStart(2, '0')
+        const day = String(nextOccurrence.getDate()).padStart(2, '0')
+        const dateStr = `${year}-${month}-${day}`
+
+        startDateTime = formData.startTime
+          ? `${dateStr}T${formData.startTime}`
+          : `${dateStr}T00:00`
+
+        // Validate recurrence end date is after calculated start date
+        if (formData.recurrenceEndDate) {
+          const endDate = new Date(formData.recurrenceEndDate)
+          const calcStartDate = new Date(startDateTime)
+          if (endDate <= calcStartDate) {
+            setError('Recurrence end date must be after the calculated start date')
+            setSaving(false)
+            return
+          }
+        }
+      } else {
+        // For one-time events, use the provided date
+        startDateTime = formData.startTime
+          ? `${formData.startDate}T${formData.startTime}`
+          : `${formData.startDate}T00:00`
+      }
 
       let endDateTime = null
       if (formData.endDate) {
@@ -68,8 +132,9 @@ export default function SubmitEventPage() {
         body: JSON.stringify({
           ...formData,
           startDate: startDateTime,
-          endDate: endDateTime,
+          endDate: formData.isRecurring ? null : endDateTime,
           price: formData.isFree ? null : formData.price || null,
+          recurrenceEndDate: formData.recurrenceEndDate || null,
         }),
       })
 
@@ -134,6 +199,9 @@ export default function SubmitEventPage() {
                     isFamilyFriendly: false,
                     sourceUrl: '',
                     imageUrl: '',
+                    isRecurring: false,
+                    recurrenceDays: [],
+                    recurrenceEndDate: '',
                   })
                 }}
                 className="px-6 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
@@ -190,19 +258,22 @@ export default function SubmitEventPage() {
 
             {/* Date and Time */}
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  Event Date *
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={formData.startDate}
-                  onChange={(e) => updateField('startDate', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-              <div>
+              {/* Only show Event Date for one-time events */}
+              {!formData.isRecurring && (
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    Event Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.startDate}
+                    onChange={(e) => updateField('startDate', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              )}
+              <div className={formData.isRecurring ? 'col-span-2' : ''}>
                 <label className="block text-sm font-medium text-stone-700 mb-1">
                   Start Time *
                 </label>
@@ -214,6 +285,89 @@ export default function SubmitEventPage() {
                   className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
+            </div>
+
+            {/* Recurring Event Section */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <input
+                  type="checkbox"
+                  id="isRecurring"
+                  checked={formData.isRecurring}
+                  onChange={(e) => {
+                    updateField('isRecurring', e.target.checked)
+                    if (!e.target.checked) {
+                      updateField('recurrenceDays', [])
+                      updateField('recurrenceEndDate', '')
+                    }
+                  }}
+                  className="rounded border-stone-300 text-purple-500 focus:ring-purple-500"
+                />
+                <label htmlFor="isRecurring" className="text-sm font-medium text-stone-700">
+                  This is a recurring event
+                </label>
+              </div>
+
+              {formData.isRecurring && (
+                <div className="border-l-4 border-purple-500 pl-4 py-3 bg-purple-50 rounded-r-lg space-y-4">
+                  <p className="text-sm text-purple-700 mb-3">
+                    For events that happen weekly (e.g., Trivia every Tuesday). Events will be created starting from the next occurrence of the selected day(s).
+                  </p>
+
+                  {/* Day Selector */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">
+                      Repeat on *
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                        <label
+                          key={day}
+                          className={`flex items-center justify-center px-3 py-2 rounded-lg border-2 cursor-pointer transition-colors ${
+                            formData.recurrenceDays.includes(idx)
+                              ? 'bg-purple-500 border-purple-500 text-white'
+                              : 'bg-white border-stone-300 text-stone-700 hover:border-purple-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={formData.recurrenceDays.includes(idx)}
+                            onChange={(e) => {
+                              const days = e.target.checked
+                                ? [...formData.recurrenceDays, idx]
+                                : formData.recurrenceDays.filter(d => d !== idx)
+                              updateField('recurrenceDays', days.sort())
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm font-medium">{day}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {formData.isRecurring && formData.recurrenceDays.length === 0 && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Please select at least one day
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Recurrence End Date */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                      Ends on (optional)
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.recurrenceEndDate}
+                      onChange={(e) => updateField('recurrenceEndDate', e.target.value)}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">
+                      Leave blank if this event continues indefinitely
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Venue */}
@@ -268,31 +422,33 @@ export default function SubmitEventPage() {
               />
             </div>
 
-            {/* End Date and Time */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  End Date
-                </label>
-                <input
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) => updateField('endDate', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
+            {/* End Date and Time - only show if not recurring */}
+            {!formData.isRecurring && (
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => updateField('endDate', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={formData.endTime}
+                    onChange={(e) => updateField('endTime', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => updateField('endTime', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            </div>
+            )}
 
             {/* Address & City */}
             <div className="grid grid-cols-2 gap-4 mb-4">

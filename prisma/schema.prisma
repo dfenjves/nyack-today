@@ -59,6 +59,11 @@ model Event {
   // For deduplication - hash of title + venue + startDate
   sourceHash      String?   @unique
 
+  // Recurrence fields (for recurring events like "Every Tuesday")
+  isRecurring         Boolean   @default(false)
+  recurrenceDays      Int[]     // Array of day numbers: 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
+  recurrenceEndDate   DateTime? // Optional end date for recurrence
+
   // Link from approved submission
   submission      EventSubmission?
 
@@ -66,6 +71,7 @@ model Event {
   @@index([category])
   @@index([isHidden])
   @@index([isFamilyFriendly])
+  @@index([isRecurring])
 }
 
 // Always-available activities (go-karts, bowling, etc.)
@@ -128,6 +134,11 @@ model EventSubmission {
   isFamilyFriendly Boolean  @default(false)
   sourceUrl       String?
   imageUrl        String?
+
+  // Recurrence fields (for recurring events like "Every Tuesday")
+  isRecurring         Boolean   @default(false)
+  recurrenceDays      Int[]     // Array of day numbers: 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
+  recurrenceEndDate   DateTime? // Optional end date for recurrence
 
   // Admin workflow fields
   status          SubmissionStatus @default(PENDING)

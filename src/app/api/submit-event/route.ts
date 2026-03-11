@@ -36,14 +36,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate date is not in the past
+    // Validate date is not in the past (only for one-time events)
     const startDate = new Date(data.startDate)
     const now = new Date()
-    if (startDate < now) {
+    if (!data.isRecurring && startDate < now) {
       return NextResponse.json(
         { error: 'Event date must be in the future' },
         { status: 400 }
       )
+    }
+
+    // Validate recurring event fields if applicable
+    if (data.isRecurring) {
+      // Must have at least one day selected
+      if (!data.recurrenceDays || data.recurrenceDays.length === 0) {
+        return NextResponse.json(
+          { error: 'Must select at least one day for recurring events' },
+          { status: 400 }
+        )
+      }
+
+      // Validate day values are 0-6
+      if (data.recurrenceDays.some((d: number) => d < 0 || d > 6)) {
+        return NextResponse.json(
+          { error: 'Invalid recurrence days' },
+          { status: 400 }
+        )
+      }
+
+      // Validate recurrence end date is after start date
+      if (data.recurrenceEndDate) {
+        const recurrenceEndDate = new Date(data.recurrenceEndDate)
+        if (recurrenceEndDate <= startDate) {
+          return NextResponse.json(
+            { error: 'Recurrence end date must be after start date' },
+            { status: 400 }
+          )
+        }
+      }
     }
 
     // Create submission
@@ -64,6 +94,10 @@ export async function POST(request: NextRequest) {
         imageUrl: data.imageUrl || null,
         submitterEmail: data.submitterEmail,
         status: 'PENDING',
+        // Recurrence fields
+        isRecurring: data.isRecurring ?? false,
+        recurrenceDays: data.recurrenceDays || [],
+        recurrenceEndDate: data.recurrenceEndDate ? new Date(data.recurrenceEndDate) : null,
       },
     })
 

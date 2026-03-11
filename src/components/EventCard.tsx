@@ -76,6 +76,12 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
                 Family
               </span>
             )}
+
+            {event.isRecurring && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                🔁 Recurring
+              </span>
+            )}
           </div>
         </div>
       </div>
