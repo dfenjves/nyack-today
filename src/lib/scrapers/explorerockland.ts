@@ -1,7 +1,8 @@
 import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
 import { parsePrice, guessFamilyFriendly } from './utils'
-import puppeteer, { Browser } from 'puppeteer'
+import puppeteer from 'puppeteer-core'
+import type { Browser } from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
 
 const SOURCE_NAME = 'Explore Rockland'
@@ -65,15 +66,25 @@ export const exploreRocklandScraper: Scraper = {
       // Launch Puppeteer with appropriate config for environment
       const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
 
-      browser = await puppeteer.launch({
-        args: isProduction
-          ? chromium.args
-          : ['--no-sandbox', '--disable-setuid-sandbox'],
-        executablePath: isProduction
-          ? await chromium.executablePath()
-          : undefined,
-        headless: true,
-      })
+      if (isProduction) {
+        // Vercel/serverless: use @sparticuz/chromium
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          executablePath: await chromium.executablePath(),
+          headless: true,
+        })
+      } else {
+        // Local development: use Puppeteer's Chrome
+        // You can set CHROME_BIN env var to override
+        const executablePath = process.env.CHROME_BIN ||
+          '/Users/danielfenjves/.cache/puppeteer/chrome/mac_arm-146.0.7680.31/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
+
+        browser = await puppeteer.launch({
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          executablePath,
+          headless: true,
+        })
+      }
 
       const page = await browser.newPage()
       await page.setUserAgent(
