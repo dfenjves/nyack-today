@@ -4,5 +4,10 @@
       "path": "/api/scrape",
       "schedule": "0 6 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/scrape/route.ts": {
+      "maxDuration": 300
+    }
+  }
 }
