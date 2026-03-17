@@ -14,7 +14,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@prisma/client": "^6.19.2",
-    "@sparticuz/chromium": "^136.0.0",
+    "@sparticuz/chromium": "^143.0.4",
     "@vercel/analytics": "^1.6.1",
     "cheerio": "^1.1.2",
     "googleapis": "^171.4.0",
