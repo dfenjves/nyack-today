@@ -4,6 +4,7 @@ import { parsePrice, guessFamilyFriendly } from './utils'
 import puppeteer from 'puppeteer-core'
 import type { Browser } from 'puppeteer-core'
 import chromium from '@sparticuz/chromium'
+import * as path from 'path'
 
 const SOURCE_NAME = 'Explore Rockland'
 const SOURCE_URL = 'https://explorerocklandny.com/events'
@@ -68,9 +69,27 @@ export const exploreRocklandScraper: Scraper = {
 
       if (isProduction) {
         // Vercel/serverless: use @sparticuz/chromium
+
+        // Set runtime (fallback if not in Vercel Dashboard)
+        if (!process.env.AWS_LAMBDA_JS_RUNTIME) {
+          process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
+        }
+
+        // Disable graphics mode to prevent freezing
+        if (typeof chromium.setGraphicsMode === 'function') {
+          chromium.setGraphicsMode(false)
+        }
+
+        // Get executable path and set library path
+        const executablePath = await chromium.executablePath()
+        const execDir = path.dirname(executablePath)
+
+        // CRITICAL: Set LD_LIBRARY_PATH so Chromium can find libraries
+        process.env.LD_LIBRARY_PATH = execDir
+
         browser = await puppeteer.launch({
           args: chromium.args,
-          executablePath: await chromium.executablePath(),
+          executablePath,
           headless: true,
         })
       } else {
