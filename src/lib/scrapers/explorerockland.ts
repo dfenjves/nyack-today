@@ -2,6 +2,7 @@ import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
 import { parsePrice, guessFamilyFriendly } from './utils'
 import puppeteer, { Browser } from 'puppeteer'
+import chromium from '@sparticuz/chromium'
 
 const SOURCE_NAME = 'Explore Rockland'
 const SOURCE_URL = 'https://explorerocklandny.com/events'
@@ -61,10 +62,18 @@ export const exploreRocklandScraper: Scraper = {
     let browser: Browser | null = null
 
     try {
-      // Launch Puppeteer
+      // Launch Puppeteer with appropriate config for environment
+      const isProduction = process.env.VERCEL || process.env.NODE_ENV === 'production'
+
       browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: isProduction
+          ? chromium.args
+          : ['--no-sandbox', '--disable-setuid-sandbox'],
+        defaultViewport: chromium.defaultViewport,
+        executablePath: isProduction
+          ? await chromium.executablePath()
+          : undefined,
+        headless: chromium.headless,
       })
 
       const page = await browser.newPage()
