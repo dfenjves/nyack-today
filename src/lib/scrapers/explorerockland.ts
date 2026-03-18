@@ -75,11 +75,6 @@ export const exploreRocklandScraper: Scraper = {
           process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
         }
 
-        // Disable graphics mode to prevent freezing
-        if (typeof chromium.setGraphicsMode === 'function') {
-          chromium.setGraphicsMode(false)
-        }
-
         // Get executable path and set library path
         const executablePath = await chromium.executablePath()
         const execDir = path.dirname(executablePath)
