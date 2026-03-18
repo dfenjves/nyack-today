@@ -3,6 +3,7 @@ import { formatTime, formatDate } from '@/lib/utils/dates'
 import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
 import Link from 'next/link'
+import CalendarDropdown from './CalendarDropdown'
 
 interface EventCardProps {
   event: Event
@@ -82,6 +83,10 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
                 🔁 Recurring
               </span>
             )}
+
+            <div onClick={(e) => e.stopPropagation()}>
+              <CalendarDropdown event={event} />
+            </div>
           </div>
         </div>
       </div>
