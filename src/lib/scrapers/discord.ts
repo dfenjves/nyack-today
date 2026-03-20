@@ -5,8 +5,6 @@
  */
 
 import { Scraper, ScraperResult } from './types';
-import { processDiscordMessages } from '../discord/processor';
-import { getDiscordConfig, disconnectDiscordClient } from '../discord/client';
 
 /**
  * Discord scraper
@@ -32,6 +30,10 @@ export const discordScraper: Scraper = {
   async scrape(): Promise<ScraperResult> {
     try {
       console.log('Starting Discord scraper...');
+
+      // Dynamically import Discord modules to avoid bundling issues
+      const { getDiscordConfig, disconnectDiscordClient } = await import('../discord/client');
+      const { processDiscordMessages } = await import('../discord/processor');
 
       // Check if enabled
       const config = getDiscordConfig();
@@ -125,6 +127,7 @@ export const discordScraper: Scraper = {
 
       // Ensure Discord client is disconnected on error
       try {
+        const { disconnectDiscordClient } = await import('../discord/client');
         await disconnectDiscordClient();
       } catch (disconnectError) {
         console.error('Error disconnecting Discord client:', disconnectError);
