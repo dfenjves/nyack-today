@@ -1,5 +1,5 @@
 import { Resend } from 'resend'
-import { EventSubmission } from '@prisma/client'
+import { Event, EventSubmission } from '@prisma/client'
 import { categoryLabels, categoryIcons } from './categories'
 
 /**
@@ -378,4 +378,777 @@ function escapeHtml(text: string): string {
     "'": '&#039;',
   }
   return text.replace(/[&<>"']/g, (char) => map[char])
+}
+
+/**
+ * Format recurrence pattern for display in emails
+ * Example: "Repeats every Tuesday, Thursday" or "Repeats every Monday until March 30, 2026"
+ */
+function formatRecurrencePattern(
+  isRecurring: boolean,
+  recurrenceDays: number[],
+  recurrenceEndDate: Date | null
+): string {
+  if (!isRecurring || !recurrenceDays || recurrenceDays.length === 0) {
+    return ''
+  }
+
+  const dayNames = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ]
+  const days = recurrenceDays.map((d) => dayNames[d]).join(', ')
+
+  if (recurrenceEndDate) {
+    const endDateStr = new Date(recurrenceEndDate).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+    return `Repeats every ${days} until ${endDateStr}`
+  }
+  return `Repeats every ${days}`
+}
+
+/**
+ * Generate HTML email for submission confirmation
+ */
+function generateConfirmationHtmlEmail(submission: EventSubmission): string {
+  const submittedAt = new Date(submission.submittedAt).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  // Format time
+  const timeDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .header {
+      background-color: #f97316;
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fafaf9;
+      border-left: 4px solid #f97316;
+      border-radius: 4px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #57534e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px 0;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    .label {
+      font-weight: 600;
+      color: #57534e;
+      margin-right: 8px;
+    }
+    .value {
+      color: #1c1917;
+    }
+    .footer {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f5f5f4;
+      border-top: 2px solid #e7e5e4;
+      font-size: 12px;
+      color: #78716c;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>✉️ Event Submission Received</h1>
+  </div>
+
+  <div class="content">
+    <p>Hi there!</p>
+
+    <p>Thank you for submitting your event to Nyack Today. We've received your submission and our team will review it shortly.</p>
+
+    <div class="section">
+      <div class="section-title">What You Submitted</div>
+
+      <div class="field">
+        <span class="label">Title:</span>
+        <span class="value">${escapeHtml(submission.title)}</span>
+      </div>
+
+      <div class="field">
+        <span class="label">${submission.isRecurring ? '📅 Schedule:' : '📅 Date:'}</span>
+        <span class="value">${dateDisplay}</span>
+      </div>
+
+      <div class="field">
+        <span class="label">🕐 Time:</span>
+        <span class="value">${timeDisplay}</span>
+      </div>
+
+      <div class="field">
+        <span class="label">📍 Venue:</span>
+        <span class="value">${escapeHtml(submission.venue)}</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">What Happens Next</div>
+      <ul style="margin: 0; padding-left: 20px;">
+        <li>Our team will review your submission within 24-48 hours</li>
+        <li>We'll send you an email when your event is approved or if we need more information</li>
+        <li>Once approved, your event will be live on Nyack Today for the community to discover</li>
+      </ul>
+    </div>
+
+    <p>Questions? Reply to this email or contact us at submissions@nyacktoday.com</p>
+  </div>
+
+  <div class="footer">
+    <div><strong>Submission ID:</strong> ${submission.id}</div>
+    <div><strong>Submitted:</strong> ${submittedAt}</div>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate plain text email for submission confirmation
+ */
+function generateConfirmationPlainTextEmail(
+  submission: EventSubmission
+): string {
+  const submittedAt = new Date(submission.submittedAt).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const timeDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  })
+
+  return `
+EVENT SUBMISSION RECEIVED
+=========================
+
+Hi there!
+
+Thank you for submitting your event to Nyack Today. We've received your submission and our team will review it shortly.
+
+WHAT YOU SUBMITTED
+------------------
+Title: ${submission.title}
+${submission.isRecurring ? 'Schedule:' : 'Date:'} ${dateDisplay}
+Time: ${timeDisplay}
+Venue: ${submission.venue}
+
+WHAT HAPPENS NEXT
+------------------
+- Our team will review your submission within 24-48 hours
+- We'll send you an email when your event is approved or if we need more information
+- Once approved, your event will be live on Nyack Today for the community to discover
+
+Questions? Reply to this email or contact us at submissions@nyacktoday.com
+
+Submission ID: ${submission.id}
+Submitted: ${submittedAt}
+  `.trim()
+}
+
+/**
+ * Send confirmation email to submitter when event is submitted
+ * Uses graceful degradation - logs errors but doesn't throw
+ */
+export async function sendSubmissionConfirmationEmail(
+  submission: EventSubmission
+): Promise<void> {
+  // Validate environment variables
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    console.warn(
+      'Confirmation email skipped: RESEND_API_KEY not configured'
+    )
+    return
+  }
+
+  try {
+    const resend = new Resend(apiKey)
+
+    const htmlContent = generateConfirmationHtmlEmail(submission)
+    const textContent = generateConfirmationPlainTextEmail(submission)
+
+    await resend.emails.send({
+      from: 'Nyack Today <submissions@nyacktoday.com>',
+      to: submission.submitterEmail,
+      subject: `Event Submission Received - ${submission.title}`,
+      html: htmlContent,
+      text: textContent,
+    })
+
+    console.log(`Confirmation email sent to: ${submission.submitterEmail}`)
+  } catch (error) {
+    // Log error but don't throw - email is not critical to submission success
+    console.error('Failed to send confirmation email:', error)
+  }
+}
+
+/**
+ * Generate HTML email for submission approval
+ */
+function generateApprovalHtmlEmail(
+  submission: EventSubmission,
+  event: Event
+): string {
+  const approvedAt = new Date(submission.reviewedAt || new Date()).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    })
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const eventUrl = submission.isRecurring
+    ? siteUrl // For recurring events, link to homepage
+    : `${siteUrl}/events/${event.id}`
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .header {
+      background-color: #f97316;
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 20px;
+    }
+    .event-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1c1917;
+      margin: 20px 0;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fafaf9;
+      border-left: 4px solid #f97316;
+      border-radius: 4px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #57534e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      margin: 30px 0;
+      padding: 14px 28px;
+      background: #f97316;
+      color: white !important;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .cta-button:hover {
+      background: #ea580c;
+    }
+    .footer {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f5f5f4;
+      border-top: 2px solid #e7e5e4;
+      font-size: 12px;
+      color: #78716c;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎉 Your Event is Live!</h1>
+  </div>
+
+  <div class="content">
+    <p>Great news! Your event has been approved and is now live on Nyack Today.</p>
+
+    <div class="event-title">${escapeHtml(submission.title)}</div>
+
+    <div class="section">
+      <div>${dateDisplay}</div>
+      <div style="margin-top: 8px;">📍 ${escapeHtml(submission.venue)}</div>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="${eventUrl}" class="cta-button">
+        ${submission.isRecurring ? 'View Nyack Today' : 'View Your Event on Nyack Today'}
+      </a>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Share Your Event</div>
+      <p style="margin: 0;">Help spread the word! Share the link above with friends, family, and on social media.</p>
+    </div>
+
+    <p>Thank you for contributing to the Nyack community! We appreciate you helping locals discover great things to do.</p>
+  </div>
+
+  <div class="footer">
+    <div><strong>Event ID:</strong> ${event.id}</div>
+    <div><strong>Approved:</strong> ${approvedAt}</div>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate plain text email for submission approval
+ */
+function generateApprovalPlainTextEmail(
+  submission: EventSubmission,
+  event: Event
+): string {
+  const approvedAt = new Date(submission.reviewedAt || new Date()).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    })
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const eventUrl = submission.isRecurring
+    ? siteUrl
+    : `${siteUrl}/events/${event.id}`
+
+  return `
+YOUR EVENT IS LIVE!
+===================
+
+Great news! Your event has been approved and is now live on Nyack Today.
+
+${submission.title}
+${dateDisplay}
+${submission.venue}
+
+${submission.isRecurring ? 'VIEW NYACK TODAY' : 'VIEW YOUR EVENT'}
+${eventUrl}
+
+SHARE YOUR EVENT
+----------------
+Help spread the word! Share the link above with friends, family, and on social media.
+
+Thank you for contributing to the Nyack community! We appreciate you helping locals discover great things to do.
+
+Event ID: ${event.id}
+Approved: ${approvedAt}
+  `.trim()
+}
+
+/**
+ * Send approval email to submitter when event is approved
+ * Includes link to live event on the site
+ */
+export async function sendSubmissionApprovalEmail(
+  submission: EventSubmission,
+  event: Event
+): Promise<void> {
+  // Validate environment variables
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    console.warn('Approval email skipped: RESEND_API_KEY not configured')
+    return
+  }
+
+  try {
+    const resend = new Resend(apiKey)
+
+    const htmlContent = generateApprovalHtmlEmail(submission, event)
+    const textContent = generateApprovalPlainTextEmail(submission, event)
+
+    await resend.emails.send({
+      from: 'Nyack Today <submissions@nyacktoday.com>',
+      to: submission.submitterEmail,
+      subject: `Event Approved! ${submission.title} is now live`,
+      html: htmlContent,
+      text: textContent,
+    })
+
+    console.log(`Approval email sent to: ${submission.submitterEmail}`)
+  } catch (error) {
+    // Log error but don't throw - email is not critical
+    console.error('Failed to send approval email:', error)
+  }
+}
+
+/**
+ * Generate HTML email for submission rejection
+ */
+function generateRejectionHtmlEmail(submission: EventSubmission): string {
+  const reviewedAt = new Date(submission.reviewedAt || new Date()).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .header {
+      background-color: #f97316;
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fafaf9;
+      border-left: 4px solid #f97316;
+      border-radius: 4px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #57534e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px 0;
+    }
+    .reason-box {
+      margin: 20px 0;
+      padding: 15px;
+      background: #fff7ed;
+      border-left: 4px solid #ea580c;
+      border-radius: 4px;
+    }
+    .footer {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f5f5f4;
+      border-top: 2px solid #e7e5e4;
+      font-size: 12px;
+      color: #78716c;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📬 Event Submission Update</h1>
+  </div>
+
+  <div class="content">
+    <p>Hi there,</p>
+
+    <p>Thank you for taking the time to submit your event to Nyack Today. After reviewing your submission, we've decided not to add it to our calendar at this time.</p>
+
+    <div class="section">
+      <div class="section-title">Your Submission</div>
+      <div><strong>Title:</strong> ${escapeHtml(submission.title)}</div>
+      <div style="margin-top: 8px;"><strong>${submission.isRecurring ? 'Schedule:' : 'Date:'}</strong> ${dateDisplay}</div>
+      <div style="margin-top: 8px;"><strong>Venue:</strong> ${escapeHtml(submission.venue)}</div>
+    </div>
+
+    ${
+      submission.rejectionReason
+        ? `
+    <div class="reason-box">
+      <div class="section-title">Review Notes</div>
+      <p style="margin: 0;">${escapeHtml(submission.rejectionReason)}</p>
+    </div>
+    `
+        : ''
+    }
+
+    <p>This may be because the event falls outside our geographic focus (Nyack and immediate surrounding areas), doesn't fit our event categories, or we need more information to verify the details.</p>
+
+    <p><strong>Please don't let this discourage you!</strong> We'd love to see future events you're hosting. You can submit another event anytime at ${siteUrl}/submit</p>
+
+    <p>If you have questions or want to discuss this submission, feel free to reply to this email.</p>
+  </div>
+
+  <div class="footer">
+    <div><strong>Submission ID:</strong> ${submission.id}</div>
+    <div><strong>Reviewed:</strong> ${reviewedAt}</div>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
+/**
+ * Generate plain text email for submission rejection
+ */
+function generateRejectionPlainTextEmail(submission: EventSubmission): string {
+  const reviewedAt = new Date(submission.reviewedAt || new Date()).toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+
+  // Format date/time or recurrence pattern
+  let dateDisplay: string
+  if (submission.isRecurring) {
+    const recurrence = formatRecurrencePattern(
+      submission.isRecurring,
+      submission.recurrenceDays,
+      submission.recurrenceEndDate
+    )
+    dateDisplay = recurrence || 'Recurring event'
+  } else {
+    dateDisplay = new Date(submission.startDate).toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+  return `
+EVENT SUBMISSION UPDATE
+=======================
+
+Hi there,
+
+Thank you for taking the time to submit your event to Nyack Today. After reviewing your submission, we've decided not to add it to our calendar at this time.
+
+YOUR SUBMISSION
+---------------
+Title: ${submission.title}
+${submission.isRecurring ? 'Schedule:' : 'Date:'} ${dateDisplay}
+Venue: ${submission.venue}
+
+${
+    submission.rejectionReason
+      ? `
+REVIEW NOTES
+------------
+${submission.rejectionReason}
+
+`
+      : ''
+  }
+This may be because the event falls outside our geographic focus (Nyack and immediate surrounding areas), doesn't fit our event categories, or we need more information to verify the details.
+
+Please don't let this discourage you! We'd love to see future events you're hosting. You can submit another event anytime at ${siteUrl}/submit
+
+If you have questions or want to discuss this submission, feel free to reply to this email.
+
+Submission ID: ${submission.id}
+Reviewed: ${reviewedAt}
+  `.trim()
+}
+
+/**
+ * Send rejection email to submitter when event is rejected
+ * Includes optional reason from admin
+ */
+export async function sendSubmissionRejectionEmail(
+  submission: EventSubmission
+): Promise<void> {
+  // Validate environment variables
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    console.warn('Rejection email skipped: RESEND_API_KEY not configured')
+    return
+  }
+
+  try {
+    const resend = new Resend(apiKey)
+
+    const htmlContent = generateRejectionHtmlEmail(submission)
+    const textContent = generateRejectionPlainTextEmail(submission)
+
+    await resend.emails.send({
+      from: 'Nyack Today <submissions@nyacktoday.com>',
+      to: submission.submitterEmail,
+      subject: `Event Submission Update - ${submission.title}`,
+      html: htmlContent,
+      text: textContent,
+    })
+
+    console.log(`Rejection email sent to: ${submission.submitterEmail}`)
+  } catch (error) {
+    // Log error but don't throw - email is not critical
+    console.error('Failed to send rejection email:', error)
+  }
 }

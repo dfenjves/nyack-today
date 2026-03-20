@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { Category } from '@prisma/client'
-import { sendEventSubmissionEmail } from '@/lib/utils/email'
+import {
+  sendEventSubmissionEmail,
+  sendSubmissionConfirmationEmail,
+} from '@/lib/utils/email'
 
 /**
  * POST /api/submit-event
@@ -101,9 +104,10 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    // Send email notification (graceful degradation - don't fail submission if email fails)
+    // Send email notifications (graceful degradation - don't fail submission if email fails)
     try {
-      await sendEventSubmissionEmail(submission)
+      await sendEventSubmissionEmail(submission) // Admin notification
+      await sendSubmissionConfirmationEmail(submission) // Confirmation to submitter
     } catch (emailError) {
       console.error('Failed to send submission notification:', emailError)
     }

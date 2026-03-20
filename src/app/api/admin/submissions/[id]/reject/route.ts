@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { sendSubmissionRejectionEmail } from '@/lib/utils/email'
 
 /**
  * POST /api/admin/submissions/[id]/reject
@@ -41,6 +42,13 @@ export async function POST(
         rejectionReason: data.reason || null,
       },
     })
+
+    // Send rejection email to submitter (graceful degradation)
+    try {
+      await sendSubmissionRejectionEmail(updated)
+    } catch (emailError) {
+      console.error('Failed to send rejection email:', emailError)
+    }
 
     return NextResponse.json({ submission: updated })
   } catch (error) {
