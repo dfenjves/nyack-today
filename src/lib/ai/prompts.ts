@@ -25,6 +25,7 @@ Extract event information from emails and return structured JSON.
 - address: Street address
 - price: Price string (e.g., "$20", "Free", "$15-$30")
 - imageUrl: Image URL from email
+- eventUrl: URL for event registration, tickets, or more info
 
 **Rules:**
 1. Only extract events in the Nyack area:
@@ -66,7 +67,8 @@ Extract event information from emails and return structured JSON.
       "address": "string | null",
       "city": "string",
       "price": "string | null",
-      "imageUrl": "string | null"
+      "imageUrl": "string | null",
+      "eventUrl": "string | null"
     }
   ]
 }`;

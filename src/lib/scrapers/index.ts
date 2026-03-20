@@ -11,6 +11,7 @@ import { nyackVillageScraper } from './nyackvillage'
 import { emailScraper } from './email'
 import { maureensJazzCellarScraper } from './maureensjazzcellar'
 import { exploreRocklandScraper } from './explorerockland'
+import { discordScraper } from './discord'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 
 /**
@@ -27,6 +28,7 @@ export const scrapers: Scraper[] = [
   emailScraper,
   maureensJazzCellarScraper,
   exploreRocklandScraper,
+  discordScraper,
 ]
 
 /**

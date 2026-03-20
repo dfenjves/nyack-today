@@ -5,7 +5,7 @@
  */
 
 /**
- * Raw event data extracted by AI from email content
+ * Raw event data extracted by AI from email/Discord content
  */
 export interface ExtractedEvent {
   title: string;
@@ -17,6 +17,7 @@ export interface ExtractedEvent {
   city: string;
   price?: string | null;
   imageUrl?: string | null;
+  eventUrl?: string | null; // URL for event registration/tickets/info
 }
 
 /**
