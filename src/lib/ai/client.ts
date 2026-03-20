@@ -267,3 +267,288 @@ export async function extractEventsFromEmail(emailContent: {
     }
   }
 }
+
+/**
+ * Discord-specific system prompt for event extraction
+ */
+const DISCORD_SYSTEM_PROMPT = `You are an event extraction specialist for Nyack, NY.
+
+Extract event information from Discord messages and event poster images, then return structured JSON.
+
+**Required fields:**
+- title: Event name
+- startDate: ISO 8601 datetime (e.g., "2026-03-15T19:00:00-04:00")
+- venue: Location name
+- city: City name
+
+**Optional fields:**
+- description: Event description
+- endDate: ISO 8601 datetime
+- address: Street address
+- price: Price string (e.g., "$20", "Free", "$15-$30")
+- imageUrl: Event poster image URL
+- eventUrl: URL for event registration, tickets, or more info (extract from message links)
+
+**Rules:**
+1. Only extract events in the Nyack area:
+   - Nyack, South Nyack, Upper Nyack, West Nyack
+   - Valley Cottage, Piermont
+   - Tarrytown, Sleepy Hollow, Irvington
+   - Nyack, NY 10960 area
+
+2. Skip past events (before today)
+
+3. Be lenient with incomplete information:
+   - If time is missing, use 19:00:00 (7 PM) as default
+   - If price is unclear, leave as null
+   - If description is minimal, that's okay
+
+4. Process both text content and attached images:
+   - Extract event details from poster images using OCR
+   - Combine information from text and images
+
+5. Discord messages are often casual:
+   - May be informal language ("show tonight", "gig at xyz")
+   - May only have an event poster image with no text
+   - May be non-event chat (return empty array if no events)
+
+6. Extract URLs from message text:
+   - Look for registration links (eventbrite, runsignup, ticketmaster, etc.)
+   - Event venue websites
+   - Facebook event pages
+   - Any URL that provides more event information
+   - Store in eventUrl field
+
+7. Return array of events (empty array if no events found)
+
+8. Return ONLY valid JSON, no markdown formatting, no explanations
+
+**Output JSON schema:**
+{
+  "events": [
+    {
+      "title": "string",
+      "description": "string | null",
+      "startDate": "ISO 8601 string",
+      "endDate": "ISO 8601 string | null",
+      "venue": "string",
+      "address": "string | null",
+      "city": "string",
+      "price": "string | null",
+      "imageUrl": "string | null",
+      "eventUrl": "string | null"
+    }
+  ]
+}`;
+
+/**
+ * Extracts events from Discord message using OpenAI Vision API
+ *
+ * Processes both text content and attached images in a single API call
+ */
+async function extractFromDiscordWithOpenAI(
+  discordMessage: {
+    content: string;
+    authorName: string;
+    postedAt: string;
+    channelName: string;
+    attachmentUrls: string[];
+  },
+  config: AIConfig
+): Promise<AIEventExtractionResponse> {
+  const client = createOpenAIClient();
+
+  // Build user prompt
+  const textPrompt = `Discord Message from @${discordMessage.authorName} in #${discordMessage.channelName}
+Posted: ${discordMessage.postedAt}
+
+${discordMessage.content || '(No text content - see attached images)'}`;
+
+  // Build message content with text and images
+  const messageContent: Array<
+    { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
+  > = [{ type: 'text', text: textPrompt }];
+
+  // Add image attachments
+  for (const imageUrl of discordMessage.attachmentUrls) {
+    messageContent.push({
+      type: 'image_url',
+      image_url: { url: imageUrl },
+    });
+  }
+
+  try {
+    const response = await client.chat.completions.create({
+      model: config.model === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o', // Force gpt-4o for vision
+      max_tokens: config.maxTokens,
+      temperature: config.temperature,
+      messages: [
+        {
+          role: 'system',
+          content: DISCORD_SYSTEM_PROMPT,
+        },
+        {
+          role: 'user',
+          content: messageContent,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('No content in OpenAI response');
+    }
+
+    // Parse JSON response
+    const parsed = parseAIResponse(content);
+    return parsed;
+  } catch (error) {
+    throw new AIExtractionError(
+      `OpenAI Discord extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'openai',
+      error
+    );
+  }
+}
+
+/**
+ * Extracts events from Discord message using Anthropic Claude Vision
+ */
+async function extractFromDiscordWithAnthropic(
+  discordMessage: {
+    content: string;
+    authorName: string;
+    postedAt: string;
+    channelName: string;
+    attachmentUrls: string[];
+  },
+  config: AIConfig
+): Promise<AIEventExtractionResponse> {
+  const client = createAnthropicClient();
+
+  // Build user prompt with text and images
+  const textPrompt = `Discord Message from @${discordMessage.authorName} in #${discordMessage.channelName}
+Posted: ${discordMessage.postedAt}
+
+${discordMessage.content || '(No text content - see attached images)'}`;
+
+  // Build message content with text and images
+  const messageContent: Array<
+    { type: 'text'; text: string } | { type: 'image'; source: { type: 'url'; url: string } }
+  > = [{ type: 'text', text: textPrompt }];
+
+  // Add image attachments
+  for (const imageUrl of discordMessage.attachmentUrls) {
+    messageContent.push({
+      type: 'image',
+      source: { type: 'url', url: imageUrl },
+    });
+  }
+
+  try {
+    const response = await client.messages.create({
+      model: config.model,
+      max_tokens: config.maxTokens,
+      temperature: config.temperature,
+      system: DISCORD_SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: messageContent,
+        },
+      ],
+    });
+
+    // Extract text from response
+    const textContent = response.content.find((c) => c.type === 'text');
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text content in Claude response');
+    }
+
+    // Parse JSON response
+    const parsed = parseAIResponse(textContent.text);
+    return parsed;
+  } catch (error) {
+    throw new AIExtractionError(
+      `Anthropic Discord extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'anthropic',
+      error
+    );
+  }
+}
+
+/**
+ * Extracts events from Discord message using configured AI provider
+ *
+ * Uses Vision API to process both text and event poster images
+ *
+ * @param discordMessage - Discord message metadata, content, and image attachments
+ * @returns Extracted events
+ */
+export async function extractEventsFromDiscord(discordMessage: {
+  content: string;
+  authorName: string;
+  postedAt: string;
+  channelName: string;
+  attachmentUrls: string[];
+}): Promise<AIEventExtractionResponse> {
+  // Skip if both content and images are empty
+  if (!discordMessage.content && discordMessage.attachmentUrls.length === 0) {
+    return { events: [] };
+  }
+
+  const config = getAIConfig();
+
+  // Override with Discord-specific settings if provided
+  if (process.env.DISCORD_AI_PROVIDER) {
+    config.provider = process.env.DISCORD_AI_PROVIDER as AIProvider;
+  }
+  if (process.env.DISCORD_AI_MODEL) {
+    config.model = process.env.DISCORD_AI_MODEL;
+  }
+
+  // Try primary provider
+  try {
+    if (config.provider === 'openai') {
+      return await extractFromDiscordWithOpenAI(discordMessage, config);
+    } else {
+      return await extractFromDiscordWithAnthropic(discordMessage, config);
+    }
+  } catch (primaryError) {
+    console.warn(
+      `Primary AI provider (${config.provider}) failed for Discord extraction, trying fallback`,
+      primaryError
+    );
+
+    // Try fallback provider
+    const fallbackProvider: AIProvider =
+      config.provider === 'openai' ? 'anthropic' : 'openai';
+
+    try {
+      const fallbackConfig: AIConfig = {
+        ...config,
+        provider: fallbackProvider,
+        model:
+          fallbackProvider === 'openai'
+            ? 'gpt-4o'
+            : 'claude-3-5-sonnet-20241022',
+      };
+
+      if (fallbackProvider === 'openai') {
+        return await extractFromDiscordWithOpenAI(
+          discordMessage,
+          fallbackConfig
+        );
+      } else {
+        return await extractFromDiscordWithAnthropic(
+          discordMessage,
+          fallbackConfig
+        );
+      }
+    } catch (fallbackError) {
+      // Both providers failed, throw original error
+      throw primaryError;
+    }
+  }
+}

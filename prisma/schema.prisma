@@ -132,6 +132,7 @@ model EventSubmission {
   price           String?
   isFree          Boolean   @default(false)
   isFamilyFriendly Boolean  @default(false)
+  sourceName      String?   // "Manual Form", "Email", "Discord"
   sourceUrl       String?
   imageUrl        String?
 
@@ -152,4 +153,29 @@ model EventSubmission {
 
   @@index([status])
   @@index([submittedAt])
+}
+
+// Discord messages processed for event extraction
+model DiscordMessage {
+  id              String   @id @default(cuid())
+
+  // Discord metadata
+  messageId       String   @unique  // Discord snowflake ID
+  channelId       String              // Which channel this came from
+  channelName     String              // Human-readable channel name
+  authorId        String              // Discord user ID who posted
+  authorName      String              // Discord username
+  content         String   @db.Text   // Message text content
+  attachmentUrls  String[] @default([]) // Array of image URLs
+  postedAt        DateTime            // When message was posted to Discord
+
+  // Processing metadata
+  processedAt     DateTime @default(now())
+  status          String   // "success", "error", "no_events"
+  eventsExtracted Int      @default(0)
+  errorMessage    String?
+
+  @@index([channelId])
+  @@index([processedAt])
+  @@index([status])
 }

@@ -113,6 +113,9 @@ function extractedEventToScrapedEvent(
       extracted.description
     );
 
+    // Use extracted event URL if available, otherwise link to Gmail message
+    const sourceUrl = extracted.eventUrl || `gmail:${emailMetadata.messageId}`;
+
     return {
       title: extracted.title,
       description: extracted.description ?? null,
@@ -126,7 +129,7 @@ function extractedEventToScrapedEvent(
       price,
       isFree,
       isFamilyFriendly,
-      sourceUrl: `gmail:${emailMetadata.messageId}`,
+      sourceUrl,
       sourceName: 'Email Newsletters',
       imageUrl: extracted.imageUrl ?? null,
     };
