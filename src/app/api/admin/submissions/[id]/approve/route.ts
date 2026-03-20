@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { sendSubmissionApprovalEmail } from '@/lib/utils/email'
 
 /**
  * POST /api/admin/submissions/[id]/approve
@@ -66,6 +67,19 @@ export async function POST(
         approvedEventId: event.id,
       },
     })
+
+    // Send approval email to submitter (graceful degradation)
+    try {
+      const updatedSubmission = await prisma.eventSubmission.findUnique({
+        where: { id },
+      })
+
+      if (updatedSubmission) {
+        await sendSubmissionApprovalEmail(updatedSubmission, event)
+      }
+    } catch (emailError) {
+      console.error('Failed to send approval email:', emailError)
+    }
 
     return NextResponse.json({ event, submission })
   } catch (error) {
