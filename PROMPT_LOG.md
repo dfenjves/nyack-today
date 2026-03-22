@@ -78,85 +78,34 @@ This file logs all prompts and major tasks performed during development sessions
 
 ---
 
-### Prompt 6: Work on Issue #30 - Event Image Upload
-**User:** "Go ahead and create a new branch and start working on issue 30"
+## Session: 2026-03-22
+
+### Prompt 1: Discord Scraper Image Extraction (Issue #29)
+**User:** "work on issue 29, in a new branch"
 
 **Action Taken:**
-- Created new branch `feature/event-image-upload`
-- Added image URL input field to event submission form (`src/app/submit/page.tsx`)
-- Added image preview that displays when user enters a URL
-- Updated admin submission review page to display event images (`src/app/admin/submissions/page.tsx`)
-- Added `imageUrl` field to EventSubmission TypeScript interface
-- Verified EventCard component already supports displaying images (no changes needed)
-- Ran build to verify all changes compile successfully
+- Created new branch `feature/discord-scraper-images`
+- Analyzed existing Discord scraper implementation
+- Found that infrastructure for image extraction already existed but AI prompt was not explicit enough
+- Updated Discord AI system prompt in `src/lib/ai/client.ts`:
+  - Added explicit instruction to use Discord attachment URLs as imageUrl field
+  - Modified both OpenAI and Anthropic prompt builders to list attachment URLs with clear instructions
+  - Enhanced rule #4 to emphasize using attachment URLs for imageUrl
+- Ran build to verify changes compile successfully
+- All tests passed
 
 **Technical Details:**
-- Implemented Phase 1: URL input (users can paste image URLs from external hosting)
-- Phase 2 (future): Direct file upload with storage integration (Vercel Blob or similar)
-- Image preview includes error handling (hides if image fails to load)
+- Discord scraper already sends attachment URLs to Vision APIs (OpenAI GPT-4o and Anthropic Claude)
+- AI already processes images via OCR to extract event details
+- The fix makes it explicit that attachment URLs should be used as the imageUrl field in extracted events
+- Changes affect both OpenAI (lines 362-378) and Anthropic (lines 431-447) implementations
 
 **Files Modified:**
-- `src/app/submit/page.tsx` - Added image URL field with live preview
-- `src/app/admin/submissions/page.tsx` - Added image display in submission cards
+- `src/lib/ai/client.ts` - Updated DISCORD_SYSTEM_PROMPT and prompt builders for both AI providers
 
-**Outcome:** Users can now submit image URLs with their events. Images appear in:
-- Event submission form (with preview)
-- Admin review panel (thumbnail + link)
-- Event cards on homepage (already supported via EventCard component)
+**Outcome:** Discord scraper will now automatically include image URLs from Discord message attachments in the extracted events. This requires production testing when Discord scraper runs with real messages.
 
-**Status:** Ready for testing and review. Branch: `feature/event-image-upload`
-
----
-
-### Prompt 7: Direct File Upload for Event Submissions
-**User:** "As a user, I want to be able to upload an image if I don't have the url for an event, during submission"
-
-**Action Taken:**
-- Entered planning mode to design file upload feature
-- Explored codebase to understand current image implementation and infrastructure
-- Asked user clarifying questions about storage service, file limits, and optimization preferences
-- User selected: Vercel Blob storage, 5MB limit, auto-resize to 1200px, both URL and file upload options
-- Created detailed implementation plan
-- Installed `@vercel/blob` package
-- Updated `.env.example` with `BLOB_READ_WRITE_TOKEN` documentation
-- Created new API route: `/src/app/api/upload-image/route.ts`
-  - Accepts multipart/form-data file uploads
-  - Multi-layer validation (MIME type, actual format via Sharp, size, corrupt file detection)
-  - Optimizes images: resize to 1200px max width, convert JPEG/PNG to WebP (preserve GIFs)
-  - Uploads to Vercel Blob storage
-  - Returns blob URL
-- Updated `/src/app/submit/page.tsx`:
-  - Added file upload state management
-  - Created mode toggle (URL vs File Upload)
-  - Implemented file input with drag-and-drop support
-  - Added upload progress indicator
-  - Created image preview for both modes
-  - Modified form submission to upload file before creating event
-  - Added client-side validation (type and size)
-- Tested build successfully
-
-**Technical Details:**
-- **Security:** 3-layer validation (client MIME type, server MIME type, Sharp format verification)
-- **Optimization:** WebP conversion (85% quality), resize only if > 1200px width
-- **User Experience:** Toggle between URL paste and file upload, drag-and-drop, live preview
-- **File size limit:** 5MB client and server enforcement
-- **Supported formats:** JPEG, PNG, WebP, GIF
-
-**Files Modified/Created:**
-- **NEW:** `/src/app/api/upload-image/route.ts` - File upload endpoint
-- **MODIFIED:** `/src/app/submit/page.tsx` - Added file upload UI and functionality
-- **MODIFIED:** `/package.json` - Added `@vercel/blob` dependency
-- **MODIFIED:** `/.env.example` - Added `BLOB_READ_WRITE_TOKEN` documentation
-
-**Next Steps:**
-- Set up Vercel Blob storage in Vercel Dashboard
-- Pull environment variables locally: `vercel env pull .env.local`
-- Test file upload end-to-end in local development
-- Deploy to production and verify Vercel Blob configuration
-
-**Outcome:** Users can now upload images directly from their devices OR paste image URLs. Images are automatically optimized and stored in Vercel Blob storage. The build passes successfully with the new feature.
-
-**Status:** Ready for local testing and deployment
+**Status:** Ready for testing in production
 
 ---
 

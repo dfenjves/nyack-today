@@ -286,7 +286,7 @@ Extract event information from Discord messages and event poster images, then re
 - endDate: ISO 8601 datetime
 - address: Street address
 - price: Price string (e.g., "$20", "Free", "$15-$30")
-- imageUrl: Event poster image URL
+- imageUrl: Event poster image URL (IMPORTANT: If the Discord message has image attachments, use the attachment URL as the imageUrl)
 - eventUrl: URL for event registration, tickets, or more info (extract from message links)
 
 **Rules:**
@@ -306,6 +306,7 @@ Extract event information from Discord messages and event poster images, then re
 4. Process both text content and attached images:
    - Extract event details from poster images using OCR
    - Combine information from text and images
+   - IMPORTANT: If the message has image attachments, use the attachment URL(s) as the imageUrl field for the extracted event(s)
 
 5. Discord messages are often casual:
    - May be informal language ("show tonight", "gig at xyz")
@@ -359,10 +360,14 @@ async function extractFromDiscordWithOpenAI(
   const client = createOpenAIClient();
 
   // Build user prompt
+  const attachmentText = discordMessage.attachmentUrls.length > 0
+    ? `\n\nAttached Images (use these URLs as imageUrl for extracted events):\n${discordMessage.attachmentUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}`
+    : '';
+
   const textPrompt = `Discord Message from @${discordMessage.authorName} in #${discordMessage.channelName}
 Posted: ${discordMessage.postedAt}
 
-${discordMessage.content || '(No text content - see attached images)'}`;
+${discordMessage.content || '(No text content - see attached images)'}${attachmentText}`;
 
   // Build message content with text and images
   const messageContent: Array<
@@ -428,10 +433,14 @@ async function extractFromDiscordWithAnthropic(
   const client = createAnthropicClient();
 
   // Build user prompt with text and images
+  const attachmentText = discordMessage.attachmentUrls.length > 0
+    ? `\n\nAttached Images (use these URLs as imageUrl for extracted events):\n${discordMessage.attachmentUrls.map((url, i) => `${i + 1}. ${url}`).join('\n')}`
+    : '';
+
   const textPrompt = `Discord Message from @${discordMessage.authorName} in #${discordMessage.channelName}
 Posted: ${discordMessage.postedAt}
 
-${discordMessage.content || '(No text content - see attached images)'}`;
+${discordMessage.content || '(No text content - see attached images)'}${attachmentText}`;
 
   // Build message content with text and images
   const messageContent: Array<
