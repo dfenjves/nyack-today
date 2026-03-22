@@ -547,6 +547,37 @@ export default function SubmitEventPage() {
                 className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
+
+            {/* Event Image URL */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-stone-700 mb-1">
+                Event Image URL
+              </label>
+              <input
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) => updateField('imageUrl', e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <p className="text-xs text-stone-500 mt-1">
+                Add a link to an image for your event (flyer, poster, or promotional image)
+              </p>
+              {formData.imageUrl && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-stone-700 mb-2">Preview:</p>
+                  <img
+                    src={formData.imageUrl}
+                    alt="Event preview"
+                    className="w-full max-w-md rounded-lg border border-stone-200"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Submit Button */}

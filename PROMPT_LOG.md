@@ -78,6 +78,36 @@ This file logs all prompts and major tasks performed during development sessions
 
 ---
 
+### Prompt 6: Work on Issue #30 - Event Image Upload
+**User:** "Go ahead and create a new branch and start working on issue 30"
+
+**Action Taken:**
+- Created new branch `feature/event-image-upload`
+- Added image URL input field to event submission form (`src/app/submit/page.tsx`)
+- Added image preview that displays when user enters a URL
+- Updated admin submission review page to display event images (`src/app/admin/submissions/page.tsx`)
+- Added `imageUrl` field to EventSubmission TypeScript interface
+- Verified EventCard component already supports displaying images (no changes needed)
+- Ran build to verify all changes compile successfully
+
+**Technical Details:**
+- Implemented Phase 1: URL input (users can paste image URLs from external hosting)
+- Phase 2 (future): Direct file upload with storage integration (Vercel Blob or similar)
+- Image preview includes error handling (hides if image fails to load)
+
+**Files Modified:**
+- `src/app/submit/page.tsx` - Added image URL field with live preview
+- `src/app/admin/submissions/page.tsx` - Added image display in submission cards
+
+**Outcome:** Users can now submit image URLs with their events. Images appear in:
+- Event submission form (with preview)
+- Admin review panel (thumbnail + link)
+- Event cards on homepage (already supported via EventCard component)
+
+**Status:** Ready for testing and review. Branch: `feature/event-image-upload`
+
+---
+
 ## Template for Future Entries
 
 ### Prompt N: [Brief Title]
