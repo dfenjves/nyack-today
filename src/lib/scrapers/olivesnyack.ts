@@ -126,9 +126,9 @@ export const olivesNyackScraper: Scraper = {
     let browser: Browser | null = null
 
     try {
-      const isProduction = process.env.VERCEL_ENV === 'production'
+      const isVercel = !!process.env.VERCEL_ENV
 
-      if (isProduction) {
+      if (isVercel) {
         if (!process.env.AWS_LAMBDA_JS_RUNTIME) {
           process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
         }
