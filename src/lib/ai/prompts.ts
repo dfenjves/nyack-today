@@ -24,7 +24,7 @@ Extract event information from emails and return structured JSON.
 - endDate: ISO 8601 datetime
 - address: Street address
 - price: Price string (e.g., "$20", "Free", "$15-$30")
-- imageUrl: Image URL from email
+- imageUrl: Image URL for event poster/photo
 - eventUrl: URL for event registration, tickets, or more info
 
 **Rules:**
@@ -49,7 +49,18 @@ Extract event information from emails and return structured JSON.
    - "$15-$30" → "$15-$30"
    - "Donation" → "Donation"
 
-6. Extract image URLs from <img> tags if present
+6. **IMPORTANT - Extract URLs from email:**
+   - eventUrl: Look for event registration/ticket/info links
+     * Eventbrite, Ticketmaster, Facebook Events, Meetup
+     * Venue websites with event details
+     * "Register here", "Buy tickets", "More info", "RSVP"
+     * RunSignUp, ShowClix, TicketWeb, Dice.fm
+     * Any clickable link related to the event
+   - imageUrl: Extract event poster/photo URLs
+     * From <img> tags (src attribute)
+     * From direct image links (ending in .jpg, .png, .webp, etc.)
+     * Choose the most relevant/largest event image
+     * Prefer event posters over logos or decorative images
 
 7. Return array of events (empty array if none found)
 
