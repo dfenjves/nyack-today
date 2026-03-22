@@ -1,163 +1,147 @@
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, parsePrice, guessFamilyFriendly, stripHtml, decodeHtmlEntities } from './utils'
+import { parsePrice, guessFamilyFriendly } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
+import puppeteer from 'puppeteer-core'
+import type { Browser } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
+import * as path from 'path'
 
 const SOURCE_NAME = 'Scott & Joe'
 const SOURCE_URL = 'https://www.scottandjoe.co/classes-events'
-const EVENTS_JSON_URL = 'https://www.scottandjoe.co/classes-events?format=json'
+// Events are served via Acuity Scheduling (Squarespace Scheduling) iframe
+const ACUITY_URL = 'https://app.squarespacescheduling.com/schedule.php?owner=29264403'
 const VENUE = 'Scott & Joe'
 const ADDRESS = '4 South Broadway'
 const CITY = 'Nyack'
 
-interface SquarespaceEventItem {
-  id?: string
-  title?: string
-  fullUrl?: string
-  startDate?: number | string
-  endDate?: number | string
-  body?: string
-  assetUrl?: string
-  location?: string
-  excerpt?: string
-  // Squarespace sometimes nests date info here
-  dates?: {
-    start?: number
-    end?: number
-  }
-}
-
-interface SquarespaceEventsResponse {
-  items?: SquarespaceEventItem[]
-  pagination?: {
-    nextPage?: string
-    hasNextPage?: boolean
-  }
+const MONTH_NAME_TO_INDEX: Record<string, number> = {
+  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
 }
 
 /**
- * Parse a Squarespace date value (Unix ms timestamp or ISO string) into a Date
+ * Parse "Thursday, April 9 · 6:30–8:00 PM" from the description text.
+ * Returns a Date or null.
  */
-function parseSquarespaceDate(value: number | string | undefined): Date | null {
-  if (!value) return null
-  if (typeof value === 'number') {
-    return new Date(value)
-  }
-  const d = new Date(value)
-  return isNaN(d.getTime()) ? null : d
-}
+function parseDateFromDescription(text: string): Date | null {
+  // Strip "SOLD OUT" prefix and normalize
+  const cleaned = text.replace(/^SOLD\s+OUT\s*/i, '').trim()
 
-/**
- * Fetch all pages of events from the Squarespace JSON API
- */
-async function fetchAllEvents(): Promise<SquarespaceEventItem[]> {
-  const allItems: SquarespaceEventItem[] = []
-  let nextUrl: string | null = EVENTS_JSON_URL
+  // Match: "Thursday, April 9 · 6:30–8:00 PM" or "Thursday, April 9 · 6:30-8:00 PM"
+  const match = cleaned.match(
+    /\w+day,\s+(\w+)\s+(\d+)\s+[·•]\s+(\d+):(\d+)[–\-](\d+:\d+)\s*(AM|PM)/i
+  )
+  if (!match) return null
 
-  while (nextUrl) {
-    const response = await fetchWithTimeout(nextUrl, 15000)
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
+  const monthName = match[1].toLowerCase()
+  const day = parseInt(match[2], 10)
+  let hour = parseInt(match[3], 10)
+  const minute = parseInt(match[4], 10)
+  const ampm = match[6].toUpperCase()
 
-    const data: SquarespaceEventsResponse = await response.json()
-    const items = data.items || []
-    allItems.push(...items)
+  const monthIndex = MONTH_NAME_TO_INDEX[monthName]
+  if (monthIndex === undefined) return null
 
-    nextUrl =
-      data.pagination?.hasNextPage && data.pagination.nextPage
-        ? data.pagination.nextPage.startsWith('http')
-          ? data.pagination.nextPage
-          : `https://www.scottandjoe.co${data.pagination.nextPage}`
-        : null
-  }
+  if (ampm === 'PM' && hour !== 12) hour += 12
+  if (ampm === 'AM' && hour === 12) hour = 0
 
-  return allItems
+  // Infer year
+  const now = new Date()
+  let year = now.getFullYear()
+  const candidate = new Date(year, monthIndex, day, hour, minute)
+  if (candidate < now) year++
+
+  return new Date(year, monthIndex, day, hour, minute)
 }
 
 /**
  * Scraper for Scott & Joe cheese shop / wine bistro events in Nyack
- * Uses Squarespace JSON API (?format=json)
+ * Uses Puppeteer to scrape the Acuity Scheduling iframe directly
  */
 export const scottAndJoeScraper: Scraper = {
   name: SOURCE_NAME,
 
   async scrape(): Promise<ScraperResult> {
     const events: ScrapedEvent[] = []
+    let browser: Browser | null = null
 
     try {
-      const items = await fetchAllEvents()
+      const isVercel = !!process.env.VERCEL_ENV
 
-      if (items.length === 0) {
-        return {
-          sourceName: SOURCE_NAME,
-          events: [],
-          status: 'partial',
-          errorMessage: 'No upcoming events found',
+      if (isVercel) {
+        if (!process.env.AWS_LAMBDA_JS_RUNTIME) {
+          process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
         }
+        const executablePath = await chromium.executablePath()
+        const execDir = path.dirname(executablePath)
+        process.env.LD_LIBRARY_PATH = execDir
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          executablePath,
+          headless: true,
+        })
+      } else {
+        const executablePath = process.env.CHROME_BIN ||
+          '/Users/danielfenjves/.cache/puppeteer/chrome/mac_arm-146.0.7680.31/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
+        browser = await puppeteer.launch({
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+          executablePath,
+          headless: true,
+        })
       }
+
+      const page = await browser.newPage()
+      await page.setUserAgent(
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      )
+
+      await page.goto(ACUITY_URL, { waitUntil: 'networkidle2', timeout: 30000 })
+      await page.waitForSelector('.select-item.select-item-box', { timeout: 15000 })
+
+      const rawEvents = await page.evaluate(() => {
+        return Array.from(document.querySelectorAll('.select-item.select-item-box')).map(el => ({
+          title: el.querySelector('.appointment-type-name')?.textContent?.trim() || '',
+          price: el.querySelector('.duration-container span')?.textContent?.trim() || '',
+          description: el.querySelector('.type-description')?.textContent?.trim() || '',
+          imageUrl: (el.querySelector('img') as HTMLImageElement)?.src || null,
+        }))
+      })
 
       const now = new Date()
 
-      for (const item of items) {
-        if (!item.title) continue
+      for (const raw of rawEvents) {
+        if (!raw.title) continue
 
-        // Squarespace stores event dates either as top-level startDate or nested in dates
-        const startDate =
-          parseSquarespaceDate(item.startDate) ??
-          parseSquarespaceDate(item.dates?.start)
+        const startDate = parseDateFromDescription(raw.description)
+        if (!startDate || startDate <= now) continue
 
-        if (!startDate) {
-          console.log(`[${SOURCE_NAME}] No start date for "${item.title}"`)
-          continue
-        }
+        // Extract description text after the date line
+        const descLines = raw.description.replace(/^SOLD\s+OUT\s*/i, '').trim().split('\n\n')
+        // First line is the date, rest is description
+        const descText = descLines.slice(1).join('\n\n').replace(/\s+/g, ' ').trim() || null
 
-        if (startDate < now) continue
+        const { price, isFree } = parsePrice(raw.price || null)
 
-        const endDate =
-          parseSquarespaceDate(item.endDate) ??
-          parseSquarespaceDate(item.dates?.end) ??
-          null
-
-        // Build description from body HTML
-        let description: string | null = null
-        if (item.body) {
-          description = decodeHtmlEntities(stripHtml(item.body)).replace(/\s+/g, ' ').trim() || null
-        } else if (item.excerpt) {
-          description = decodeHtmlEntities(stripHtml(item.excerpt)).replace(/\s+/g, ' ').trim() || null
-        }
-
-        // Squarespace price sometimes appears in description
-        const priceMatch = description?.match(/\$[\d,.]+/)
-        const { price, isFree } = priceMatch
-          ? parsePrice(priceMatch[0])
-          : parsePrice(null)
-
-        const eventUrl = item.fullUrl
-          ? item.fullUrl.startsWith('http')
-            ? item.fullUrl
-            : `https://www.scottandjoe.co${item.fullUrl}`
-          : SOURCE_URL
-
-        const event: ScrapedEvent = {
-          title: item.title.trim(),
-          description,
+        events.push({
+          title: raw.title,
+          description: descText,
           startDate,
-          endDate,
+          endDate: null,
           venue: VENUE,
           address: ADDRESS,
           city: CITY,
           isNyackProper: true,
-          category: guessCategory(item.title, description),
+          category: guessCategory(raw.title, descText),
           price,
           isFree,
-          isFamilyFriendly: guessFamilyFriendly(item.title, description),
-          sourceUrl: eventUrl,
+          isFamilyFriendly: guessFamilyFriendly(raw.title, descText),
+          sourceUrl: SOURCE_URL,
           sourceName: SOURCE_NAME,
-          imageUrl: item.assetUrl || null,
-        }
-
-        events.push(event)
+          imageUrl: raw.imageUrl,
+        })
       }
+
+      await browser.close()
 
       if (events.length === 0) {
         return {
@@ -168,12 +152,9 @@ export const scottAndJoeScraper: Scraper = {
         }
       }
 
-      return {
-        sourceName: SOURCE_NAME,
-        events,
-        status: 'success',
-      }
+      return { sourceName: SOURCE_NAME, events, status: 'success' }
     } catch (error) {
+      if (browser) await browser.close()
       const message = error instanceof Error ? error.message : 'Unknown error'
       return {
         sourceName: SOURCE_NAME,
