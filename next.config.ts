@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
     'bufferutil',
     'utf-8-validate'
   ],
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 export default nextConfig;

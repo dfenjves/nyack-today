@@ -22,6 +22,7 @@ interface EventSubmission {
   isFree: boolean
   isFamilyFriendly: boolean
   sourceUrl: string | null
+  imageUrl: string | null
   submitterEmail: string
   status: SubmissionStatus
   submittedAt: string
@@ -184,7 +185,18 @@ export default function AdminSubmissionsPage() {
                   : 'border-red-200'
               }`}
             >
-              <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start gap-4 mb-4">
+                {/* Event Image */}
+                {submission.imageUrl && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={submission.imageUrl}
+                      alt={submission.title}
+                      className="w-32 h-32 object-cover rounded-lg border border-stone-200"
+                    />
+                  </div>
+                )}
+
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-xl font-bold text-stone-900">
@@ -287,6 +299,19 @@ export default function AdminSubmissionsPage() {
                       className="text-orange-500 hover:text-orange-600 underline"
                     >
                       {submission.sourceUrl}
+                    </a>
+                  </div>
+                )}
+                {submission.imageUrl && (
+                  <div className="md:col-span-2">
+                    <span className="font-medium text-stone-700">Image:</span>{' '}
+                    <a
+                      href={submission.imageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-orange-500 hover:text-orange-600 underline break-all"
+                    >
+                      {submission.imageUrl}
                     </a>
                   </div>
                 )}

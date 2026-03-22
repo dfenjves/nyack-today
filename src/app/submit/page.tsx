@@ -14,6 +14,14 @@ export default function SubmitEventPage() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
+  // File upload state
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const [dragActive, setDragActive] = useState(false)
+  const [previewUrl, setPreviewUrl] = useState('')
+
   const [formData, setFormData] = useState({
     // Required fields
     title: '',
@@ -45,8 +53,24 @@ export default function SubmitEventPage() {
     e.preventDefault()
     setSaving(true)
     setError('')
+    setUploadError('')
 
     try {
+      // Handle file upload if in file mode
+      let finalImageUrl = formData.imageUrl
+      if (uploadMode === 'file' && selectedFile) {
+        setUploadProgress(true)
+        try {
+          finalImageUrl = await uploadImage(selectedFile)
+        } catch (err) {
+          setUploadError(err instanceof Error ? err.message : 'Failed to upload image')
+          setSaving(false)
+          setUploadProgress(false)
+          return
+        }
+        setUploadProgress(false)
+      }
+
       // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       if (!emailRegex.test(formData.submitterEmail)) {
@@ -131,6 +155,7 @@ export default function SubmitEventPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          imageUrl: finalImageUrl || null,
           startDate: startDateTime,
           endDate: formData.isRecurring ? null : endDateTime,
           price: formData.isFree ? null : formData.price || null,
@@ -154,6 +179,70 @@ export default function SubmitEventPage() {
 
   const updateField = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  // File selection handler
+  const handleFileSelect = (file: File) => {
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError('Please select a JPEG, PNG, WebP, or GIF image')
+      return
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      setUploadError('File size must be under 5MB')
+      return
+    }
+
+    setSelectedFile(file)
+    setUploadError('')
+
+    // Create preview URL
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
+  }
+
+  // Upload file to API
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/upload-image', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error || 'Failed to upload image')
+    }
+
+    const data = await response.json()
+    return data.url
+  }
+
+  // Drag and drop handlers
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true)
+    } else if (e.type === 'dragleave') {
+      setDragActive(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0])
+    }
   }
 
   // Success state - show confirmation
@@ -203,6 +292,11 @@ export default function SubmitEventPage() {
                     recurrenceDays: [],
                     recurrenceEndDate: '',
                   })
+                  // Reset file upload state
+                  setUploadMode('url')
+                  setSelectedFile(null)
+                  setPreviewUrl('')
+                  setUploadError('')
                 }}
                 className="px-6 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
               >
@@ -546,6 +640,163 @@ export default function SubmitEventPage() {
                 placeholder="https://..."
                 className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
+            </div>
+
+            {/* Event Image */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Event Image
+              </label>
+
+              {/* Mode Toggle */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode('url')
+                    setSelectedFile(null)
+                    setPreviewUrl('')
+                    setUploadError('')
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    uploadMode === 'url'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Enter URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadMode('file')
+                    updateField('imageUrl', '')
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    uploadMode === 'file'
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  Upload File
+                </button>
+              </div>
+
+              {/* URL Input Mode */}
+              {uploadMode === 'url' && (
+                <div>
+                  <input
+                    type="url"
+                    value={formData.imageUrl}
+                    onChange={(e) => updateField('imageUrl', e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                  <p className="text-xs text-stone-500 mt-1">
+                    Paste a link to an image for your event
+                  </p>
+                </div>
+              )}
+
+              {/* File Upload Mode */}
+              {uploadMode === 'file' && (
+                <div>
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                      dragActive
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-stone-300 hover:border-orange-400'
+                    }`}
+                  >
+                    <input
+                      type="file"
+                      id="image-upload"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          handleFileSelect(e.target.files[0])
+                        }
+                      }}
+                      className="hidden"
+                    />
+                    <label htmlFor="image-upload" className="cursor-pointer">
+                      <div className="flex flex-col items-center gap-2">
+                        {selectedFile ? (
+                          <>
+                            <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <p className="font-medium text-stone-900">{selectedFile.name}</p>
+                            <p className="text-sm text-stone-500">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                setSelectedFile(null)
+                                setPreviewUrl('')
+                              }}
+                              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                            >
+                              Choose Different File
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-12 h-12 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p className="font-medium text-stone-700">
+                              Drag and drop your image here, or click to browse
+                            </p>
+                            <p className="text-sm text-stone-500">
+                              JPEG, PNG, WebP, or GIF up to 5MB
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                  {uploadError && (
+                    <div className="mt-2 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                      <p className="font-medium text-sm">Upload Error</p>
+                      <p className="text-sm">{uploadError}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="mt-3 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  <span>Uploading and optimizing image...</span>
+                </div>
+              )}
+
+              {/* Image Preview */}
+              {(previewUrl || formData.imageUrl) && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-stone-700 mb-2">Preview:</p>
+                  <img
+                    src={previewUrl || formData.imageUrl}
+                    alt="Event preview"
+                    className="w-full max-w-md rounded-lg border border-stone-200"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.style.display = 'none'
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
