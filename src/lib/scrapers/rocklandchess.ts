@@ -33,8 +33,9 @@ function extractEventsFromHtml(html: string): RocklandChessEvent[] {
     if (!text.includes('"events":[') && !text.includes('\\"events\\":[')) return
 
     // Match the JSON string argument: self.__next_f.push([N, "..."])
-    // Uses a pattern that correctly handles escaped chars inside the string
-    const match = text.match(/push\(\[\d+,"((?:[^"\\]|\\.)*)"\)/)
+    // Format is push([N,"<content>"]) — note the ] before ) closing the array.
+    // Uses a pattern that correctly handles escaped chars inside the string.
+    const match = text.match(/push\(\[\d+,"((?:[^"\\]|\\.)*)"\]\)/)
     if (!match) return
 
     try {
