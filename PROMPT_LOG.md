@@ -108,6 +108,58 @@ This file logs all prompts and major tasks performed during development sessions
 
 ---
 
+### Prompt 7: Direct File Upload for Event Submissions
+**User:** "As a user, I want to be able to upload an image if I don't have the url for an event, during submission"
+
+**Action Taken:**
+- Entered planning mode to design file upload feature
+- Explored codebase to understand current image implementation and infrastructure
+- Asked user clarifying questions about storage service, file limits, and optimization preferences
+- User selected: Vercel Blob storage, 5MB limit, auto-resize to 1200px, both URL and file upload options
+- Created detailed implementation plan
+- Installed `@vercel/blob` package
+- Updated `.env.example` with `BLOB_READ_WRITE_TOKEN` documentation
+- Created new API route: `/src/app/api/upload-image/route.ts`
+  - Accepts multipart/form-data file uploads
+  - Multi-layer validation (MIME type, actual format via Sharp, size, corrupt file detection)
+  - Optimizes images: resize to 1200px max width, convert JPEG/PNG to WebP (preserve GIFs)
+  - Uploads to Vercel Blob storage
+  - Returns blob URL
+- Updated `/src/app/submit/page.tsx`:
+  - Added file upload state management
+  - Created mode toggle (URL vs File Upload)
+  - Implemented file input with drag-and-drop support
+  - Added upload progress indicator
+  - Created image preview for both modes
+  - Modified form submission to upload file before creating event
+  - Added client-side validation (type and size)
+- Tested build successfully
+
+**Technical Details:**
+- **Security:** 3-layer validation (client MIME type, server MIME type, Sharp format verification)
+- **Optimization:** WebP conversion (85% quality), resize only if > 1200px width
+- **User Experience:** Toggle between URL paste and file upload, drag-and-drop, live preview
+- **File size limit:** 5MB client and server enforcement
+- **Supported formats:** JPEG, PNG, WebP, GIF
+
+**Files Modified/Created:**
+- **NEW:** `/src/app/api/upload-image/route.ts` - File upload endpoint
+- **MODIFIED:** `/src/app/submit/page.tsx` - Added file upload UI and functionality
+- **MODIFIED:** `/package.json` - Added `@vercel/blob` dependency
+- **MODIFIED:** `/.env.example` - Added `BLOB_READ_WRITE_TOKEN` documentation
+
+**Next Steps:**
+- Set up Vercel Blob storage in Vercel Dashboard
+- Pull environment variables locally: `vercel env pull .env.local`
+- Test file upload end-to-end in local development
+- Deploy to production and verify Vercel Blob configuration
+
+**Outcome:** Users can now upload images directly from their devices OR paste image URLs. Images are automatically optimized and stored in Vercel Blob storage. The build passes successfully with the new feature.
+
+**Status:** Ready for local testing and deployment
+
+---
+
 ## Template for Future Entries
 
 ### Prompt N: [Brief Title]
