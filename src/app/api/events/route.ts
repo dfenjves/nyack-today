@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { Category, Event } from '@prisma/client'
-import { getDateRange, DateFilter } from '@/lib/utils/dates'
+import { getDateRange, getCustomDateRange, DateFilter } from '@/lib/utils/dates'
 import { areEventsDuplicates } from '@/lib/scrapers/utils'
 import { generateRecurringInstances } from '@/lib/utils/recurrence'
 
@@ -67,17 +67,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Date filter
-    if (dateFilter) {
+    const customDateParam = searchParams.get('customDate')
+    if (dateFilter === 'custom' && customDateParam) {
+      const customDate = new Date(customDateParam)
+      const { start, end } = getCustomDateRange(customDate)
+      where.startDate = { gte: start, lte: end }
+    } else if (dateFilter && dateFilter !== 'custom') {
       const { start, end } = getDateRange(dateFilter)
-      where.startDate = {
-        gte: start,
-        lte: end,
-      }
+      where.startDate = { gte: start, lte: end }
     } else {
       // Default to future events only
-      where.startDate = {
-        gte: new Date(),
-      }
+      where.startDate = { gte: new Date() }
     }
 
     // Category filter
@@ -103,7 +103,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Get date range for recurring events query
-    const { start, end } = dateFilter ? getDateRange(dateFilter) : { start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+    const { start, end } = (() => {
+      if (dateFilter === 'custom' && customDateParam) {
+        return getCustomDateRange(new Date(customDateParam))
+      }
+      if (dateFilter && dateFilter !== 'custom') {
+        return getDateRange(dateFilter)
+      }
+      return { start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+    })()
 
     // Fetch one-time events
     const oneTimeWhere = { ...where, isRecurring: false }

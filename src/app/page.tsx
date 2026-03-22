@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
 import DateTabs from '@/components/DateTabs'
@@ -8,7 +8,8 @@ import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
 import { EventListSkeleton } from '@/components/EventCardSkeleton'
 import BottomNav from '@/components/BottomNav'
-import { DateFilter } from '@/lib/utils/dates'
+import FallbackBanner from '@/components/FallbackBanner'
+import { DateFilter, formatCustomDatePill } from '@/lib/utils/dates'
 import { Event } from '@prisma/client'
 
 interface EventsApiResponse {
@@ -21,8 +22,27 @@ interface EventsApiResponse {
   }
 }
 
+function convertEventDates(events: Event[]): Event[] {
+  return events.map((event) => ({
+    ...event,
+    startDate: new Date(event.startDate),
+    endDate: event.endDate ? new Date(event.endDate) : null,
+    createdAt: new Date(event.createdAt),
+    updatedAt: new Date(event.updatedAt),
+  }))
+}
+
+function isFallbackDismissed(): boolean {
+  try {
+    return sessionStorage.getItem('tonight-fallback-dismissed') === 'true'
+  } catch {
+    return false
+  }
+}
+
 export default function Home() {
   const [dateFilter, setDateFilter] = useState<DateFilter>('tonight')
+  const [customDate, setCustomDate] = useState<Date | null>(null)
   const [filters, setFilters] = useState<Filters>({
     category: 'ALL',
     priceFilter: 'all',
@@ -32,40 +52,39 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showFallback, setShowFallback] = useState(false)
 
-  // Build query string from filters
+  // Signals that the next 'week' fetch was triggered by tonight being empty
+  const pendingFallbackRef = useRef(false)
+
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams()
 
-    // Date filter
-    params.set('date', dateFilter)
+    if (customDate) {
+      params.set('date', 'custom')
+      params.set('customDate', customDate.toISOString())
+    } else {
+      params.set('date', dateFilter)
+    }
 
-    // Category filter
     if (filters.category !== 'ALL') {
       params.set('category', filters.category)
     }
-
-    // Price filter
     if (filters.priceFilter === 'free') {
       params.set('free', 'true')
     }
-
-    // Location filter
     if (filters.location === 'nyack') {
       params.set('nyackOnly', 'true')
     } else if (filters.location === 'nearby') {
       params.set('nearbyOnly', 'true')
     }
-
-    // Family-friendly filter
     if (filters.familyFriendly) {
       params.set('familyFriendly', 'true')
     }
 
     return params.toString()
-  }, [dateFilter, filters])
+  }, [dateFilter, filters, customDate])
 
-  // Fetch events from API
   const fetchEvents = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -79,33 +98,72 @@ export default function Home() {
       }
 
       const data: EventsApiResponse = await response.json()
+      const eventsWithDates = convertEventDates(data.events)
 
-      // Convert date strings back to Date objects
-      const eventsWithDates = data.events.map((event) => ({
-        ...event,
-        startDate: new Date(event.startDate),
-        endDate: event.endDate ? new Date(event.endDate) : null,
-        createdAt: new Date(event.createdAt),
-        updatedAt: new Date(event.updatedAt),
-      }))
+      // Tonight is empty → switch to This Week tab and show fallback banner
+      if (
+        dateFilter === 'tonight' &&
+        !customDate &&
+        eventsWithDates.length === 0 &&
+        !isFallbackDismissed()
+      ) {
+        pendingFallbackRef.current = true
+        setDateFilter('week')
+        return // re-fetch will be triggered by dateFilter change
+      }
+
+      // If this fetch was the result of a fallback from tonight, show the banner
+      if (pendingFallbackRef.current && dateFilter === 'week') {
+        pendingFallbackRef.current = false
+        setShowFallback(true)
+      } else {
+        setShowFallback(false)
+      }
 
       setEvents(eventsWithDates)
     } catch (err) {
       console.error('Error fetching events:', err)
       setError('Failed to load events. Please try again.')
       setEvents([])
+      setShowFallback(false)
     } finally {
       setLoading(false)
     }
-  }, [buildQueryString])
+  }, [buildQueryString, dateFilter, customDate])
 
-  // Fetch events when filters change
   useEffect(() => {
     fetchEvents()
   }, [fetchEvents])
 
-  // Get the heading based on date filter
+  const handleDateFilterChange = (filter: DateFilter) => {
+    pendingFallbackRef.current = false
+    setShowFallback(false)
+    setCustomDate(null)
+    setDateFilter(filter)
+  }
+
+  const handleCustomDateSelect = (date: Date) => {
+    setCustomDate(date)
+  }
+
+  const handleCustomDateClear = () => {
+    setCustomDate(null)
+  }
+
+  const handleFallbackDismiss = () => {
+    try {
+      sessionStorage.setItem('tonight-fallback-dismissed', 'true')
+    } catch {
+      // sessionStorage unavailable
+    }
+    setShowFallback(false)
+    // Stay on This Week tab — events remain as-is
+  }
+
   const getHeading = () => {
+    if (customDate) {
+      return `Events on ${formatCustomDatePill(customDate)}`
+    }
     switch (dateFilter) {
       case 'tonight':
         return "What's Happening Tonight"
@@ -122,19 +180,23 @@ export default function Home() {
     }
   }
 
-  // Get empty message based on filters
   const getEmptyMessage = () => {
+    if (customDate) {
+      return `No events on ${formatCustomDatePill(customDate)}`
+    }
     if (dateFilter === 'tonight') {
-      return "No events tonight"
+      return 'No events tonight'
     }
     if (filters.familyFriendly) {
-      return "No family-friendly events found for this time period"
+      return 'No family-friendly events found for this time period'
     }
     if (filters.priceFilter === 'free') {
-      return "No free events found for this time period"
+      return 'No free events found for this time period'
     }
-    return "No events found for this time period"
+    return 'No events found for this time period'
   }
+
+  const showDate = !!customDate || (dateFilter !== 'tonight' && dateFilter !== 'tomorrow')
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -142,7 +204,6 @@ export default function Home() {
       <Hero />
 
       <main id="events-section" className="max-w-4xl mx-auto px-4 py-12">
-        {/* Hero section */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-stone-900 mb-2">
             {getHeading()}
@@ -152,17 +213,24 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Date tabs */}
         <div className="mb-4">
-          <DateTabs activeFilter={dateFilter} onFilterChange={setDateFilter} />
+          <DateTabs
+            activeFilter={dateFilter}
+            onFilterChange={handleDateFilterChange}
+            customDate={customDate}
+            onCustomDateSelect={handleCustomDateSelect}
+            onCustomDateClear={handleCustomDateClear}
+          />
         </div>
 
-        {/* Filters */}
         <div className="mb-6">
           <FilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
 
-        {/* Error state */}
+        {showFallback && (
+          <FallbackBanner onDismiss={handleFallbackDismiss} />
+        )}
+
         {error && (
           <div className="text-center py-8">
             <p className="text-red-500 mb-4">{error}</p>
@@ -175,14 +243,13 @@ export default function Home() {
           </div>
         )}
 
-        {/* Events list */}
         {!error && (
           loading ? (
             <EventListSkeleton count={5} />
           ) : (
             <EventList
               events={events}
-              showDate={dateFilter !== 'tonight' && dateFilter !== 'tomorrow'}
+              showDate={showDate}
               emptyMessage={getEmptyMessage()}
             />
           )
