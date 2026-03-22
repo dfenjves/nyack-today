@@ -78,6 +78,37 @@ This file logs all prompts and major tasks performed during development sessions
 
 ---
 
+## Session: 2026-03-22
+
+### Prompt 1: Discord Scraper Image Extraction (Issue #29)
+**User:** "work on issue 29, in a new branch"
+
+**Action Taken:**
+- Created new branch `feature/discord-scraper-images`
+- Analyzed existing Discord scraper implementation
+- Found that infrastructure for image extraction already existed but AI prompt was not explicit enough
+- Updated Discord AI system prompt in `src/lib/ai/client.ts`:
+  - Added explicit instruction to use Discord attachment URLs as imageUrl field
+  - Modified both OpenAI and Anthropic prompt builders to list attachment URLs with clear instructions
+  - Enhanced rule #4 to emphasize using attachment URLs for imageUrl
+- Ran build to verify changes compile successfully
+- All tests passed
+
+**Technical Details:**
+- Discord scraper already sends attachment URLs to Vision APIs (OpenAI GPT-4o and Anthropic Claude)
+- AI already processes images via OCR to extract event details
+- The fix makes it explicit that attachment URLs should be used as the imageUrl field in extracted events
+- Changes affect both OpenAI (lines 362-378) and Anthropic (lines 431-447) implementations
+
+**Files Modified:**
+- `src/lib/ai/client.ts` - Updated DISCORD_SYSTEM_PROMPT and prompt builders for both AI providers
+
+**Outcome:** Discord scraper will now automatically include image URLs from Discord message attachments in the extracted events. This requires production testing when Discord scraper runs with real messages.
+
+**Status:** Ready for testing in production
+
+---
+
 ## Template for Future Entries
 
 ### Prompt N: [Brief Title]
