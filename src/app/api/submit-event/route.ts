@@ -5,6 +5,7 @@ import {
   sendEventSubmissionEmail,
   sendSubmissionConfirmationEmail,
 } from '@/lib/utils/email'
+import { parseEasternTime } from '@/lib/utils/timezone'
 
 /**
  * POST /api/submit-event
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate date is not in the past (only for one-time events)
-    const startDate = new Date(data.startDate)
+    const startDate = parseEasternTime(data.startDate)
     const now = new Date()
     if (!data.isRecurring && startDate < now) {
       return NextResponse.json(
@@ -69,7 +70,8 @@ export async function POST(request: NextRequest) {
 
       // Validate recurrence end date is after start date
       if (data.recurrenceEndDate) {
-        const recurrenceEndDate = new Date(data.recurrenceEndDate)
+        // For recurrence end date, we just need the date (not time), so parse as midnight Eastern
+        const recurrenceEndDate = parseEasternTime(data.recurrenceEndDate + 'T00:00')
         if (recurrenceEndDate <= startDate) {
           return NextResponse.json(
             { error: 'Recurrence end date must be after start date' },
@@ -84,8 +86,8 @@ export async function POST(request: NextRequest) {
       data: {
         title: data.title,
         description: data.description || null,
-        startDate: new Date(data.startDate),
-        endDate: data.endDate ? new Date(data.endDate) : null,
+        startDate: startDate,
+        endDate: data.endDate ? parseEasternTime(data.endDate) : null,
         venue: data.venue,
         address: data.address || null,
         city: data.city || 'Nyack',
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
         // Recurrence fields
         isRecurring: data.isRecurring ?? false,
         recurrenceDays: data.recurrenceDays || [],
-        recurrenceEndDate: data.recurrenceEndDate ? new Date(data.recurrenceEndDate) : null,
+        recurrenceEndDate: data.recurrenceEndDate ? parseEasternTime(data.recurrenceEndDate + 'T00:00') : null,
       },
     })
 

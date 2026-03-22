@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { Category } from '@prisma/client'
+import { parseEasternTime } from '@/lib/utils/timezone'
 
 /**
  * GET /api/admin/events
@@ -69,8 +70,8 @@ export async function POST(request: NextRequest) {
       data: {
         title: data.title,
         description: data.description || null,
-        startDate: new Date(data.startDate),
-        endDate: data.endDate ? new Date(data.endDate) : null,
+        startDate: parseEasternTime(data.startDate),
+        endDate: data.endDate ? parseEasternTime(data.endDate) : null,
         venue: data.venue,
         address: data.address || null,
         city: data.city || 'Nyack',

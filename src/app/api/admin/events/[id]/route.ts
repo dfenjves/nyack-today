@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { Category } from '@prisma/client'
+import { parseEasternTime } from '@/lib/utils/timezone'
 
 /**
  * GET /api/admin/events/[id]
@@ -51,8 +52,8 @@ export async function PATCH(
 
     if (data.title !== undefined) updateData.title = data.title
     if (data.description !== undefined) updateData.description = data.description
-    if (data.startDate !== undefined) updateData.startDate = new Date(data.startDate)
-    if (data.endDate !== undefined) updateData.endDate = data.endDate ? new Date(data.endDate) : null
+    if (data.startDate !== undefined) updateData.startDate = parseEasternTime(data.startDate)
+    if (data.endDate !== undefined) updateData.endDate = data.endDate ? parseEasternTime(data.endDate) : null
     if (data.venue !== undefined) updateData.venue = data.venue
     if (data.address !== undefined) updateData.address = data.address
     if (data.city !== undefined) updateData.city = data.city
