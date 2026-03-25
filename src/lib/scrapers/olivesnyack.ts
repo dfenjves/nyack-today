@@ -1,11 +1,8 @@
+import * as cheerio from 'cheerio'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
 import { guessFamilyFriendly } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 import { Category } from '@prisma/client'
-import puppeteer from 'puppeteer-core'
-import type { Browser } from 'puppeteer-core'
-import chromium from '@sparticuz/chromium'
-import * as path from 'path'
 
 const SOURCE_NAME = "Olive's"
 const SOURCE_URL = 'https://www.olivesnyackbar.com/'
@@ -31,12 +28,11 @@ const SKIP_KEYWORDS = ['happy hour', 'all night happy hour']
 
 /**
  * Parse a time string like "9 PM", "9:00 PM", "8:30 PM" from the end of a string.
- * Returns the event name (prefix) and time components, or null.
  */
 function parseEventText(text: string): { name: string; hour: number; minute: number } | null {
   const match = text.match(/^(.*?)\s+(\d+)(?::(\d+))?\s*(AM|PM)\s*$/i)
   if (!match) return null
-  const name = match[1].trim().replace(/\u200B/g, '').trim() // strip zero-width spaces
+  const name = match[1].trim().replace(/\u200B/g, '').trim()
   if (!name) return null
   let hour = parseInt(match[2], 10)
   const minute = match[3] ? parseInt(match[3], 10) : 0
@@ -53,16 +49,13 @@ function getNextOccurrences(dayOfWeek: number, count: number, hour: number, minu
   const dates: Date[] = []
   const now = new Date()
   const todayDow = now.getDay()
-  let daysUntil = (dayOfWeek - todayDow + 7) % 7
+  const daysUntil = (dayOfWeek - todayDow + 7) % 7
 
   for (let i = 0; i < count; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() + daysUntil + i * 7)
     d.setHours(hour, minute, 0, 0)
-    // Skip if in the past (e.g., today's event already happened)
-    if (d > now) {
-      dates.push(d)
-    }
+    if (d > now) dates.push(d)
   }
   return dates
 }
@@ -72,7 +65,7 @@ function getNextOccurrences(dayOfWeek: number, count: number, hour: number, minu
  */
 function parseSpecificEvent(text: string): ScrapedEvent | null {
   const match = text.match(
-    /^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY),?\s+(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+(\d+)(?:st|nd|rd|th)?:\s+(.+?)\s+(\d+)(?::(\d+))?\s*(AM|PM)/i
+    /^(MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY),?\s+(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+(\d+)(?:st|nd|rd|th)?[:\s]+(.+?)\s+(\d+)(?::(\d+))?\s*(AM|PM)/i
   )
   if (!match) return null
 
@@ -87,18 +80,15 @@ function parseSpecificEvent(text: string): ScrapedEvent | null {
 
   if (!title) return null
 
-  // Infer year
   const now = new Date()
   let year = now.getFullYear()
   const candidate = new Date(year, monthIndex, day, hour, minute)
   if (candidate < now) year++
 
-  const startDate = new Date(year, monthIndex, day, hour, minute)
-
   return {
     title,
     description: null,
-    startDate,
+    startDate: new Date(year, monthIndex, day, hour, minute),
     endDate: null,
     venue: VENUE,
     address: ADDRESS,
@@ -115,54 +105,44 @@ function parseSpecificEvent(text: string): ScrapedEvent | null {
 }
 
 /**
- * Scraper for Olive's Nyack weekly music calendar
- * Uses Puppeteer (Wix site, JS-rendered)
+ * Scraper for Olive's Nyack weekly music calendar.
+ * Wix serves SSR HTML to Googlebot — uses Cheerio, no Puppeteer needed.
  */
 export const olivesNyackScraper: Scraper = {
   name: SOURCE_NAME,
 
   async scrape(): Promise<ScraperResult> {
     const events: ScrapedEvent[] = []
-    let browser: Browser | null = null
 
     try {
-      const isVercel = !!process.env.VERCEL_ENV
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 20000)
+      const response = await fetch(SOURCE_URL, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+      })
+      clearTimeout(timeoutId)
 
-      if (isVercel) {
-        if (!process.env.AWS_LAMBDA_JS_RUNTIME) {
-          process.env.AWS_LAMBDA_JS_RUNTIME = 'nodejs22.x'
+      if (!response.ok) {
+        return {
+          sourceName: SOURCE_NAME,
+          events: [],
+          status: 'error',
+          errorMessage: `HTTP ${response.status}: ${response.statusText}`,
         }
-        const executablePath = await chromium.executablePath()
-        const execDir = path.dirname(executablePath)
-        process.env.LD_LIBRARY_PATH = execDir
-        browser = await puppeteer.launch({
-          args: chromium.args,
-          executablePath,
-          headless: true,
-        })
-      } else {
-        const executablePath = process.env.CHROME_BIN ||
-          '/Users/danielfenjves/.cache/puppeteer/chrome/mac_arm-146.0.7680.31/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
-        browser = await puppeteer.launch({
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-          executablePath,
-          headless: true,
-        })
       }
 
-      const page = await browser.newPage()
-      await page.setUserAgent(
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-      )
+      const html = await response.text()
+      const $ = cheerio.load(html)
 
-      await page.goto(SOURCE_URL, { waitUntil: 'networkidle2', timeout: 30000 })
-      await page.waitForSelector('.wixui-rich-text', { timeout: 10000 })
-
-      // Extract all rich text block contents in DOM order
-      const blocks: string[] = await page.evaluate(() => {
-        return Array.from(document.querySelectorAll('.wixui-rich-text'))
-          .map(el => el.textContent?.trim().replace(/\u200B/g, '').replace(/\s+/g, ' ').trim() || '')
-          .filter(t => t.length > 0)
+      // Extract text from each Wix rich-text block in DOM order
+      const blocks: string[] = []
+      $('[data-testid="richTextElement"]').each((_, el) => {
+        const text = $(el).text().replace(/\u200B/g, '').replace(/\s+/g, ' ').trim()
+        if (text) blocks.push(text)
       })
 
       const now = new Date()
@@ -170,14 +150,13 @@ export const olivesNyackScraper: Scraper = {
       for (let i = 0; i < blocks.length; i++) {
         const text = blocks[i].toUpperCase()
 
-        // Check if this block is a standalone day-of-week name (recurring slot header)
+        // Recurring slot header: "SUNDAYS", "MONDAYS", etc.
         const dayMatch = text.match(/^(SUNDAYS|MONDAYS|TUESDAYS|WEDNESDAYS|THURSDAYS|FRIDAYS|SATURDAYS)$/)
         if (dayMatch) {
-          const dayName = dayMatch[1].replace(/S$/, '') // "SUNDAYS" -> "SUNDAY"
+          const dayName = dayMatch[1].replace(/S$/, '')
           const dow = DAY_NAME_TO_DOW[dayName]
           const nextBlock = blocks[i + 1] || ''
 
-          // Skip promos
           if (SKIP_KEYWORDS.some(kw => nextBlock.toLowerCase().includes(kw))) continue
 
           const parsed = parseEventText(nextBlock)
@@ -206,16 +185,12 @@ export const olivesNyackScraper: Scraper = {
           continue
         }
 
-        // Check if this block is a specific dated event like "FRIDAY, MARCH 20th: GLASS PONY 9:00 PM"
+        // Specific dated event: "FRIDAY, MARCH 27th: HOLLYWOOD HERB 9:00 PM"
         const specificEvent = parseSpecificEvent(blocks[i])
-        if (specificEvent) {
-          if (specificEvent.startDate > now) {
-            events.push(specificEvent)
-          }
+        if (specificEvent && specificEvent.startDate > now) {
+          events.push(specificEvent)
         }
       }
-
-      await browser.close()
 
       if (events.length === 0) {
         return {
@@ -228,7 +203,6 @@ export const olivesNyackScraper: Scraper = {
 
       return { sourceName: SOURCE_NAME, events, status: 'success' }
     } catch (error) {
-      if (browser) await browser.close()
       const message = error instanceof Error ? error.message : 'Unknown error'
       return {
         sourceName: SOURCE_NAME,
