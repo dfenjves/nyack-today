@@ -12,7 +12,7 @@ export default function Hero() {
             Nyack Today
           </h1>
           <p className="text-lg md:text-xl text-stone-800">
-            Your guide to what's happening in our corner of the Hudson Valley
+            Your guide to what&apos;s happening in our corner of the Hudson Valley
           </p>
         </div>
       </div>
