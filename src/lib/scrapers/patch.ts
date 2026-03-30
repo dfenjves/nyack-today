@@ -34,6 +34,7 @@ interface PatchEvent {
   summary?: string
   eventType?: string
   ogImageUrl?: string
+  imageThumbnail?: string
   eventSiteUrl?: string
   canonicalUrl?: string
 }
@@ -86,14 +87,15 @@ export const patchScraper: Scraper = {
         }
       }
 
-      // Navigate to allEvents array: props.pageProps.mainContent.allEvents
-      const allEvents = (
+      // Navigate to allEvents: props.pageProps.mainContent.allEvents
+      // allEvents is an object keyed by UNIX timestamps, each value is an array of events
+      const mainContent = (
         (nextData?.props as Record<string, unknown>)?.pageProps as Record<string, unknown>
       )?.mainContent as Record<string, unknown>
 
-      const eventList: PatchEvent[] = (allEvents?.allEvents as PatchEvent[]) || []
+      const allEventsObj = mainContent?.allEvents as Record<string, PatchEvent[]> | undefined
 
-      if (!Array.isArray(eventList) || eventList.length === 0) {
+      if (!allEventsObj || typeof allEventsObj !== 'object') {
         return {
           sourceName: SOURCE_NAME,
           events: [],
@@ -101,6 +103,9 @@ export const patchScraper: Scraper = {
           errorMessage: 'No events found in page data',
         }
       }
+
+      // Flatten all date-keyed arrays into a single list
+      const eventList: PatchEvent[] = Object.values(allEventsObj).flat()
 
       const now = new Date()
 
@@ -142,8 +147,8 @@ export const patchScraper: Scraper = {
           ? { price: null, isFree: true }
           : parsePrice(event.eventType)
 
-        // Image - skip generic placeholder images
-        let imageUrl: string | null = event.ogImageUrl || null
+        // Prefer thumbnail, fall back to ogImageUrl; skip generic placeholders
+        let imageUrl: string | null = event.imageThumbnail || event.ogImageUrl || null
         if (imageUrl?.includes('/assets/calendar/events')) {
           imageUrl = null
         }
