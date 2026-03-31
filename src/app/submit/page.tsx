@@ -232,6 +232,11 @@ export default function SubmitEventPage() {
         sourceUrl: event.sourceUrl || prev.sourceUrl,
       }))
 
+      // Use the poster as the event image
+      setSelectedFile(file)
+      setUploadMode('file')
+      setPreviewUrl(objectUrl)
+
       setPosterFilled(true)
     } catch (err) {
       setPosterScanError(err instanceof Error ? err.message : 'Failed to scan poster')
@@ -462,6 +467,8 @@ export default function SubmitEventPage() {
                   onClick={() => {
                     setPosterPreview('')
                     setPosterFilled(false)
+                    setSelectedFile(null)
+                    setPreviewUrl('')
                     posterInputRef.current?.click()
                   }}
                   className="text-sm text-orange-600 hover:text-orange-700 font-medium"
