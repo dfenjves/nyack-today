@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Category } from '@prisma/client'
@@ -13,6 +13,13 @@ export default function SubmitEventPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+
+  // Poster scan state
+  const [scanningPoster, setScanningPoster] = useState(false)
+  const [posterPreview, setPosterPreview] = useState('')
+  const [posterScanError, setPosterScanError] = useState('')
+  const [posterFilled, setPosterFilled] = useState(false)
+  const posterInputRef = useRef<HTMLInputElement>(null)
 
   // File upload state
   const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url')
@@ -181,6 +188,64 @@ export default function SubmitEventPage() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Poster scan handler
+  const handlePosterScan = async (file: File) => {
+    setScanningPoster(true)
+    setPosterScanError('')
+    setPosterFilled(false)
+
+    // Show preview immediately
+    const objectUrl = URL.createObjectURL(file)
+    setPosterPreview(objectUrl)
+
+    try {
+      const data = new FormData()
+      data.append('file', file)
+
+      const response = await fetch('/api/extract-event-from-poster', {
+        method: 'POST',
+        body: data,
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        throw new Error(err.error || 'Failed to scan poster')
+      }
+
+      const { event } = await response.json()
+
+      // Fill in form fields with extracted data
+      setFormData((prev) => ({
+        ...prev,
+        title: event.title || prev.title,
+        description: event.description || prev.description,
+        startDate: event.date || prev.startDate,
+        startTime: event.startTime || prev.startTime,
+        endTime: event.endTime || prev.endTime,
+        venue: event.venue || prev.venue,
+        address: event.address || prev.address,
+        city: event.city || prev.city,
+        price: event.isFree ? '' : (event.price || prev.price),
+        isFree: event.isFree ?? prev.isFree,
+        isFamilyFriendly: event.isFamilyFriendly ?? prev.isFamilyFriendly,
+        category: (event.category as Category) || prev.category,
+        sourceUrl: event.sourceUrl || prev.sourceUrl,
+      }))
+
+      // Use the poster as the event image
+      setSelectedFile(file)
+      setUploadMode('file')
+      setPreviewUrl(objectUrl)
+
+      setPosterFilled(true)
+    } catch (err) {
+      setPosterScanError(err instanceof Error ? err.message : 'Failed to scan poster')
+      setPosterPreview('')
+    } finally {
+      setScanningPoster(false)
+    }
+  }
+
   // File selection handler
   const handleFileSelect = (file: File) => {
     // Validate file type
@@ -325,6 +390,111 @@ export default function SubmitEventPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+          {/* Poster Scan Section */}
+          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <h2 className="font-semibold text-orange-800">See a poster? Snap it to auto-fill!</h2>
+            </div>
+            <p className="text-sm text-orange-700 mb-3">
+              Take a photo of an event poster and we&apos;ll fill in the details for you automatically.
+            </p>
+
+            {/* Hidden file input — camera on mobile, file picker on desktop */}
+            <input
+              ref={posterInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) handlePosterScan(file)
+                // Reset so same file can be re-selected
+                e.target.value = ''
+              }}
+              className="hidden"
+            />
+
+            {!posterPreview && !scanningPoster && (
+              <button
+                type="button"
+                onClick={() => posterInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 active:bg-orange-700 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Scan Poster
+              </button>
+            )}
+
+            {/* Scanning state */}
+            {scanningPoster && (
+              <div className="space-y-3">
+                {posterPreview && (
+                  <div className="relative">
+                    <img src={posterPreview} alt="Poster preview" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
+                    <div className="absolute inset-0 bg-orange-900/40 rounded-lg flex items-center justify-center">
+                      <div className="bg-white rounded-lg px-4 py-2 flex items-center gap-2">
+                        <svg className="animate-spin h-4 w-4 text-orange-500" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        <span className="text-sm font-medium text-stone-700">Reading poster...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Success state */}
+            {posterFilled && posterPreview && !scanningPoster && (
+              <div className="space-y-3">
+                <img src={posterPreview} alt="Scanned poster" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
+                <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm font-medium">Details filled in! Review and correct below.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPosterPreview('')
+                    setPosterFilled(false)
+                    setSelectedFile(null)
+                    setPreviewUrl('')
+                    posterInputRef.current?.click()
+                  }}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  Scan a different poster
+                </button>
+              </div>
+            )}
+
+            {/* Error state */}
+            {posterScanError && (
+              <div className="mt-2 space-y-2">
+                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
+                  {posterScanError}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => posterInputRef.current?.click()}
+                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
+          </div>
+
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
               {error}
