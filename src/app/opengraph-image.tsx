@@ -69,7 +69,7 @@ export default async function Image() {
             marginBottom: 48,
           }}
         >
-          What's Happening in Nyack
+          What&apos;s Happening in Nyack
         </div>
 
         {/* Features */}

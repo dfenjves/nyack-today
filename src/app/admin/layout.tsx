@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -9,25 +9,20 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const auth = sessionStorage.getItem('admin_auth')
+    const storedPassword = sessionStorage.getItem('admin_password')
+    if (auth === 'true' && !storedPassword) {
+      // Clear stale auth if password is missing (from before password storage was added)
+      sessionStorage.removeItem('admin_auth')
+      return false
+    }
+    return auth === 'true' && !!storedPassword
+  })
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const pathname = usePathname()
-
-  // Check if already authenticated (must have both auth flag AND password stored)
-  useEffect(() => {
-    const auth = sessionStorage.getItem('admin_auth')
-    const storedPassword = sessionStorage.getItem('admin_password')
-    // Require both auth flag AND password to be stored (password needed for API calls)
-    if (auth === 'true' && storedPassword) {
-      setIsAuthenticated(true)
-    } else if (auth === 'true' && !storedPassword) {
-      // Clear stale auth if password is missing (from before password storage was added)
-      sessionStorage.removeItem('admin_auth')
-    }
-    setIsLoading(false)
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,14 +52,6 @@ export default function AdminLayout({
     sessionStorage.removeItem('admin_password')
     setIsAuthenticated(false)
     setPassword('')
-  }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-stone-100 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-      </div>
-    )
   }
 
   if (!isAuthenticated) {
