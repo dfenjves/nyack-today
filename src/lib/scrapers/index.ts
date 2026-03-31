@@ -12,6 +12,9 @@ import { emailScraper } from './email'
 import { maureensJazzCellarScraper } from './maureensjazzcellar'
 import { exploreRocklandScraper } from './explorerockland'
 import { discordScraper } from './discord'
+import { rocklandArtCenterScraper } from './rocklandartcenter'
+import { olivesNyackScraper } from './olivesnyack'
+import { rocklandChessScraper } from './rocklandchess'
 import { patchScraper } from './patch'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 
@@ -30,6 +33,9 @@ export const scrapers: Scraper[] = [
   maureensJazzCellarScraper,
   exploreRocklandScraper,
   discordScraper,
+  rocklandArtCenterScraper,
+  olivesNyackScraper,
+  rocklandChessScraper,
   patchScraper,
 ]
 

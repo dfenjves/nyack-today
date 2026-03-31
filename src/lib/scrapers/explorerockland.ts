@@ -65,9 +65,9 @@ export const exploreRocklandScraper: Scraper = {
 
     try {
       // Launch Puppeteer with appropriate config for environment
-      const isProduction = process.env.VERCEL_ENV === 'production'
+      const isVercel = !!process.env.VERCEL_ENV
 
-      if (isProduction) {
+      if (isVercel) {
         // Vercel/serverless: use @sparticuz/chromium
 
         // Set runtime (fallback if not in Vercel Dashboard)
