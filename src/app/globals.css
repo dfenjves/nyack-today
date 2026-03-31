@@ -56,3 +56,20 @@ body {
 .text-muted {
   color: var(--muted);
 }
+
+/* react-day-picker custom theme */
+.rdp-custom {
+  --rdp-accent-color: #f97316;
+  --rdp-accent-background-color: #fff7ed;
+  --rdp-selected-border: 2px solid #f97316;
+}
+
+.rdp-custom .rdp-day_button:hover:not([disabled]) {
+  background-color: #fff7ed;
+}
+
+.rdp-custom .rdp-selected .rdp-day_button {
+  background-color: #f97316;
+  color: white;
+  font-weight: 600;
+}

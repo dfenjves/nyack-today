@@ -194,7 +194,36 @@ export function getMonthEnd(): Date {
   return easternToUtc(monthEnd.getUTCFullYear(), monthEnd.getUTCMonth(), monthEnd.getUTCDate(), 23, 59, 59, 999)
 }
 
-export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week' | 'month'
+export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week' | 'month' | 'custom'
+
+/**
+ * Get date range for a specific date (midnight to 11:59:59 PM Eastern)
+ */
+export function getCustomDateRange(date: Date): { start: Date; end: Date } {
+  const parts = getEasternDateParts(date)
+  const start = easternToUtc(parts.year, parts.month, parts.day, 0, 0, 0, 0)
+  const end = easternToUtc(parts.year, parts.month, parts.day, 23, 59, 59, 999)
+  return { start, end }
+}
+
+/**
+ * Format a date for the custom date pill (e.g., "Mar 28")
+ */
+export function formatCustomDatePill(date: Date): string {
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: TIMEZONE,
+  })
+}
+
+/**
+ * Get max selectable date (3 months from now)
+ */
+export function getMaxSelectableDate(): Date {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth() + 3, now.getDate())
+}
 
 export function getDateRange(filter: DateFilter): { start: Date; end: Date } {
   const now = new Date()
