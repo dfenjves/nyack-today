@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, parsePrice, guessFamilyFriendly, decodeHtmlEntities, stripHtml } from './utils'
+import { fetchWithTimeout, parsePrice, guessFamilyFriendly, decodeHtmlEntities, stripHtml, makeEasternDate } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 
 const SOURCE_NAME = 'Rockland Center for the Arts'
@@ -44,7 +44,7 @@ function parseEventDate(dateText: string): Date | null {
     year += 1
   }
 
-  return new Date(year, monthIndex, day, hour, minute)
+  return makeEasternDate(year, monthIndex, day, hour, minute)
 }
 
 /**

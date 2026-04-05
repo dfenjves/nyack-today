@@ -474,6 +474,42 @@ export function decodeHtmlEntities(text: string): string {
 }
 
 /**
+ * Returns true if the given calendar date falls within Eastern Daylight Time (EDT, UTC-4).
+ * EDT runs from the 2nd Sunday of March to the 1st Sunday of November.
+ * month is 0-indexed (0=Jan, 11=Dec).
+ */
+function isEDT(year: number, month: number, day: number): boolean {
+  if (month < 2 || month > 10) return false // Jan, Feb, Dec → always EST
+  if (month > 2 && month < 10) return true  // Apr–Oct → always EDT
+
+  // Returns the day-of-month for the nth Sunday in a given month
+  const nthSunday = (yr: number, mo: number, n: number): number => {
+    const firstDay = new Date(yr, mo, 1).getDay() // 0=Sun
+    const firstSunday = firstDay === 0 ? 1 : 8 - firstDay
+    return firstSunday + (n - 1) * 7
+  }
+
+  if (month === 2) {
+    // March: EDT starts on the 2nd Sunday
+    return day >= nthSunday(year, 2, 2)
+  } else {
+    // November: EDT ends on the 1st Sunday
+    return day < nthSunday(year, 10, 1)
+  }
+}
+
+/**
+ * Create a Date from year/month/day/hour/minute interpreted as Eastern Time (ET).
+ * Automatically applies EDT (UTC-4) or EST (UTC-5) based on US DST rules.
+ * month is 0-indexed.
+ */
+export function makeEasternDate(year: number, month: number, day: number, hour: number, minute: number): Date {
+  const offset = isEDT(year, month, day) ? '-04:00' : '-05:00'
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return new Date(`${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(minute)}:00${offset}`)
+}
+
+/**
  * Fetch a URL with error handling and timeout
  */
 export async function fetchWithTimeout(
