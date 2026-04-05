@@ -510,6 +510,19 @@ export function makeEasternDate(year: number, month: number, day: number, hour: 
 }
 
 /**
+ * Fix dates from sources whose CMS stores times as UTC but outputs them with
+ * an Eastern offset applied (e.g. an 8 PM Eastern show stored as 8 PM UTC,
+ * then output as "16:00-04:00"). Corrects by adding the Eastern offset back.
+ */
+export function fixUtcAsEasternDate(date: Date): Date {
+  const y = date.getUTCFullYear()
+  const mo = date.getUTCMonth()
+  const d = date.getUTCDate()
+  const offsetMs = (isEDT(y, mo, d) ? 4 : 5) * 3600000
+  return new Date(date.getTime() + offsetMs)
+}
+
+/**
  * Fetch a URL with error handling and timeout
  */
 export async function fetchWithTimeout(
