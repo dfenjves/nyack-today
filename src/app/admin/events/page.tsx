@@ -155,9 +155,14 @@ export default function AdminEventsPage() {
                   <td className="px-4 py-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-stone-900 line-clamp-1">
+                        <a
+                          href={event.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-stone-900 hover:text-orange-600 hover:underline line-clamp-1"
+                        >
                           {decodeHtmlEntities(event.title)}
-                        </p>
+                        </a>
                         {event.isRecurring && (
                           <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 text-xs rounded font-medium flex-shrink-0">
                             🔁

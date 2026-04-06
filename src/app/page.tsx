@@ -166,7 +166,7 @@ export default function Home() {
     }
     switch (dateFilter) {
       case 'tonight':
-        return "What's Happening Tonight"
+        return "What's Happening Today"
       case 'tomorrow':
         return "Tomorrow's Events"
       case 'weekend':
