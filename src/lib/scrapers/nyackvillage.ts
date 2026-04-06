@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, decodeHtmlEntities, stripHtml } from './utils'
+import { fetchWithTimeout, decodeHtmlEntities, stripHtml, makeEasternDate } from './utils'
 
 const SOURCE_NAME = 'Village of Nyack'
 const CITY = 'Nyack'
@@ -245,7 +245,7 @@ function parseDateTimeFromRss(dateStr: string, timeStr?: string): Date | null {
       }
     }
 
-    return new Date(year, month, day, hour, minute)
+    return makeEasternDate(year, month, day, hour, minute)
   } catch {
     return null
   }

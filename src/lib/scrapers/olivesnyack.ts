@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { guessFamilyFriendly } from './utils'
+import { guessFamilyFriendly, makeEasternDate } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 import { Category } from '@prisma/client'
 
@@ -54,8 +54,8 @@ function getNextOccurrences(dayOfWeek: number, count: number, hour: number, minu
   for (let i = 0; i < count; i++) {
     const d = new Date(now)
     d.setDate(d.getDate() + daysUntil + i * 7)
-    d.setHours(hour, minute, 0, 0)
-    if (d > now) dates.push(d)
+    const eastern = makeEasternDate(d.getFullYear(), d.getMonth(), d.getDate(), hour, minute)
+    if (eastern > now) dates.push(eastern)
   }
   return dates
 }
@@ -88,7 +88,7 @@ function parseSpecificEvent(text: string): ScrapedEvent | null {
   return {
     title,
     description: null,
-    startDate: new Date(year, monthIndex, day, hour, minute),
+    startDate: makeEasternDate(year, monthIndex, day, hour, minute),
     endDate: null,
     venue: VENUE,
     address: ADDRESS,

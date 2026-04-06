@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, guessFamilyFriendly } from './utils'
+import { fetchWithTimeout, guessFamilyFriendly, makeEasternDate } from './utils'
 
 const SOURCE_NAME = 'Rockland County Chess Club'
 const SOURCE_URL = 'https://www.rocklandchess.org/events/'
@@ -77,8 +77,7 @@ function parseEventDate(dateStr: string, timeStr: string): Date | null {
     if (isNaN(utc.getTime())) return null
 
     const [h, m] = timeStr.split(':').map(Number)
-    // Construct using UTC date components + local hour/minute (no TZ conversion)
-    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), h, m, 0, 0)
+    return makeEasternDate(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), h, m)
   } catch {
     return null
   }

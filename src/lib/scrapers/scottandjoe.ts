@@ -1,5 +1,5 @@
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { parsePrice, guessFamilyFriendly } from './utils'
+import { parsePrice, guessFamilyFriendly, makeEasternDate } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 import puppeteer from 'puppeteer-core'
 import type { Browser } from 'puppeteer-core'
@@ -51,7 +51,7 @@ function parseDateFromDescription(text: string): Date | null {
   const candidate = new Date(year, monthIndex, day, hour, minute)
   if (candidate < now) year++
 
-  return new Date(year, monthIndex, day, hour, minute)
+  return makeEasternDate(year, monthIndex, day, hour, minute)
 }
 
 /**

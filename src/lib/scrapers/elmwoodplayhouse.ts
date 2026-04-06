@@ -4,6 +4,7 @@ import {
   extractJsonLdEvents,
   jsonLdToScrapedEvent,
   fetchWithTimeout,
+  fixUtcAsEasternDate,
 } from './utils'
 
 const SOURCE_NAME = 'Elmwood Playhouse'
@@ -52,14 +53,18 @@ export const elmwoodPlayhouseScraper: Scraper = {
       for (const jsonLd of jsonLdEvents) {
         const scraped = jsonLdToScrapedEvent(jsonLd, SOURCE_NAME, SOURCE_URL)
         if (scraped) {
-          // Override with theater-specific values
+          // Elmwood's CMS stores times as UTC but outputs them with an Eastern
+          // offset in JSON-LD, making every time appear 4-5 hours early.
+          // Correct by adding the Eastern offset back.
           const theaterEvent: ScrapedEvent = {
             ...scraped,
+            startDate: fixUtcAsEasternDate(scraped.startDate),
+            endDate: scraped.endDate ? fixUtcAsEasternDate(scraped.endDate) : null,
             venue: VENUE_NAME,
             address: ADDRESS,
             city: CITY,
-            isNyackProper: true, // Nyack is Nyack proper
-            category: Category.THEATER, // All Elmwood events are theater
+            isNyackProper: true,
+            category: Category.THEATER,
           }
           events.push(theaterEvent)
         }

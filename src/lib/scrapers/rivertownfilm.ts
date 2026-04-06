@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio'
 import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, decodeHtmlEntities, stripHtml } from './utils'
+import { fetchWithTimeout, decodeHtmlEntities, stripHtml, makeEasternDate } from './utils'
 
 const SOURCE_NAME = 'Rivertown Film'
 const SOURCE_URL = 'https://rivertownfilm.org/'
@@ -261,12 +261,12 @@ function parseDateFromMatch(match: RegExpMatchArray): Date | null {
       hour = 0
     }
 
-    // Create date
-    const date = new Date(year, monthNum, day, hour, minute)
+    // Create date in Eastern time
+    let date = makeEasternDate(year, monthNum, day, hour, minute)
 
     // If date is in the past and we're using current year, try next year
     if (date < now && year === currentYear) {
-      date.setFullYear(currentYear + 1)
+      date = makeEasternDate(currentYear + 1, monthNum, day, hour, minute)
     }
 
     return date
