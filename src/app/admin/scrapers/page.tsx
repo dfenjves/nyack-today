@@ -12,6 +12,14 @@ interface ScraperLog {
   runAt: string
 }
 
+interface AddedEvent {
+  id: string
+  title: string
+  startDate: string
+  venue: string
+  sourceUrl: string
+}
+
 export default function AdminScrapersPage() {
   const [logs, setLogs] = useState<ScraperLog[]>([])
   const [scrapers, setScrapers] = useState<string[]>([])
@@ -20,6 +28,11 @@ export default function AdminScrapersPage() {
   const [selectedScraper, setSelectedScraper] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
+
+  // Accordion state
+  const [expandedLogId, setExpandedLogId] = useState<string | null>(null)
+  const [logEvents, setLogEvents] = useState<Record<string, AddedEvent[]>>({})
+  const [loadingEvents, setLoadingEvents] = useState<string | null>(null)
 
   const fetchScrapers = async () => {
     try {
@@ -37,12 +50,8 @@ export default function AdminScrapersPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      if (statusFilter !== 'all') {
-        params.set('status', statusFilter)
-      }
-      if (selectedScraper !== 'all') {
-        params.set('source', selectedScraper)
-      }
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (selectedScraper !== 'all') params.set('source', selectedScraper)
       params.set('limit', '100')
 
       const response = await fetch(`/api/admin/scrapers?${params}`)
@@ -57,13 +66,8 @@ export default function AdminScrapersPage() {
     }
   }
 
-  useEffect(() => {
-    fetchScrapers()
-  }, [])
-
-  useEffect(() => {
-    fetchLogs()
-  }, [selectedScraper, statusFilter])
+  useEffect(() => { fetchScrapers() }, [])
+  useEffect(() => { fetchLogs() }, [selectedScraper, statusFilter])
 
   const runScraper = async (source?: string) => {
     setRunning(true)
@@ -73,9 +77,7 @@ export default function AdminScrapersPage() {
       const adminPassword = sessionStorage.getItem('admin_password')
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'x-admin-password': adminPassword || '',
-        },
+        headers: { 'x-admin-password': adminPassword || '' },
       })
       if (!response.ok) {
         const data = await response.json()
@@ -86,6 +88,32 @@ export default function AdminScrapersPage() {
       setError('Failed to run scraper')
     } finally {
       setRunning(false)
+    }
+  }
+
+  const toggleAccordion = async (log: ScraperLog) => {
+    if (log.eventsAdded === 0) return
+
+    if (expandedLogId === log.id) {
+      setExpandedLogId(null)
+      return
+    }
+
+    setExpandedLogId(log.id)
+
+    if (!logEvents[log.id]) {
+      setLoadingEvents(log.id)
+      try {
+        const response = await fetch(`/api/admin/scrapers/${log.id}`)
+        if (response.ok) {
+          const data = await response.json()
+          setLogEvents((prev) => ({ ...prev, [log.id]: data.events }))
+        }
+      } catch {
+        // silently fail — accordion just won't show events
+      } finally {
+        setLoadingEvents(null)
+      }
     }
   }
 
@@ -119,9 +147,7 @@ export default function AdminScrapersPage() {
         >
           <option value="all">All Scrapers</option>
           {scrapers.map((scraper) => (
-            <option key={scraper} value={scraper}>
-              {scraper}
-            </option>
+            <option key={scraper} value={scraper}>{scraper}</option>
           ))}
         </select>
 
@@ -160,57 +186,111 @@ export default function AdminScrapersPage() {
           <table className="w-full">
             <thead className="bg-stone-50 border-b border-stone-200">
               <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600">
-                  Source
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600 hidden md:table-cell">
-                  Run At
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600">
-                  Results
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600 hidden sm:table-cell">
-                  Status
-                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600">Source</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600 hidden md:table-cell">Run At</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600">Results</th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-stone-600 hidden sm:table-cell">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {logs.map((log) => (
-                <tr key={log.id}>
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-stone-900">{log.sourceName}</p>
-                    {log.errorMessage && (
-                      <p className="text-xs text-red-600 mt-1 line-clamp-2">
-                        {log.errorMessage}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-stone-600 hidden md:table-cell">
-                    {new Date(log.runAt).toLocaleString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-stone-600">
-                    {log.eventsFound} found, {log.eventsAdded} added
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <span
-                      className={`px-2 py-1 text-xs rounded-full ${
-                        log.status === 'success'
-                          ? 'bg-green-100 text-green-700'
-                          : log.status === 'partial'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
+              {logs.map((log) => {
+                const isExpanded = expandedLogId === log.id
+                const isLoadingThisLog = loadingEvents === log.id
+                const events = logEvents[log.id] ?? []
+                const clickable = log.eventsAdded > 0
+
+                return (
+                  <>
+                    <tr
+                      key={log.id}
+                      onClick={() => toggleAccordion(log)}
+                      className={clickable ? 'cursor-pointer hover:bg-stone-50 transition-colors' : ''}
                     >
-                      {log.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {clickable && (
+                            <span className={`text-stone-400 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}>
+                              ▶
+                            </span>
+                          )}
+                          <div>
+                            <p className="font-medium text-stone-900">{log.sourceName}</p>
+                            {log.errorMessage && (
+                              <p className="text-xs text-red-600 mt-1 line-clamp-2">{log.errorMessage}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-stone-600 hidden md:table-cell">
+                        {new Date(log.runAt).toLocaleString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-stone-600">
+                        {log.eventsFound} found,{' '}
+                        <span className={log.eventsAdded > 0 ? 'font-medium text-green-700' : ''}>
+                          {log.eventsAdded} added
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          log.status === 'success' ? 'bg-green-100 text-green-700'
+                          : log.status === 'partial' ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                        }`}>
+                          {log.status}
+                        </span>
+                      </td>
+                    </tr>
+
+                    {isExpanded && (
+                      <tr key={`${log.id}-events`} className="bg-stone-50">
+                        <td colSpan={4} className="px-4 py-3">
+                          {isLoadingThisLog ? (
+                            <div className="flex items-center gap-2 text-sm text-stone-500 py-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
+                              Loading events…
+                            </div>
+                          ) : events.length === 0 ? (
+                            <p className="text-sm text-stone-500 py-2">No events found in this window.</p>
+                          ) : (
+                            <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 bg-white overflow-hidden">
+                              {events.map((event) => (
+                                <li key={event.id} className="flex items-center justify-between px-4 py-2.5 gap-4">
+                                  <div className="min-w-0">
+                                    <a
+                                      href={event.sourceUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm font-medium text-stone-900 hover:text-orange-600 hover:underline truncate block"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {event.title}
+                                    </a>
+                                    <p className="text-xs text-stone-500 mt-0.5">{event.venue}</p>
+                                  </div>
+                                  <span className="text-xs text-stone-500 flex-shrink-0">
+                                    {new Date(event.startDate).toLocaleString('en-US', {
+                                      timeZone: 'America/New_York',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                    })}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                )
+              })}
             </tbody>
           </table>
         </div>
