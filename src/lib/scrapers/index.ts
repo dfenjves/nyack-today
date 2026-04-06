@@ -72,19 +72,20 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
       console.log(`  Found ${result.events.length} events (${result.status})`)
 
       // Save events to database
+      let scraperEventsAdded = 0
       for (const event of result.events) {
         const saveResult = await saveEvent(event)
-        if (saveResult === 'added') totalEventsAdded++
+        if (saveResult === 'added') { totalEventsAdded++; scraperEventsAdded++ }
         else if (saveResult === 'updated') totalEventsUpdated++
         else if (saveResult === 'duplicate') totalEventsDuplicate++
       }
 
-      // Log the scraper run
+      // Log the scraper run with the per-scraper added count
       await logScraperRun(
         scraper.name,
         result.status,
         result.events.length,
-        totalEventsAdded,
+        scraperEventsAdded,
         result.errorMessage
       )
     } catch (error) {
