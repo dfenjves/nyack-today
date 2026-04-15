@@ -16,7 +16,7 @@ interface DateTabsProps {
 }
 
 const tabs: { value: DateFilter; label: string }[] = [
-  { value: 'tonight', label: 'Tonight' },
+  { value: 'tonight', label: 'Today' },
   { value: 'tomorrow', label: 'Tomorrow' },
   { value: 'weekend', label: 'Weekend' },
   { value: 'week', label: 'This Week' },
