@@ -213,13 +213,8 @@ function parseWeekenderPost(html: string, postUrl: string, postDate: Date): Pars
     'article',
   ]
 
-  let $content = $('body')
-  for (const sel of contentSelectors) {
-    if ($(sel).length > 0) {
-      $content = $(sel).first()
-      break
-    }
-  }
+  const contentSelector = contentSelectors.find(sel => $(sel).length > 0) ?? 'body'
+  const $content = $(contentSelector)
 
   // Strategy 1: Each event is headed by an <h2> or <h3>
   // Collect elements between headings as event details
