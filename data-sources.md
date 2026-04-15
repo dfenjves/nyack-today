@@ -34,9 +34,9 @@ A running list of event and activity sources for the Nyack area.
 | Tarrytown Music Hall | https://tarrytownmusichall.org/ | Venue | External ticketing at tickets.tarrytownmusichall.org |
 
 ### Tier 3: Unstructured/Special Handling
-| Source | URL | Type | Notes |
-|--------|-----|------|-------|
-| Nyack News and Views | https://nyacknewsandviews.com | Blog | Parse "Weekly Rec" articles |
+| Source | URL | Type | Status | Notes |
+|--------|-----|------|--------|-------|
+| Nyack News and Views | https://nyacknewsandviews.com/blog/category/nyack-weekender/ | Blog | ✅ Built | Parses most recent Nyack Weekender post; multi-strategy content extraction (h2/h3 headings, bold titles, list items) |
 | ArtsRock | https://artsrock.org/ | Venue | Returns 403, may need alternative approach |
 | West Gate Lounge | https://www.facebook.com/WestGateLounge/ | Venue | Facebook page - unreliable scraping |
 | Edward Hopper House | https://www.edwardhopperhouse.org/ | Venue | Multi-page crawl needed, no JSON-LD |
