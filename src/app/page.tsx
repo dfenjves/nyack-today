@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
+import MarqueeSection from '@/components/MarqueeSection'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
@@ -53,12 +54,19 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showFallback, setShowFallback] = useState(false)
+  const [marqueeOnly, setMarqueeOnly] = useState(false)
 
   // Signals that the next 'week' fetch was triggered by tonight being empty
   const pendingFallbackRef = useRef(false)
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams()
+
+    if (marqueeOnly) {
+      params.set('marquee', 'true')
+      // No date param → API defaults to all future events
+      return params.toString()
+    }
 
     if (customDate) {
       params.set('date', 'custom')
@@ -83,7 +91,7 @@ export default function Home() {
     }
 
     return params.toString()
-  }, [dateFilter, filters, customDate])
+  }, [dateFilter, filters, customDate, marqueeOnly])
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
@@ -135,11 +143,25 @@ export default function Home() {
     fetchEvents()
   }, [fetchEvents])
 
+  const handleShowAllMarquee = useCallback(() => {
+    setMarqueeOnly(true)
+    pendingFallbackRef.current = false
+    setShowFallback(false)
+    setTimeout(() => {
+      document.getElementById('events-section')?.scrollIntoView({ behavior: 'smooth' })
+    }, 50)
+  }, [])
+
+  const handleClearMarquee = () => {
+    setMarqueeOnly(false)
+  }
+
   const handleDateFilterChange = (filter: DateFilter) => {
     pendingFallbackRef.current = false
     setShowFallback(false)
     setCustomDate(null)
     setDateFilter(filter)
+    setMarqueeOnly(false)
   }
 
   const handleCustomDateSelect = (date: Date) => {
@@ -161,6 +183,7 @@ export default function Home() {
   }
 
   const getHeading = () => {
+    if (marqueeOnly) return '⭐ Big Events'
     if (customDate) {
       return `Events on ${formatCustomDatePill(customDate)}`
     }
@@ -204,6 +227,8 @@ export default function Home() {
       <Hero />
 
       <main id="events-section" className="max-w-4xl mx-auto px-4 py-12">
+        <MarqueeSection onShowAll={handleShowAllMarquee} />
+
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-stone-900 mb-2">
             {getHeading()}
@@ -226,6 +251,18 @@ export default function Home() {
         <div className="mb-6">
           <FilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
+
+        {marqueeOnly && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
+            <span className="text-sm text-amber-800 font-medium">Showing all upcoming marquee events</span>
+            <button
+              onClick={handleClearMarquee}
+              className="text-amber-600 hover:text-amber-900 text-sm font-medium"
+            >
+              ✕ Clear
+            </button>
+          </div>
+        )}
 
         {showFallback && (
           <FallbackBanner onDismiss={handleFallbackDismiss} />

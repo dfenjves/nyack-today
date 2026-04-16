@@ -86,6 +86,7 @@ export default function DateTabs({
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
             <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 outline-none">
+              <Drawer.Title className="sr-only">Pick a Date</Drawer.Title>
               <div className="pt-3 flex justify-center">
                 <div className="w-10 h-1 bg-stone-200 rounded-full" />
               </div>

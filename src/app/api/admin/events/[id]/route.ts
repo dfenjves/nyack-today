@@ -73,6 +73,7 @@ export async function PATCH(
     if (data.sourceUrl !== undefined) updateData.sourceUrl = data.sourceUrl
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl
     if (data.isHidden !== undefined) updateData.isHidden = data.isHidden
+    if (data.isMarquee !== undefined) updateData.isMarquee = data.isMarquee
 
     const event = await prisma.event.update({
       where: { id },

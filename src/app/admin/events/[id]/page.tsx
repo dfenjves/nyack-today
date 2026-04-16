@@ -46,6 +46,7 @@ export default function EditEventPage() {
     sourceUrl: '',
     imageUrl: '',
     isHidden: false,
+    isMarquee: false,
   })
 
   const fetchEvent = async () => {
@@ -78,6 +79,7 @@ export default function EditEventPage() {
           sourceUrl: loaded.sourceUrl,
           imageUrl: loaded.imageUrl || '',
           isHidden: loaded.isHidden,
+          isMarquee: loaded.isMarquee,
         })
       } else {
         setError('Failed to load event')
@@ -396,6 +398,19 @@ export default function EditEventPage() {
           />
           <label htmlFor="isHidden" className="text-sm text-stone-700">
             Hide event from public view
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isMarquee"
+            checked={formData.isMarquee}
+            onChange={(e) => updateField('isMarquee', e.target.checked)}
+            className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+          />
+          <label htmlFor="isMarquee" className="text-sm text-stone-700">
+            ⭐ Marquee event (high-draw, attracts visitors from outside Nyack)
           </label>
         </div>
 

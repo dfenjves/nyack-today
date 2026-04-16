@@ -53,6 +53,7 @@ model Event {
   sourceName      String    // e.g., "Visit Nyack", "Levity Live"
   imageUrl        String?
   isHidden        Boolean   @default(false)
+  isMarquee       Boolean   @default(false)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -168,6 +168,11 @@ export default function AdminEventsPage() {
                             🔁
                           </span>
                         )}
+                        {event.isMarquee && (
+                          <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 text-xs rounded font-medium flex-shrink-0">
+                            ⭐
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-stone-500">
                         {event.venue}, {event.city}
