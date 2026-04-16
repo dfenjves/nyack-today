@@ -71,7 +71,8 @@ export async function POST(request: NextRequest) {
       // Preserve GIFs as-is (don't resize animated GIFs)
       optimizedBuffer = buffer
     } else {
-      const sharpInstance = sharp(buffer)
+      // .rotate() auto-applies EXIF orientation so phone photos aren't sideways
+      const sharpInstance = sharp(buffer).rotate()
 
       if (shouldResize) {
         sharpInstance.resize(MAX_IMAGE_WIDTH, null, {
