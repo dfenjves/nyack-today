@@ -5,7 +5,7 @@ export default function Hero() {
       <div className="absolute inset-0 bg-gradient-to-br from-orange-200 via-amber-300 to-orange-400 -z-10" />
 
       {/* Content */}
-      <div className="flex flex-col items-center justify-center px-4 pt-12 pb-8 max-w-6xl mx-auto w-full">
+      <div className="flex flex-col items-center justify-center px-4 pt-10 pb-4 max-w-6xl mx-auto w-full">
         {/* Hero headline */}
         <div className="text-center">
           <h1 className="text-4xl md:text-6xl font-bold text-stone-900 mb-3">

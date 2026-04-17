@@ -226,7 +226,7 @@ export default function Home() {
       <Header />
       <Hero />
 
-      <main id="events-section" className="max-w-4xl mx-auto px-4 pt-6 pb-12">
+      <main id="events-section" className="max-w-4xl mx-auto px-4 pt-4 pb-12">
         <MarqueeSection onShowAll={handleShowAllMarquee} />
 
         <div className="mb-6">
