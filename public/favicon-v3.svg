@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- "N" monogram with Hudson River wave -->
+
+  <!-- Orange circle background -->
+  <circle cx="16" cy="16" r="15" fill="#f97316"/>
+
+  <!-- River wave band at bottom of circle -->
+  <clipPath id="clip">
+    <circle cx="16" cy="16" r="15"/>
+  </clipPath>
+  <rect x="0" y="22" width="32" height="10" fill="#1d4ed8" clip-path="url(#clip)"/>
+  <path d="M0 23 Q4 21 8 23 Q12 25 16 23 Q20 21 24 23 Q28 25 32 23" stroke="#60a5fa" stroke-width="1" fill="none" opacity="0.7" clip-path="url(#clip)"/>
+
+  <!-- Geometric "N" built from paths (no font dependency) -->
+  <!-- Left vertical stroke -->
+  <rect x="8" y="8" width="3" height="14" fill="#fff" rx="0.5"/>
+  <!-- Right vertical stroke -->
+  <rect x="21" y="8" width="3" height="14" fill="#fff" rx="0.5"/>
+  <!-- Diagonal stroke: top-left to bottom-right -->
+  <polygon points="11,8 14,8 22,22 19,22" fill="#fff"/>
+</svg>

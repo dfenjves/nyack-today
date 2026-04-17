@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Sailboat on the Hudson -->
+
+  <!-- Sky background -->
+  <rect width="32" height="32" fill="#fed7aa" rx="4"/>
+
+  <!-- Sun -->
+  <circle cx="24" cy="9" r="4" fill="#f97316" opacity="0.9"/>
+
+  <!-- Light rays from sun -->
+  <line x1="24" y1="3" x2="24" y2="1" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+  <line x1="28.2" y1="4.8" x2="29.6" y2="3.4" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+  <line x1="30" y1="9" x2="32" y2="9" stroke="#fb923c" stroke-width="1" opacity="0.6"/>
+
+  <!-- Palisades / cliff silhouette far shore -->
+  <path d="M0 19 Q5 15 9 18 Q13 14 17 18 Q20 16 23 18 L32 18 L32 21 L0 21Z" fill="#92400e" opacity="0.4"/>
+
+  <!-- River -->
+  <rect x="0" y="20" width="32" height="12" fill="#1e40af" rx="0"/>
+
+  <!-- Water ripples -->
+  <path d="M2 23 Q7 21.5 12 23 Q17 24.5 22 23 Q27 21.5 31 23" stroke="#60a5fa" stroke-width="0.8" fill="none" opacity="0.55"/>
+  <path d="M2 26 Q7 24.5 12 26 Q17 27.5 22 26 Q27 24.5 31 26" stroke="#93c5fd" stroke-width="0.6" fill="none" opacity="0.4"/>
+
+  <!-- Boat hull -->
+  <path d="M10 20 Q16 22.5 22 20 L21 20 L11 20Z" fill="#7c2d12"/>
+  <path d="M11 20 L10 20 Q9.5 20.5 10.5 21 L21.5 21 Q22.5 20.5 22 20 Z" fill="#92400e"/>
+
+  <!-- Mast -->
+  <line x1="16" y1="9" x2="16" y2="20" stroke="#7c2d12" stroke-width="1.2"/>
+
+  <!-- Main sail -->
+  <polygon points="16,9 16,19 9,19" fill="#fff" opacity="0.95"/>
+
+  <!-- Jib sail -->
+  <polygon points="16,11 16,19 22,19" fill="#fef3c7" opacity="0.9"/>
+</svg>
