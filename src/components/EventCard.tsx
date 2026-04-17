@@ -22,7 +22,11 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
       href={event.sourceUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-white rounded-xl border border-stone-200 p-4 hover:shadow-md hover:border-orange-200 transition-all"
+      className={`block rounded-xl border p-4 transition-all ${
+        event.isMarquee
+          ? 'bg-amber-50 border-amber-300 hover:shadow-md hover:border-amber-400'
+          : 'bg-white border-stone-200 hover:shadow-md hover:border-orange-200'
+      }`}
     >
       <div className="flex gap-4">
         {/* Event image or category icon fallback */}
@@ -35,16 +39,23 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
             />
           </div>
         ) : (
-          <div className="w-20 h-20 flex-shrink-0 rounded-lg bg-orange-50 flex items-center justify-center text-3xl">
+          <div className={`w-20 h-20 flex-shrink-0 rounded-lg flex items-center justify-center text-3xl ${event.isMarquee ? 'bg-amber-100' : 'bg-orange-50'}`}>
             {categoryIcon}
           </div>
         )}
 
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
-            {title}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
+              {title}
+            </h3>
+            {event.isMarquee && (
+              <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-800">
+                ⭐ Big Event
+              </span>
+            )}
+          </div>
 
           {/* Time and date */}
           <p className="text-sm text-stone-600 mt-1">
