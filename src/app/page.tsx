@@ -240,7 +240,7 @@ export default function Home() {
 
         <div className="mb-4">
           <DateTabs
-            activeFilter={dateFilter}
+            activeFilter={marqueeOnly ? 'custom' : dateFilter}
             onFilterChange={handleDateFilterChange}
             customDate={customDate}
             onCustomDateSelect={handleCustomDateSelect}
