@@ -35,6 +35,20 @@ interface EventSubmission {
   recurrenceEndDate: string | null
 }
 
+const toLocalDateInput = (isoString: string) => {
+  const d = new Date(isoString)
+  const local = new Date(d)
+  local.setMinutes(local.getMinutes() - local.getTimezoneOffset())
+  return local.toISOString().slice(0, 10)
+}
+
+const toLocalTimeInput = (isoString: string) => {
+  const d = new Date(isoString)
+  const local = new Date(d)
+  local.setMinutes(local.getMinutes() - local.getTimezoneOffset())
+  return local.toISOString().slice(11, 16)
+}
+
 export default function AdminSubmissionsPage() {
   const [submissions, setSubmissions] = useState<EventSubmission[]>([])
   const [loading, setLoading] = useState(true)
@@ -42,6 +56,28 @@ export default function AdminSubmissionsPage() {
   const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
+
+  // Edit modal state
+  const [editingSubmission, setEditingSubmission] = useState<EventSubmission | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    description: '',
+    startDate: '',
+    startTime: '',
+    endDate: '',
+    endTime: '',
+    venue: '',
+    address: '',
+    city: 'Nyack',
+    category: 'OTHER' as Category,
+    price: '',
+    isFree: false,
+    isFamilyFriendly: false,
+    sourceUrl: '',
+    imageUrl: '',
+  })
 
   const fetchSubmissions = async () => {
     setLoading(true)
@@ -135,6 +171,84 @@ export default function AdminSubmissionsPage() {
       }
     } catch (error) {
       console.error('Failed to delete submission:', error)
+    }
+  }
+
+  const openEditModal = (submission: EventSubmission) => {
+    setEditingSubmission(submission)
+    setEditFormData({
+      title: decodeHtmlEntities(submission.title),
+      description: submission.description ? decodeHtmlEntities(submission.description) : '',
+      startDate: toLocalDateInput(submission.startDate),
+      startTime: toLocalTimeInput(submission.startDate),
+      endDate: submission.endDate ? toLocalDateInput(submission.endDate) : '',
+      endTime: submission.endDate ? toLocalTimeInput(submission.endDate) : '',
+      venue: decodeHtmlEntities(submission.venue),
+      address: submission.address ? decodeHtmlEntities(submission.address) : '',
+      city: decodeHtmlEntities(submission.city),
+      category: submission.category,
+      price: submission.price || '',
+      isFree: submission.isFree,
+      isFamilyFriendly: submission.isFamilyFriendly,
+      sourceUrl: submission.sourceUrl || '',
+      imageUrl: submission.imageUrl || '',
+    })
+    setShowEditModal(true)
+  }
+
+  const updateEditField = (field: string, value: unknown) => {
+    setEditFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const saveEdit = async () => {
+    if (!editingSubmission) return
+    setSavingEdit(true)
+
+    try {
+      const startDateTime = editFormData.startTime
+        ? `${editFormData.startDate}T${editFormData.startTime}`
+        : `${editFormData.startDate}T00:00`
+
+      let endDateTime = null
+      if (editFormData.endDate) {
+        endDateTime = editFormData.endTime
+          ? `${editFormData.endDate}T${editFormData.endTime}`
+          : `${editFormData.endDate}T23:59`
+      }
+
+      const response = await fetch(`/api/admin/submissions/${editingSubmission.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editFormData.title,
+          description: editFormData.description,
+          startDate: startDateTime,
+          endDate: endDateTime,
+          venue: editFormData.venue,
+          address: editFormData.address,
+          city: editFormData.city,
+          category: editFormData.category,
+          price: editFormData.isFree ? null : editFormData.price || null,
+          isFree: editFormData.isFree,
+          isFamilyFriendly: editFormData.isFamilyFriendly,
+          sourceUrl: editFormData.sourceUrl,
+          imageUrl: editFormData.imageUrl,
+        }),
+      })
+
+      if (response.ok) {
+        setShowEditModal(false)
+        setEditingSubmission(null)
+        fetchSubmissions()
+      } else {
+        const data = await response.json()
+        alert(`Failed to update: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Failed to update submission:', error)
+      alert('Failed to update submission')
+    } finally {
+      setSavingEdit(false)
     }
   }
 
@@ -352,6 +466,12 @@ export default function AdminSubmissionsPage() {
                       Approve & Create Event
                     </button>
                     <button
+                      onClick={() => openEditModal(submission)}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
                       onClick={() => openRejectModal(submission)}
                       className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                     >
@@ -407,6 +527,241 @@ export default function AdminSubmissionsPage() {
                   setShowRejectModal(false)
                   setReviewingId(null)
                   setRejectionReason('')
+                }}
+                className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Submission Modal */}
+      {showEditModal && editingSubmission && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-stone-200">
+              <h2 className="text-xl font-bold text-stone-900">Edit Submission</h2>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingSubmission(null)
+                }}
+                className="text-stone-400 hover:text-stone-600 text-2xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-6 space-y-5 flex-1">
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.title}
+                  onChange={(e) => updateEditField('title', e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  rows={3}
+                  value={editFormData.description}
+                  onChange={(e) => updateEditField('description', e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    Start Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={editFormData.startDate}
+                    onChange={(e) => updateEditField('startDate', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    Start Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editFormData.startTime}
+                    onChange={(e) => updateEditField('startTime', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editFormData.endDate}
+                    onChange={(e) => updateEditField('endDate', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    End Time
+                  </label>
+                  <input
+                    type="time"
+                    value={editFormData.endTime}
+                    onChange={(e) => updateEditField('endTime', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Venue *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editFormData.venue}
+                  onChange={(e) => updateEditField('venue', e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.address}
+                    onChange={(e) => updateEditField('address', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.city}
+                    onChange={(e) => updateEditField('city', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Category
+                </label>
+                <select
+                  value={editFormData.category}
+                  onChange={(e) => updateEditField('category', e.target.value)}
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  {Object.entries(categoryLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    type="checkbox"
+                    id="edit-isFree"
+                    checked={editFormData.isFree}
+                    onChange={(e) => updateEditField('isFree', e.target.checked)}
+                    className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  <label htmlFor="edit-isFree" className="text-sm text-stone-700">
+                    This is a free event
+                  </label>
+                </div>
+                {!editFormData.isFree && (
+                  <input
+                    type="text"
+                    placeholder="e.g., $20, $15-$30"
+                    value={editFormData.price}
+                    onChange={(e) => updateEditField('price', e.target.value)}
+                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  />
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="edit-isFamilyFriendly"
+                  checked={editFormData.isFamilyFriendly}
+                  onChange={(e) => updateEditField('isFamilyFriendly', e.target.checked)}
+                  className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                />
+                <label htmlFor="edit-isFamilyFriendly" className="text-sm text-stone-700">
+                  Family-friendly event
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Event URL
+                </label>
+                <input
+                  type="url"
+                  value={editFormData.sourceUrl}
+                  onChange={(e) => updateEditField('sourceUrl', e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-1">
+                  Image URL
+                </label>
+                <input
+                  type="url"
+                  value={editFormData.imageUrl}
+                  onChange={(e) => updateEditField('imageUrl', e.target.value)}
+                  placeholder="https://..."
+                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-stone-200">
+              <button
+                onClick={saveEdit}
+                disabled={savingEdit || !editFormData.title.trim() || !editFormData.startDate || !editFormData.venue.trim()}
+                className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              >
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowEditModal(false)
+                  setEditingSubmission(null)
                 }}
                 className="px-4 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
               >
