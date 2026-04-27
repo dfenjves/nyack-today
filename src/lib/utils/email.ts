@@ -1117,6 +1117,195 @@ Reviewed: ${reviewedAt}
   `.trim()
 }
 
+// ─── Weekly Digest Emails ────────────────────────────────────────────────────
+
+function generateWelcomeHtmlEmail(unsubscribeUrl: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; }
+    .header { background-color: #f97316; color: white; padding: 30px 20px; text-align: center; }
+    .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
+    .content { padding: 24px 20px; }
+    .section { margin: 20px 0; padding: 15px; background: #fafaf9; border-left: 4px solid #f97316; border-radius: 4px; }
+    .cta-button { display: inline-block; margin: 20px 0; padding: 12px 24px; background: #f97316; color: white !important; text-decoration: none; border-radius: 8px; font-weight: 600; }
+    .footer { margin-top: 30px; padding: 20px; background: #f5f5f4; border-top: 2px solid #e7e5e4; font-size: 12px; color: #78716c; }
+    a { color: #f97316; }
+  </style>
+</head>
+<body>
+  <div class="header"><h1>You're in! 🎉</h1></div>
+  <div class="content">
+    <p>Thanks for subscribing to the <strong>Nyack Today weekly digest</strong>.</p>
+    <div class="section">
+      Every <strong>Thursday morning</strong> you'll get a quick roundup of what's happening in Nyack and the surrounding area — this weekend and beyond.
+    </div>
+    <p>In the meantime, check out what's happening right now:</p>
+    <div style="text-align: center;">
+      <a href="${siteUrl}" class="cta-button">Browse Events</a>
+    </div>
+  </div>
+  <div class="footer">
+    <div>Nyack Today &middot; <a href="${siteUrl}">${siteUrl.replace(/^https?:\/\//, '')}</a></div>
+    <div style="margin-top: 8px;"><a href="${unsubscribeUrl}" style="color: #78716c;">Unsubscribe</a></div>
+  </div>
+</body>
+</html>`.trim()
+}
+
+function generateWelcomePlainTextEmail(unsubscribeUrl: string): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  return `
+YOU'RE SUBSCRIBED!
+==================
+
+Thanks for subscribing to the Nyack Today weekly digest.
+
+Every Thursday morning you'll get a quick roundup of what's happening in Nyack and the surrounding area — this weekend and beyond.
+
+Browse events now: ${siteUrl}
+
+---
+Unsubscribe: ${unsubscribeUrl}
+`.trim()
+}
+
+export async function sendWelcomeEmail(email: string, unsubscribeToken: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) {
+    console.warn('Welcome email skipped: RESEND_API_KEY not configured')
+    return
+  }
+  try {
+    const resend = new Resend(apiKey)
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const unsubscribeUrl = `${siteUrl}/api/unsubscribe?token=${unsubscribeToken}`
+    await resend.emails.send({
+      from: 'Nyack Today <submissions@nyacktoday.com>',
+      to: email,
+      subject: "You're subscribed to the Nyack Today weekly digest!",
+      html: generateWelcomeHtmlEmail(unsubscribeUrl),
+      text: generateWelcomePlainTextEmail(unsubscribeUrl),
+    })
+    console.log(`Welcome email sent to: ${email}`)
+  } catch (error) {
+    console.error('Failed to send welcome email:', error)
+  }
+}
+
+export function generateDigestHtml(
+  events: Event[],
+  aiSummary: string,
+  unsubscribeUrl: string,
+  weekLabel: string
+): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+
+  const formatEventDate = (date: Date) =>
+    new Date(date).toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/New_York',
+    })
+
+  const eventRows = events.length === 0
+    ? `<p style="color: #57534e; font-style: italic;">No events found this week — check back next Thursday!</p>`
+    : events.map((e, i) => `
+      ${i > 0 ? '<hr style="border: none; border-top: 1px solid #e7e5e4; margin: 12px 0;">' : ''}
+      <div style="padding: 4px 0;">
+        <div style="margin-bottom: 4px;">
+          <a href="${escapeHtml(e.sourceUrl)}" style="color: #f97316; font-weight: 600; text-decoration: underline; font-size: 16px;">${escapeHtml(e.title)}</a>
+          ${e.isFree ? '<span style="margin-left: 8px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block;">FREE</span>' : ''}
+        </div>
+        <div style="color: #57534e; font-size: 14px;">${formatEventDate(e.startDate)}</div>
+        <div style="color: #78716c; font-size: 14px;">${escapeHtml(e.venue)}</div>
+      </div>`).join('')
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1c1917; max-width: 600px; margin: 0 auto; padding: 0; }
+    a { color: #f97316; }
+  </style>
+</head>
+<body>
+  <div style="background-color: #f97316; color: white; padding: 30px 20px; text-align: center;">
+    <div style="font-size: 13px; font-weight: 500; opacity: 0.85; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">Nyack Today</div>
+    <h1 style="margin: 0; font-size: 26px; font-weight: 700;">Nyack This Week</h1>
+    <div style="font-size: 15px; margin-top: 6px; opacity: 0.9;">${escapeHtml(weekLabel)}</div>
+  </div>
+
+  <div style="padding: 24px 20px;">
+    <div style="background: #fafaf9; border-left: 4px solid #f97316; border-radius: 4px; padding: 16px; margin-bottom: 24px; color: #44403c; font-size: 15px; line-height: 1.7;">
+      ${escapeHtml(aiSummary)}
+    </div>
+
+    <h2 style="font-size: 18px; font-weight: 700; color: #1c1917; margin: 0 0 16px 0;">Upcoming Events</h2>
+    ${eventRows}
+
+    <div style="text-align: center; margin-top: 28px;">
+      <a href="${siteUrl}" style="display: inline-block; padding: 12px 28px; background: #f97316; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">See All Events</a>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; padding: 20px; background: #f5f5f4; border-top: 2px solid #e7e5e4; font-size: 12px; color: #78716c; text-align: center;">
+    <div><strong>Nyack Today</strong> &middot; <a href="${siteUrl}" style="color: #78716c;">${siteUrl.replace(/^https?:\/\//, '')}</a></div>
+    <div style="margin-top: 6px;">You're receiving this because you subscribed at Nyack Today.</div>
+    <div style="margin-top: 6px;"><a href="${unsubscribeUrl}" style="color: #78716c;">Unsubscribe</a></div>
+  </div>
+</body>
+</html>`.trim()
+}
+
+export function generateDigestText(
+  events: Event[],
+  aiSummary: string,
+  unsubscribeUrl: string,
+  weekLabel: string
+): string {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const formatEventDate = (date: Date) =>
+    new Date(date).toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
+    })
+
+  const eventLines = events.length === 0
+    ? 'No events found this week — check back next Thursday!'
+    : events.map(e =>
+        `${e.title}${e.isFree ? ' [FREE]' : ''}\n${formatEventDate(e.startDate)} · ${e.venue}\n${e.sourceUrl}`
+      ).join('\n\n')
+
+  return `
+NYACK THIS WEEK — ${weekLabel.toUpperCase()}
+${'='.repeat(40)}
+
+${aiSummary}
+
+UPCOMING EVENTS
+---------------
+${eventLines}
+
+See all events: ${siteUrl}
+
+---
+You're receiving this because you subscribed at Nyack Today.
+Unsubscribe: ${unsubscribeUrl}
+`.trim()
+}
+
 /**
  * Send rejection email to submitter when event is rejected
  * Includes optional reason from admin

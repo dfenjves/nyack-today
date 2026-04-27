@@ -10,6 +10,7 @@ import EventList from '@/components/EventList'
 import { EventListSkeleton } from '@/components/EventCardSkeleton'
 import BottomNav from '@/components/BottomNav'
 import FallbackBanner from '@/components/FallbackBanner'
+import SubscribeSection from '@/components/SubscribeSection'
 import { DateFilter, formatCustomDatePill } from '@/lib/utils/dates'
 import { Event } from '@prisma/client'
 
@@ -291,6 +292,10 @@ export default function Home() {
             />
           )
         )}
+
+        <div id="subscribe-section" className="mt-10">
+          <SubscribeSection />
+        </div>
       </main>
 
       <BottomNav />

@@ -156,6 +156,19 @@ model EventSubmission {
   @@index([submittedAt])
 }
 
+// Email subscribers for the weekly digest
+model Subscriber {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  isActive         Boolean  @default(true)
+  unsubscribeToken String   @unique @default(cuid())
+  subscribedAt     DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([unsubscribeToken])
+}
+
 // Discord messages processed for event extraction
 model DiscordMessage {
   id              String   @id @default(cuid())
