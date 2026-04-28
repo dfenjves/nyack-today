@@ -35,6 +35,11 @@ export async function PATCH(
     if (data.isFamilyFriendly !== undefined) updateData.isFamilyFriendly = data.isFamilyFriendly
     if (data.sourceUrl !== undefined) updateData.sourceUrl = data.sourceUrl || null
     if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null
+    if (data.isRecurring !== undefined) updateData.isRecurring = data.isRecurring
+    if (data.recurrenceDays !== undefined) updateData.recurrenceDays = data.recurrenceDays
+    if (data.recurrenceEndDate !== undefined) {
+      updateData.recurrenceEndDate = data.recurrenceEndDate ? parseEasternTime(data.recurrenceEndDate) : null
+    }
 
     const submission = await prisma.eventSubmission.update({
       where: { id },

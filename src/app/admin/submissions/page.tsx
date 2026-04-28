@@ -77,6 +77,9 @@ export default function AdminSubmissionsPage() {
     isFamilyFriendly: false,
     sourceUrl: '',
     imageUrl: '',
+    isRecurring: false,
+    recurrenceDays: [] as number[],
+    recurrenceEndDate: '',
   })
 
   const fetchSubmissions = async () => {
@@ -192,6 +195,9 @@ export default function AdminSubmissionsPage() {
       isFamilyFriendly: submission.isFamilyFriendly,
       sourceUrl: submission.sourceUrl || '',
       imageUrl: submission.imageUrl || '',
+      isRecurring: submission.isRecurring,
+      recurrenceDays: submission.recurrenceDays || [],
+      recurrenceEndDate: submission.recurrenceEndDate ? toLocalDateInput(submission.recurrenceEndDate) : '',
     })
     setShowEditModal(true)
   }
@@ -233,6 +239,11 @@ export default function AdminSubmissionsPage() {
           isFamilyFriendly: editFormData.isFamilyFriendly,
           sourceUrl: editFormData.sourceUrl,
           imageUrl: editFormData.imageUrl,
+          isRecurring: editFormData.isRecurring,
+          recurrenceDays: editFormData.isRecurring ? editFormData.recurrenceDays : [],
+          recurrenceEndDate: editFormData.isRecurring && editFormData.recurrenceEndDate
+            ? editFormData.recurrenceEndDate
+            : null,
         }),
       })
 
@@ -629,6 +640,68 @@ export default function AdminSubmissionsPage() {
                     className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                   />
                 </div>
+              </div>
+
+              {/* Recurring Event Section */}
+              <div className="border border-stone-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="edit-isRecurring"
+                    checked={editFormData.isRecurring}
+                    onChange={(e) => updateEditField('isRecurring', e.target.checked)}
+                    className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                  />
+                  <label htmlFor="edit-isRecurring" className="text-sm font-medium text-stone-700">
+                    Recurring event
+                  </label>
+                </div>
+
+                {editFormData.isRecurring && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-2">
+                        Repeats on
+                      </label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => {
+                          const isChecked = editFormData.recurrenceDays.includes(index)
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              onClick={() => {
+                                const days = isChecked
+                                  ? editFormData.recurrenceDays.filter((d) => d !== index)
+                                  : [...editFormData.recurrenceDays, index].sort((a, b) => a - b)
+                                updateEditField('recurrenceDays', days)
+                              }}
+                              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                                isChecked
+                                  ? 'bg-purple-500 text-white border-purple-500'
+                                  : 'bg-white text-stone-600 border-stone-300 hover:bg-stone-50'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-1">
+                        Recurrence end date (optional)
+                      </label>
+                      <input
+                        type="date"
+                        value={editFormData.recurrenceEndDate}
+                        onChange={(e) => updateEditField('recurrenceEndDate', e.target.value)}
+                        className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               <div>
