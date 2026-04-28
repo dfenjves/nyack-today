@@ -100,6 +100,7 @@ export default function AdminLayout({
     { href: '/admin/activities', label: 'Activities' },
     { href: '/admin/submissions', label: 'Submissions' },
     { href: '/admin/scrapers', label: 'Scrapers' },
+    { href: '/admin/dedup', label: 'Dedup' },
   ]
 
   return (

@@ -53,7 +53,7 @@ export function stringSimilarity(a: string, b: string): number {
 /**
  * Normalize a title by removing common prefixes, venue names, and extra whitespace
  */
-function normalizeTitle(title: string, venue?: string): string {
+export function normalizeTitle(title: string, venue?: string): string {
   const prefixes = [
     'film screening:',
     'movie screening:',
@@ -123,7 +123,7 @@ function normalizeTitle(title: string, venue?: string): string {
 /**
  * Normalize a venue by extracting just the venue name (before address)
  */
-function normalizeVenue(venue: string): string {
+export function normalizeVenue(venue: string): string {
   let normalized = venue.toLowerCase().trim()
 
   // Extract venue name before comma (often followed by address)
@@ -174,9 +174,15 @@ export function areEventsDuplicates(
   date2: Date,
   similarityThreshold: number = 0.8
 ): boolean {
-  // Dates must match (same day)
-  const date1Str = date1.toISOString().split('T')[0]
-  const date2Str = date2.toISOString().split('T')[0]
+  // Dates must match (same day) — use local time methods to stay consistent with generateEventHash
+  const toLocalDateStr = (d: Date) => {
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  }
+  const date1Str = toLocalDateStr(date1)
+  const date2Str = toLocalDateStr(date2)
   if (date1Str !== date2Str) {
     return false
   }

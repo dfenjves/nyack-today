@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 
 interface ScraperLog {
   id: string
@@ -200,9 +200,8 @@ export default function AdminScrapersPage() {
                 const clickable = log.eventsAdded > 0
 
                 return (
-                  <>
+                  <Fragment key={log.id}>
                     <tr
-                      key={log.id}
                       onClick={() => toggleAccordion(log)}
                       className={clickable ? 'cursor-pointer hover:bg-stone-50 transition-colors' : ''}
                     >
@@ -288,7 +287,7 @@ export default function AdminScrapersPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 )
               })}
             </tbody>
