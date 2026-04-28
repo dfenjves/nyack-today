@@ -14,12 +14,22 @@ export default function Header() {
     setMenuOpen(false)
 
     if (pathname === '/') {
-      // Already on homepage, scroll to events section
       const eventsSection = document.getElementById('events-section')
       eventsSection?.scrollIntoView({ behavior: 'smooth' })
     } else {
-      // On another page, navigate to homepage
       router.push('/')
+    }
+  }
+
+  const handleSubscribeClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setMenuOpen(false)
+
+    if (pathname === '/') {
+      const subscribeSection = document.getElementById('subscribe-section')
+      subscribeSection?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      router.push('/#subscribe-section')
     }
   }
 
@@ -81,6 +91,12 @@ export default function Header() {
           >
             Submit Event
           </Link>
+          <button
+            onClick={handleSubscribeClick}
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+          >
+            Subscribe
+          </button>
         </nav>
       </div>
 
@@ -107,6 +123,12 @@ export default function Header() {
           >
             Submit Event
           </Link>
+          <button
+            onClick={handleSubscribeClick}
+            className="block w-full text-left px-4 py-3 text-orange-500 hover:bg-orange-50 font-medium"
+          >
+            Subscribe to Weekly Digest
+          </button>
         </nav>
       )}
     </header>
