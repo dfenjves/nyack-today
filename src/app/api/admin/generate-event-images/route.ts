@@ -8,16 +8,8 @@ export function buildImagePrompt(
   venue: string,
   description: string | null,
 ): string {
-  const eventDetail = description
-    ? `"${title}" at ${venue} — ${description.slice(0, 200)}`
-    : `"${title}" at ${venue}`
-
-  return (
-    `A photographic scene capturing the spirit of the event: ${eventDetail}. ` +
-    `Family friendly, street photography style, candid moment, natural light, ` +
-    `small Hudson Valley riverside town setting, authentic emotions. ` +
-    `No text, signs, or watermarks in the image.`
-  )
+  void description
+  return `${title} at ${venue}. in the style of a quick sketch. No text, signs, or watermarks in the image. Keep it abstract`
 }
 
 export async function GET() {
