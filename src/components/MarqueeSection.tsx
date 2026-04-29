@@ -3,9 +3,28 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { Event } from '@prisma/client'
+import type { Category } from '@prisma/client'
 import { formatTime, formatDate } from '@/lib/utils/dates'
-import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
+import { categoryLabels, getCategoryColor, categoryGradients } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
+import {
+  Music, Laugh, Film, Mic2, Baby, UtensilsCrossed,
+  Trophy, Building2, Palette, GraduationCap, Calendar,
+} from 'lucide-react'
+
+const categoryLucideIcons: Record<Category, React.ReactNode> = {
+  MUSIC:                <Music className="w-10 h-10 text-white" />,
+  COMEDY:               <Laugh className="w-10 h-10 text-white" />,
+  MOVIES:               <Film className="w-10 h-10 text-white" />,
+  THEATER:              <Mic2 className="w-10 h-10 text-white" />,
+  FAMILY_KIDS:          <Baby className="w-10 h-10 text-white" />,
+  FOOD_DRINK:           <UtensilsCrossed className="w-10 h-10 text-white" />,
+  SPORTS_RECREATION:    <Trophy className="w-10 h-10 text-white" />,
+  COMMUNITY_GOVERNMENT: <Building2 className="w-10 h-10 text-white" />,
+  ART_GALLERIES:        <Palette className="w-10 h-10 text-white" />,
+  CLASSES_WORKSHOPS:    <GraduationCap className="w-10 h-10 text-white" />,
+  OTHER:                <Calendar className="w-10 h-10 text-white" />,
+}
 
 interface MarqueeSectionProps {
   onShowAll: () => void
@@ -98,7 +117,6 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
       >
         {events.map((event) => {
           const title = decodeHtmlEntities(event.title)
-          const icon = categoryIcons[event.category]
           const label = categoryLabels[event.category]
           const color = getCategoryColor(event.category)
           const startDate = new Date(event.startDate)
@@ -116,8 +134,8 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
                   <img src={event.imageUrl} alt={title} className="w-full h-full object-cover" />
                 </div>
               ) : (
-                <div className="w-full aspect-video rounded-lg bg-amber-50 flex items-center justify-center text-4xl mb-3">
-                  {icon}
+                <div className={`w-full aspect-video rounded-lg flex items-center justify-center mb-3 ${categoryGradients[event.category]}`}>
+                  {categoryLucideIcons[event.category]}
                 </div>
               )}
 
