@@ -3,7 +3,7 @@ import OpenAI from 'openai'
 import { put } from '@vercel/blob'
 import { prisma } from '@/lib/db'
 
-function buildImagePrompt(
+export function buildImagePrompt(
   title: string,
   venue: string,
   description: string | null,
@@ -20,15 +20,28 @@ function buildImagePrompt(
   )
 }
 
-const noImage = { OR: [{ imageUrl: null }, { imageUrl: '' }] }
-
 export async function GET() {
   const events = await prisma.event.findMany({
-    where: { isMarquee: true, ...noImage },
-    select: { id: true, title: true, category: true, venue: true, startDate: true },
+    where: { isMarquee: true },
+    select: {
+      id: true,
+      title: true,
+      category: true,
+      venue: true,
+      startDate: true,
+      description: true,
+      imageUrl: true,
+    },
     orderBy: { startDate: 'asc' },
   })
-  return NextResponse.json({ events, count: events.length })
+
+  return NextResponse.json({
+    events: events.map((e) => ({
+      ...e,
+      imageUrl: e.imageUrl || null,
+      suggestedPrompt: buildImagePrompt(e.title, e.venue, e.description),
+    })),
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -42,60 +55,47 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 })
   }
 
-  const events = await prisma.event.findMany({
-    where: { isMarquee: true, ...noImage },
-    select: { id: true, title: true, venue: true, description: true },
-  })
+  const body = await request.json()
+  const { eventId, prompt } = body as { eventId?: string; prompt?: string }
 
-  if (events.length === 0) {
-    return NextResponse.json({ generated: [], count: 0 })
+  if (!eventId || !prompt?.trim()) {
+    return NextResponse.json({ error: 'eventId and prompt are required' }, { status: 400 })
   }
 
-  const client = new OpenAI({ apiKey })
-  const results: { id: string; title: string; imageUrl: string | null; error?: string }[] = []
+  try {
+    const client = new OpenAI({ apiKey })
 
-  for (const event of events) {
-    try {
-      const prompt = buildImagePrompt(event.title, event.venue, event.description)
+    const imageResponse = await client.images.generate({
+      model: 'dall-e-3',
+      prompt: prompt.trim(),
+      n: 1,
+      size: '1792x1024',
+      quality: 'standard',
+      style: 'natural',
+    })
 
-      const imageResponse = await client.images.generate({
-        model: 'dall-e-3',
-        prompt,
-        n: 1,
-        size: '1792x1024',
-        quality: 'standard',
-        style: 'natural',
-      })
+    const openAiUrl = imageResponse.data?.[0]?.url
+    if (!openAiUrl) throw new Error('No image URL returned from DALL-E 3')
 
-      const openAiUrl = imageResponse.data?.[0]?.url
-      if (!openAiUrl) throw new Error('No image URL returned from DALL-E 3')
+    // Download — OpenAI URLs expire after ~1 hour
+    const imgFetch = await fetch(openAiUrl)
+    if (!imgFetch.ok) throw new Error('Failed to download generated image')
+    const imgBuffer = Buffer.from(await imgFetch.arrayBuffer())
 
-      // Download the image — OpenAI URLs expire after ~1 hour
-      const imgFetch = await fetch(openAiUrl)
-      if (!imgFetch.ok) throw new Error('Failed to download generated image')
-      const imgBuffer = Buffer.from(await imgFetch.arrayBuffer())
+    const filename = `event-images/generated-${eventId}-${Date.now()}.png`
+    const blob = await put(filename, imgBuffer, {
+      access: 'public',
+      contentType: 'image/png',
+    })
 
-      // Upload to Vercel Blob for permanent storage
-      const filename = `event-images/generated-${event.id}-${Date.now()}.png`
-      const blob = await put(filename, imgBuffer, {
-        access: 'public',
-        contentType: 'image/png',
-      })
+    await prisma.event.update({
+      where: { id: eventId },
+      data: { imageUrl: blob.url },
+    })
 
-      await prisma.event.update({
-        where: { id: event.id },
-        data: { imageUrl: blob.url },
-      })
-
-      results.push({ id: event.id, title: event.title, imageUrl: blob.url })
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      results.push({ id: event.id, title: event.title, imageUrl: null, error: message })
-    }
+    return NextResponse.json({ imageUrl: blob.url })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error'
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  return NextResponse.json({
-    generated: results,
-    count: results.filter((r) => r.imageUrl).length,
-  })
 }
