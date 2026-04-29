@@ -7,6 +7,7 @@ import { Category } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
+import Footer from '@/components/Footer'
 
 export default function SubmitEventPage() {
   const router = useRouter()
@@ -310,66 +311,69 @@ export default function SubmitEventPage() {
     }
   }
 
+  const resetForm = () => {
+    setSuccess(false)
+    setFormData({
+      title: '',
+      startDate: '',
+      startTime: '',
+      venue: '',
+      submitterEmail: '',
+      description: '',
+      endDate: '',
+      endTime: '',
+      address: '',
+      city: 'Nyack',
+      category: 'OTHER' as Category,
+      price: '',
+      isFree: false,
+      isFamilyFriendly: false,
+      sourceUrl: '',
+      imageUrl: '',
+      isRecurring: false,
+      recurrenceDays: [],
+      recurrenceEndDate: '',
+    })
+    setUploadMode('url')
+    setSelectedFile(null)
+    setPreviewUrl('')
+    setUploadError('')
+  }
+
   // Success state - show confirmation
   if (success) {
     return (
-      <div className="min-h-screen bg-stone-50">
+      <div className="min-h-screen">
         <Header />
-        <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold text-stone-900 mb-2">Event Submitted!</h1>
-            <p className="text-stone-600 mb-6">
-              Thank you for submitting your event. Our team will review it and it should appear on the site within 24-48 hours.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Link
-                href="/"
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
-              >
-                View Events
-              </Link>
-              <button
-                onClick={() => {
-                  setSuccess(false)
-                  setFormData({
-                    title: '',
-                    startDate: '',
-                    startTime: '',
-                    venue: '',
-                    submitterEmail: '',
-                    description: '',
-                    endDate: '',
-                    endTime: '',
-                    address: '',
-                    city: 'Nyack',
-                    category: 'OTHER' as Category,
-                    price: '',
-                    isFree: false,
-                    isFamilyFriendly: false,
-                    sourceUrl: '',
-                    imageUrl: '',
-                    isRecurring: false,
-                    recurrenceDays: [],
-                    recurrenceEndDate: '',
-                  })
-                  // Reset file upload state
-                  setUploadMode('url')
-                  setSelectedFile(null)
-                  setPreviewUrl('')
-                  setUploadError('')
-                }}
-                className="px-6 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
-              >
-                Submit Another Event
-              </button>
+        <main style={{ background: '#F5F0E8', minHeight: '60vh' }}>
+          <div className="max-w-[720px] mx-auto" style={{ padding: 'clamp(28px, 5vw, 48px) clamp(20px, 4vw, 48px)' }}>
+            <div style={{ background: '#FDF8F0', border: '0.5px solid #DDD6C6', borderRadius: 18, padding: 'clamp(28px, 5vw, 48px)', textAlign: 'center' }}>
+              <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#E8EFE0', color: '#1E3A2F', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12l5 5 9-11" />
+                </svg>
+              </div>
+              <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, color: '#1A1A14', marginBottom: 8, margin: '0 0 8px' }}>
+                Thanks — we&rsquo;ve got it.
+              </h2>
+              <p style={{ fontSize: 14, color: '#7A7468', maxWidth: 360, margin: '0 auto 20px', lineHeight: 1.55 }}>
+                We&rsquo;ll review your submission and publish it within 24 hours.
+              </p>
+              <div className="flex gap-3 justify-center flex-wrap">
+                <Link href="/" style={{ display: 'inline-block', background: '#D4622A', color: '#FEF0E6', padding: '10px 20px', borderRadius: 20, fontSize: 13, fontWeight: 500, textDecoration: 'none' }}>
+                  View Events →
+                </Link>
+                <button
+                  onClick={resetForm}
+                  style={{ background: 'transparent', color: '#D4622A', border: '0.5px solid #D4622A', borderRadius: 20, padding: '10px 18px', fontSize: 13, cursor: 'pointer', fontWeight: 500, fontFamily: 'inherit' }}
+                >
+                  Submit another →
+                </button>
+              </div>
             </div>
           </div>
         </main>
+        <Footer />
         <BottomNav />
       </div>
     )
@@ -377,29 +381,42 @@ export default function SubmitEventPage() {
 
   // Form state - render form
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen">
       <Header />
 
-      <main className="max-w-2xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">Submit an Event</h1>
-          <p className="text-stone-600">
-            Know about an upcoming event in Nyack? Share it with the community!
-            We&apos;ll review your submission and add it to the calendar.
+      {/* Hero */}
+      <section style={{ background: '#1E3A2F', padding: 'clamp(36px, 5vw, 48px) clamp(20px, 4vw, 48px)', position: 'relative', overflow: 'hidden' }}>
+        <svg width="320" height="320" viewBox="0 0 360 360" style={{ position: 'absolute', right: -80, top: -40, pointerEvents: 'none', opacity: 1 }} aria-hidden="true">
+          <ellipse cx="180" cy="170" rx="150" ry="115" fill="#8FBD9E" opacity="0.18" transform="rotate(18 180 170)" />
+          <ellipse cx="120" cy="220" rx="50" ry="40" fill="#D4622A" opacity="0.18" />
+          <circle cx="265" cy="220" r="22" fill="#C8973A" opacity="0.25" />
+        </svg>
+        <div className="max-w-[720px] mx-auto" style={{ position: 'relative' }}>
+          <span style={{ display: 'inline-block', background: '#D4622A', color: '#FEF0E6', fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '5px 10px', borderRadius: 12, fontWeight: 500, marginBottom: 16 }}>
+            For organizers
+          </span>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(34px, 5vw, 48px)', fontWeight: 600, color: '#F5F0E8', lineHeight: 1.1, maxWidth: 540, letterSpacing: '-0.025em', marginBottom: 12 }}>
+            Submit an event.
+          </h1>
+          <p style={{ fontSize: 15, color: '#8FBD9E', maxWidth: 520, lineHeight: 1.55 }}>
+            Got something happening in Nyack or the surrounding Hudson Valley? We review every submission and publish within 24 hours.
           </p>
         </div>
+      </section>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+      <main style={{ background: '#F5F0E8' }}>
+        <div className="max-w-[720px] mx-auto" style={{ padding: 'clamp(28px, 5vw, 48px) clamp(20px, 4vw, 48px) clamp(40px, 6vw, 64px)' }}>
+        <form onSubmit={handleSubmit} style={{ background: '#FDF8F0', border: '0.5px solid #DDD6C6', borderRadius: 18, padding: 'clamp(22px, 4vw, 36px)' }} className="space-y-6">
           {/* Poster Scan Section */}
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+          <div className="bg-[#FDF8F0] border border-[#DDD6C6] rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-[#D4622A]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <h2 className="font-semibold text-orange-800">See a poster? Snap it to auto-fill!</h2>
+              <h2 className="font-semibold text-[#1E3A2F] font-semibold">See a poster? Snap it to auto-fill!</h2>
             </div>
-            <p className="text-sm text-orange-700 mb-3">
+            <p className="text-sm text-[#7A7468] mb-3">
               Take a photo of an event poster and we&apos;ll fill in the details for you automatically.
             </p>
 
@@ -422,7 +439,7 @@ export default function SubmitEventPage() {
               <button
                 type="button"
                 onClick={() => posterInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 active:bg-orange-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#D4622A] text-[#FEF0E6] rounded-2xl font-medium transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -437,10 +454,10 @@ export default function SubmitEventPage() {
               <div className="space-y-3">
                 {posterPreview && (
                   <div className="relative">
-                    <img src={posterPreview} alt="Poster preview" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
-                    <div className="absolute inset-0 bg-orange-900/40 rounded-lg flex items-center justify-center">
+                    <img src={posterPreview} alt="Poster preview" className="w-full max-h-48 object-contain rounded-lg border border-[#DDD6C6]" />
+                    <div className="absolute inset-0 bg-[#1E3A2F]/40 rounded-lg flex items-center justify-center">
                       <div className="bg-white rounded-lg px-4 py-2 flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-orange-500" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-[#D4622A]" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
@@ -455,7 +472,7 @@ export default function SubmitEventPage() {
             {/* Success state */}
             {posterFilled && posterPreview && !scanningPoster && (
               <div className="space-y-3">
-                <img src={posterPreview} alt="Scanned poster" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
+                <img src={posterPreview} alt="Scanned poster" className="w-full max-h-48 object-contain rounded-lg border border-[#DDD6C6]" />
                 <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2">
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -471,7 +488,7 @@ export default function SubmitEventPage() {
                     setPreviewUrl('')
                     posterInputRef.current?.click()
                   }}
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-sm text-[#D4622A] hover:text-[#7A7468] font-medium"
                 >
                   Scan a different poster
                 </button>
@@ -487,7 +504,7 @@ export default function SubmitEventPage() {
                 <button
                   type="button"
                   onClick={() => posterInputRef.current?.click()}
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-sm text-[#D4622A] hover:text-[#7A7468] font-medium"
                 >
                   Try again
                 </button>
@@ -516,7 +533,7 @@ export default function SubmitEventPage() {
                 value={formData.title}
                 onChange={(e) => updateField('title', e.target.value)}
                 placeholder="e.g., Live Jazz at The Turning Point"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               />
             </div>
 
@@ -533,7 +550,7 @@ export default function SubmitEventPage() {
                     required
                     value={formData.startDate}
                     onChange={(e) => updateField('startDate', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                   />
                 </div>
               )}
@@ -546,7 +563,7 @@ export default function SubmitEventPage() {
                   required
                   value={formData.startTime}
                   onChange={(e) => updateField('startTime', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                 />
               </div>
             </div>
@@ -624,7 +641,7 @@ export default function SubmitEventPage() {
                       type="date"
                       value={formData.recurrenceEndDate}
                       onChange={(e) => updateField('recurrenceEndDate', e.target.value)}
-                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <p className="text-xs text-stone-500 mt-1">
                       Leave blank if this event continues indefinitely
@@ -645,7 +662,7 @@ export default function SubmitEventPage() {
                 value={formData.venue}
                 onChange={(e) => updateField('venue', e.target.value)}
                 placeholder="e.g., The Turning Point"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               />
             </div>
 
@@ -660,7 +677,7 @@ export default function SubmitEventPage() {
                 value={formData.submitterEmail}
                 onChange={(e) => updateField('submitterEmail', e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               />
               <p className="text-xs text-stone-500 mt-1">
                 We&apos;ll only use this to contact you about your submission if needed
@@ -682,7 +699,7 @@ export default function SubmitEventPage() {
                 value={formData.description}
                 onChange={(e) => updateField('description', e.target.value)}
                 placeholder="Tell us more about this event..."
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               />
             </div>
 
@@ -697,7 +714,7 @@ export default function SubmitEventPage() {
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => updateField('endDate', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                   />
                 </div>
                 <div>
@@ -708,7 +725,7 @@ export default function SubmitEventPage() {
                     type="time"
                     value={formData.endTime}
                     onChange={(e) => updateField('endTime', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                   />
                 </div>
               </div>
@@ -725,7 +742,7 @@ export default function SubmitEventPage() {
                   value={formData.address}
                   onChange={(e) => updateField('address', e.target.value)}
                   placeholder="123 Main Street"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                 />
               </div>
               <div>
@@ -736,7 +753,7 @@ export default function SubmitEventPage() {
                   type="text"
                   value={formData.city}
                   onChange={(e) => updateField('city', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                 />
               </div>
             </div>
@@ -749,7 +766,7 @@ export default function SubmitEventPage() {
               <select
                 value={formData.category}
                 onChange={(e) => updateField('category', e.target.value)}
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               >
                 {Object.entries(categoryLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -767,7 +784,7 @@ export default function SubmitEventPage() {
                   id="isFree"
                   checked={formData.isFree}
                   onChange={(e) => updateField('isFree', e.target.checked)}
-                  className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                  className="rounded border-stone-300 text-[#D4622A] focus:ring-[#D4622A]"
                 />
                 <label htmlFor="isFree" className="text-sm text-stone-700">
                   This is a free event
@@ -779,7 +796,7 @@ export default function SubmitEventPage() {
                   placeholder="e.g., $20, $15-$30, Free"
                   value={formData.price}
                   onChange={(e) => updateField('price', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                 />
               )}
             </div>
@@ -791,7 +808,7 @@ export default function SubmitEventPage() {
                 id="isFamilyFriendly"
                 checked={formData.isFamilyFriendly}
                 onChange={(e) => updateField('isFamilyFriendly', e.target.checked)}
-                className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                className="rounded border-stone-300 text-[#D4622A] focus:ring-[#D4622A]"
               />
               <label htmlFor="isFamilyFriendly" className="text-sm text-stone-700">
                 Family-friendly event
@@ -808,7 +825,7 @@ export default function SubmitEventPage() {
                 value={formData.sourceUrl}
                 onChange={(e) => updateField('sourceUrl', e.target.value)}
                 placeholder="https://..."
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
               />
             </div>
 
@@ -830,7 +847,7 @@ export default function SubmitEventPage() {
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     uploadMode === 'url'
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-[#D4622A] text-[#FEF0E6]'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -844,7 +861,7 @@ export default function SubmitEventPage() {
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     uploadMode === 'file'
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-[#D4622A] text-[#FEF0E6]'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -860,7 +877,7 @@ export default function SubmitEventPage() {
                     value={formData.imageUrl}
                     onChange={(e) => updateField('imageUrl', e.target.value)}
                     placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-[#DDD6C6] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#D4622A]"
                   />
                   <p className="text-xs text-stone-500 mt-1">
                     Paste a link to an image for your event
@@ -878,8 +895,8 @@ export default function SubmitEventPage() {
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                       dragActive
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-stone-300 hover:border-orange-400'
+                        ? 'border-[#D4622A] bg-[#FDF8F0]'
+                        : 'border-stone-300 hover:border-[#D4622A]'
                     }`}
                   >
                     <input
@@ -911,7 +928,7 @@ export default function SubmitEventPage() {
                                 setSelectedFile(null)
                                 setPreviewUrl('')
                               }}
-                              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                              className="text-sm text-[#D4622A] hover:text-[#7A7468] font-medium"
                             >
                               Choose Different File
                             </button>
@@ -943,7 +960,7 @@ export default function SubmitEventPage() {
 
               {/* Upload Progress */}
               {uploadProgress && (
-                <div className="mt-3 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                <div className="mt-3 bg-orange-50 border border-[#DDD6C6] text-[#7A7468] px-4 py-3 rounded-lg flex items-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -975,20 +992,22 @@ export default function SubmitEventPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              style={{ flex: 1, padding: '12px 22px', background: '#D4622A', color: '#FEF0E6', borderRadius: 20, border: 'none', cursor: 'pointer', fontWeight: 500, fontSize: 13.5, fontFamily: 'inherit', opacity: saving ? 0.6 : 1 }}
             >
-              {saving ? 'Submitting...' : 'Submit Event for Review'}
+              {saving ? 'Submitting...' : 'Submit event →'}
             </button>
             <Link
               href="/"
-              className="px-6 py-3 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors flex items-center"
+              style={{ padding: '12px 22px', background: 'transparent', color: '#7A7468', border: '0.5px solid #DDD6C6', borderRadius: 20, fontWeight: 500, fontSize: 13, textDecoration: 'none', display: 'flex', alignItems: 'center' }}
             >
               Cancel
             </Link>
           </div>
         </form>
+        </div>
       </main>
 
+      <Footer />
       <BottomNav />
     </div>
   )

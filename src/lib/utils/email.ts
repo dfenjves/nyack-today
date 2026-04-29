@@ -9,7 +9,6 @@ import { categoryLabels, categoryIcons } from './categories'
 export async function sendEventSubmissionEmail(
   submission: EventSubmission
 ): Promise<void> {
-  // Validate environment variables
   const apiKey = process.env.RESEND_API_KEY
   const adminEmail = process.env.ADMIN_EMAIL
 
@@ -36,7 +35,6 @@ export async function sendEventSubmissionEmail(
 
     console.log(`Event submission email sent for: ${submission.title}`)
   } catch (error) {
-    // Log error but don't throw - email is not critical to submission success
     console.error('Failed to send event submission email:', error)
   }
 }
@@ -45,7 +43,6 @@ function generateHtmlEmail(submission: EventSubmission): string {
   const categoryLabel = categoryLabels[submission.category]
   const categoryIcon = categoryIcons[submission.category]
 
-  // Format dates
   const startDate = new Date(submission.startDate).toLocaleString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -73,7 +70,6 @@ function generateHtmlEmail(submission: EventSubmission): string {
     timeStyle: 'short',
   })
 
-  // Format price
   const priceDisplay = submission.isFree
     ? 'Free'
     : submission.price || 'Not specified'
@@ -88,96 +84,114 @@ function generateHtmlEmail(submission: EventSubmission): string {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #1A1A14;
       max-width: 600px;
       margin: 0 auto;
       padding: 0;
+      background-color: #F5F0E8;
     }
     .header {
-      background-color: #f97316;
-      color: white;
-      padding: 30px 20px;
+      background-color: #1E3A2F;
+      padding: 32px 24px;
       text-align: center;
+    }
+    .header-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #8FBD9E;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
     .header h1 {
       margin: 0;
-      font-size: 24px;
-      font-weight: 600;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #F5F0E8;
+      letter-spacing: -0.01em;
     }
     .content {
-      padding: 20px;
+      padding: 24px 24px 8px;
+      background: #F5F0E8;
     }
     .event-title {
+      font-family: Georgia, 'Times New Roman', serif;
       font-size: 22px;
       font-weight: 700;
-      color: #1c1917;
+      color: #1A1A14;
       margin: 0 0 20px 0;
+      letter-spacing: -0.01em;
     }
     .section {
-      margin: 20px 0;
-      padding: 15px;
-      background: #fafaf9;
-      border-left: 4px solid #f97316;
-      border-radius: 4px;
+      margin: 16px 0;
+      padding: 16px;
+      background: #FDF8F0;
+      border-left: 4px solid #D4622A;
+      border-radius: 6px;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 10px;
       font-weight: 600;
-      color: #57534e;
+      color: #7A7468;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.16em;
       margin: 0 0 12px 0;
     }
     .field {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .label {
       font-weight: 600;
-      color: #57534e;
-      margin-right: 8px;
+      color: #7A7468;
+      margin-right: 6px;
+      font-size: 13px;
     }
     .value {
-      color: #1c1917;
+      color: #1A1A14;
+      font-size: 13px;
     }
     .badge {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 14px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
       font-weight: 500;
-      background-color: #fed7aa;
-      color: #9a3412;
+      background-color: rgba(212, 98, 42, 0.12);
+      color: #D4622A;
     }
     .admin-link {
       display: inline-block;
       margin-top: 20px;
       padding: 12px 24px;
-      background: #f97316;
-      color: white;
+      background: #D4622A;
+      color: #FEF0E6 !important;
       text-decoration: none;
-      border-radius: 8px;
+      border-radius: 20px;
       font-weight: 600;
-    }
-    .admin-link:hover {
-      background: #ea580c;
+      font-size: 13px;
     }
     .footer {
-      margin-top: 30px;
-      padding: 20px;
-      background: #f5f5f4;
-      border-top: 2px solid #e7e5e4;
+      margin-top: 0;
+      padding: 20px 24px;
+      background: #1E3A2F;
       font-size: 12px;
-      color: #78716c;
+      color: #8FBD9E;
+    }
+    .footer strong {
+      color: #C5DFC9;
     }
     a {
-      color: #f97316;
+      color: #D4622A;
       text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>📬 New Event Submission</h1>
+    <div class="header-brand">Nyack Today</div>
+    <h1>New Event Submission</h1>
   </div>
 
   <div class="content">
@@ -187,7 +201,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
       <div class="section-title">Required Information</div>
 
       <div class="field">
-        <span class="label">📅 Start Date & Time:</span>
+        <span class="label">Start Date &amp; Time:</span>
         <span class="value">${startDate}</span>
       </div>
 
@@ -195,7 +209,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
         endDate
           ? `
       <div class="field">
-        <span class="label">🏁 End Date & Time:</span>
+        <span class="label">End Date &amp; Time:</span>
         <span class="value">${endDate}</span>
       </div>
       `
@@ -203,7 +217,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
       }
 
       <div class="field">
-        <span class="label">📍 Venue:</span>
+        <span class="label">Venue:</span>
         <span class="value">${escapeHtml(submission.venue)}</span>
       </div>
 
@@ -211,7 +225,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
         submission.address
           ? `
       <div class="field">
-        <span class="label">🗺️ Address:</span>
+        <span class="label">Address:</span>
         <span class="value">${escapeHtml(submission.address)}, ${escapeHtml(submission.city)}</span>
       </div>
       `
@@ -219,7 +233,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
       }
 
       <div class="field">
-        <span class="label">📧 Submitter Email:</span>
+        <span class="label">Submitter Email:</span>
         <span class="value"><a href="mailto:${escapeHtml(submission.submitterEmail)}">${escapeHtml(submission.submitterEmail)}</a></span>
       </div>
     </div>
@@ -239,8 +253,8 @@ function generateHtmlEmail(submission: EventSubmission): string {
         submission.description
           ? `
       <div class="field">
-        <span class="label">📝 Description:</span>
-        <div class="value">${escapeHtml(submission.description).replace(/\n/g, '<br>')}</div>
+        <span class="label">Description:</span>
+        <div class="value" style="margin-top: 4px;">${escapeHtml(submission.description).replace(/\n/g, '<br>')}</div>
       </div>
       `
           : ''
@@ -252,7 +266,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
       </div>
 
       <div class="field">
-        <span class="label">💰 Price:</span>
+        <span class="label">Price:</span>
         <span class="value">${escapeHtml(priceDisplay)}</span>
       </div>
 
@@ -260,7 +274,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
         submission.isFamilyFriendly
           ? `
       <div class="field">
-        <span class="label">👨‍👩‍👧‍👦 Family-Friendly:</span>
+        <span class="label">Family-Friendly:</span>
         <span class="value">Yes</span>
       </div>
       `
@@ -271,7 +285,7 @@ function generateHtmlEmail(submission: EventSubmission): string {
         submission.sourceUrl
           ? `
       <div class="field">
-        <span class="label">🔗 Event URL:</span>
+        <span class="label">Event URL:</span>
         <span class="value"><a href="${escapeHtml(submission.sourceUrl)}" target="_blank">${escapeHtml(submission.sourceUrl)}</a></span>
       </div>
       `
@@ -282,17 +296,17 @@ function generateHtmlEmail(submission: EventSubmission): string {
         : ''
     }
 
-    <div style="text-align: center; margin-top: 30px;">
+    <div style="text-align: center; margin: 24px 0 32px;">
       <a href="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/admin/submissions" class="admin-link">
-        Review Submission in Admin Dashboard
+        Review in Admin Dashboard
       </a>
     </div>
   </div>
 
   <div class="footer">
     <div><strong>Submission ID:</strong> ${submission.id}</div>
-    <div><strong>Submitted:</strong> ${submittedAt}</div>
-    <div><strong>Status:</strong> ${submission.status}</div>
+    <div style="margin-top: 4px;"><strong>Submitted:</strong> ${submittedAt}</div>
+    <div style="margin-top: 4px;"><strong>Status:</strong> ${submission.status}</div>
   </div>
 </body>
 </html>
@@ -382,7 +396,6 @@ function escapeHtml(text: string): string {
 
 /**
  * Format recurrence pattern for display in emails
- * Example: "Repeats every Tuesday, Thursday" or "Repeats every Monday until March 30, 2026"
  */
 function formatRecurrencePattern(
   isRecurring: boolean,
@@ -424,7 +437,6 @@ function generateConfirmationHtmlEmail(submission: EventSubmission): string {
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -442,7 +454,6 @@ function generateConfirmationHtmlEmail(submission: EventSubmission): string {
     })
   }
 
-  // Format time
   const timeDisplay = new Date(submission.startDate).toLocaleString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -459,64 +470,81 @@ function generateConfirmationHtmlEmail(submission: EventSubmission): string {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #1A1A14;
       max-width: 600px;
       margin: 0 auto;
       padding: 0;
+      background-color: #F5F0E8;
     }
     .header {
-      background-color: #f97316;
-      color: white;
-      padding: 30px 20px;
+      background-color: #1E3A2F;
+      padding: 32px 24px;
       text-align: center;
+    }
+    .header-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #8FBD9E;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
     .header h1 {
       margin: 0;
-      font-size: 24px;
-      font-weight: 600;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #F5F0E8;
+      letter-spacing: -0.01em;
     }
     .content {
-      padding: 20px;
+      padding: 24px 24px 8px;
+      background: #F5F0E8;
     }
     .section {
-      margin: 20px 0;
-      padding: 15px;
-      background: #fafaf9;
-      border-left: 4px solid #f97316;
-      border-radius: 4px;
+      margin: 16px 0;
+      padding: 16px;
+      background: #FDF8F0;
+      border-left: 4px solid #D4622A;
+      border-radius: 6px;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 10px;
       font-weight: 600;
-      color: #57534e;
+      color: #7A7468;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.16em;
       margin: 0 0 12px 0;
     }
     .field {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      font-size: 13px;
     }
     .label {
       font-weight: 600;
-      color: #57534e;
-      margin-right: 8px;
+      color: #7A7468;
+      margin-right: 6px;
     }
     .value {
-      color: #1c1917;
+      color: #1A1A14;
     }
     .footer {
-      margin-top: 30px;
-      padding: 20px;
-      background: #f5f5f4;
-      border-top: 2px solid #e7e5e4;
+      margin-top: 0;
+      padding: 20px 24px;
+      background: #1E3A2F;
       font-size: 12px;
-      color: #78716c;
+      color: #8FBD9E;
+    }
+    .footer strong {
+      color: #C5DFC9;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>✉️ Event Submission Received</h1>
+    <div class="header-brand">Nyack Today</div>
+    <h1>Submission Received</h1>
   </div>
 
   <div class="content">
@@ -533,36 +561,36 @@ function generateConfirmationHtmlEmail(submission: EventSubmission): string {
       </div>
 
       <div class="field">
-        <span class="label">${submission.isRecurring ? '📅 Schedule:' : '📅 Date:'}</span>
+        <span class="label">${submission.isRecurring ? 'Schedule:' : 'Date:'}</span>
         <span class="value">${dateDisplay}</span>
       </div>
 
       <div class="field">
-        <span class="label">🕐 Time:</span>
+        <span class="label">Time:</span>
         <span class="value">${timeDisplay}</span>
       </div>
 
       <div class="field">
-        <span class="label">📍 Venue:</span>
+        <span class="label">Venue:</span>
         <span class="value">${escapeHtml(submission.venue)}</span>
       </div>
     </div>
 
     <div class="section">
       <div class="section-title">What Happens Next</div>
-      <ul style="margin: 0; padding-left: 20px;">
-        <li>Our team will review your submission within 24-48 hours</li>
-        <li>We'll send you an email when your event is approved or if we need more information</li>
+      <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #1A1A14;">
+        <li style="margin-bottom: 6px;">Our team will review your submission within 24–48 hours</li>
+        <li style="margin-bottom: 6px;">We'll send you an email when your event is approved or if we need more information</li>
         <li>Once approved, your event will be live on Nyack Today for the community to discover</li>
       </ul>
     </div>
 
-    <p>Questions? Reply to this email or contact us at submissions@nyacktoday.com</p>
+    <p style="font-size: 13px; color: #7A7468; margin-bottom: 32px;">Questions? Reply to this email or contact us at <a href="mailto:submissions@nyacktoday.com" style="color: #D4622A;">submissions@nyacktoday.com</a></p>
   </div>
 
   <div class="footer">
     <div><strong>Submission ID:</strong> ${submission.id}</div>
-    <div><strong>Submitted:</strong> ${submittedAt}</div>
+    <div style="margin-top: 4px;"><strong>Submitted:</strong> ${submittedAt}</div>
   </div>
 </body>
 </html>
@@ -580,7 +608,6 @@ function generateConfirmationPlainTextEmail(
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -639,7 +666,6 @@ Submitted: ${submittedAt}
 export async function sendSubmissionConfirmationEmail(
   submission: EventSubmission
 ): Promise<void> {
-  // Validate environment variables
   const apiKey = process.env.RESEND_API_KEY
 
   if (!apiKey) {
@@ -665,7 +691,6 @@ export async function sendSubmissionConfirmationEmail(
 
     console.log(`Confirmation email sent to: ${submission.submitterEmail}`)
   } catch (error) {
-    // Log error but don't throw - email is not critical to submission success
     console.error('Failed to send confirmation email:', error)
   }
 }
@@ -682,7 +707,6 @@ function generateApprovalHtmlEmail(
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -705,7 +729,7 @@ function generateApprovalHtmlEmail(
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   const eventUrl = submission.isRecurring
-    ? siteUrl // For recurring events, link to homepage
+    ? siteUrl
     : `${siteUrl}/events/${event.id}`
 
   return `
@@ -718,73 +742,90 @@ function generateApprovalHtmlEmail(
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #1A1A14;
       max-width: 600px;
       margin: 0 auto;
       padding: 0;
+      background-color: #F5F0E8;
     }
     .header {
-      background-color: #f97316;
-      color: white;
-      padding: 30px 20px;
+      background-color: #1E3A2F;
+      padding: 32px 24px;
       text-align: center;
+    }
+    .header-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #8FBD9E;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
     .header h1 {
       margin: 0;
-      font-size: 24px;
-      font-weight: 600;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #F5F0E8;
+      letter-spacing: -0.01em;
     }
     .content {
-      padding: 20px;
+      padding: 24px 24px 8px;
+      background: #F5F0E8;
     }
     .event-title {
-      font-size: 22px;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 20px;
       font-weight: 700;
-      color: #1c1917;
-      margin: 20px 0;
+      color: #1A1A14;
+      margin: 16px 0;
+      letter-spacing: -0.01em;
     }
     .section {
-      margin: 20px 0;
-      padding: 15px;
-      background: #fafaf9;
-      border-left: 4px solid #f97316;
-      border-radius: 4px;
+      margin: 16px 0;
+      padding: 16px;
+      background: #FDF8F0;
+      border-left: 4px solid #D4622A;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1A1A14;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 10px;
       font-weight: 600;
-      color: #57534e;
+      color: #7A7468;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.16em;
       margin: 0 0 12px 0;
     }
     .cta-button {
       display: inline-block;
-      margin: 30px 0;
-      padding: 14px 28px;
-      background: #f97316;
-      color: white !important;
+      margin: 24px 0;
+      padding: 13px 28px;
+      background: #D4622A;
+      color: #FEF0E6 !important;
       text-decoration: none;
-      border-radius: 8px;
+      border-radius: 20px;
       font-weight: 600;
-      font-size: 16px;
-    }
-    .cta-button:hover {
-      background: #ea580c;
+      font-size: 14px;
     }
     .footer {
-      margin-top: 30px;
-      padding: 20px;
-      background: #f5f5f4;
-      border-top: 2px solid #e7e5e4;
+      margin-top: 0;
+      padding: 20px 24px;
+      background: #1E3A2F;
       font-size: 12px;
-      color: #78716c;
+      color: #8FBD9E;
+    }
+    .footer strong {
+      color: #C5DFC9;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🎉 Your Event is Live!</h1>
+    <div class="header-brand">Nyack Today</div>
+    <h1>Your Event is Live!</h1>
   </div>
 
   <div class="content">
@@ -794,26 +835,26 @@ function generateApprovalHtmlEmail(
 
     <div class="section">
       <div>${dateDisplay}</div>
-      <div style="margin-top: 8px;">📍 ${escapeHtml(submission.venue)}</div>
+      <div style="margin-top: 8px; color: #7A7468;">&#128205; ${escapeHtml(submission.venue)}</div>
     </div>
 
     <div style="text-align: center;">
       <a href="${eventUrl}" class="cta-button">
-        ${submission.isRecurring ? 'View Nyack Today' : 'View Your Event on Nyack Today'}
+        ${submission.isRecurring ? 'Visit Nyack Today' : 'View Your Event'}
       </a>
     </div>
 
     <div class="section">
       <div class="section-title">Share Your Event</div>
-      <p style="margin: 0;">Help spread the word! Share the link above with friends, family, and on social media.</p>
+      <p style="margin: 0; font-size: 13px;">Help spread the word! Share the link above with friends, family, and on social media.</p>
     </div>
 
-    <p>Thank you for contributing to the Nyack community! We appreciate you helping locals discover great things to do.</p>
+    <p style="font-size: 13px; color: #7A7468; margin-bottom: 32px;">Thank you for contributing to the Nyack community! We appreciate you helping locals discover great things to do.</p>
   </div>
 
   <div class="footer">
     <div><strong>Event ID:</strong> ${event.id}</div>
-    <div><strong>Approved:</strong> ${approvedAt}</div>
+    <div style="margin-top: 4px;"><strong>Approved:</strong> ${approvedAt}</div>
   </div>
 </body>
 </html>
@@ -832,7 +873,6 @@ function generateApprovalPlainTextEmail(
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -868,7 +908,7 @@ ${submission.title}
 ${dateDisplay}
 ${submission.venue}
 
-${submission.isRecurring ? 'VIEW NYACK TODAY' : 'VIEW YOUR EVENT'}
+${submission.isRecurring ? 'VISIT NYACK TODAY' : 'VIEW YOUR EVENT'}
 ${eventUrl}
 
 SHARE YOUR EVENT
@@ -884,13 +924,11 @@ Approved: ${approvedAt}
 
 /**
  * Send approval email to submitter when event is approved
- * Includes link to live event on the site
  */
 export async function sendSubmissionApprovalEmail(
   submission: EventSubmission,
   event: Event
 ): Promise<void> {
-  // Validate environment variables
   const apiKey = process.env.RESEND_API_KEY
 
   if (!apiKey) {
@@ -914,7 +952,6 @@ export async function sendSubmissionApprovalEmail(
 
     console.log(`Approval email sent to: ${submission.submitterEmail}`)
   } catch (error) {
-    // Log error but don't throw - email is not critical
     console.error('Failed to send approval email:', error)
   }
 }
@@ -928,7 +965,6 @@ function generateRejectionHtmlEmail(submission: EventSubmission): string {
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -958,60 +994,82 @@ function generateRejectionHtmlEmail(submission: EventSubmission): string {
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
       line-height: 1.6;
-      color: #333;
+      color: #1A1A14;
       max-width: 600px;
       margin: 0 auto;
       padding: 0;
+      background-color: #F5F0E8;
     }
     .header {
-      background-color: #f97316;
-      color: white;
-      padding: 30px 20px;
+      background-color: #1E3A2F;
+      padding: 32px 24px;
       text-align: center;
+    }
+    .header-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: #8FBD9E;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
     }
     .header h1 {
       margin: 0;
-      font-size: 24px;
-      font-weight: 600;
+      font-family: Georgia, 'Times New Roman', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: #F5F0E8;
+      letter-spacing: -0.01em;
     }
     .content {
-      padding: 20px;
+      padding: 24px 24px 8px;
+      background: #F5F0E8;
     }
     .section {
-      margin: 20px 0;
-      padding: 15px;
-      background: #fafaf9;
-      border-left: 4px solid #f97316;
-      border-radius: 4px;
+      margin: 16px 0;
+      padding: 16px;
+      background: #FDF8F0;
+      border-left: 4px solid #D4622A;
+      border-radius: 6px;
+      font-size: 13px;
     }
     .section-title {
-      font-size: 14px;
+      font-size: 10px;
       font-weight: 600;
-      color: #57534e;
+      color: #7A7468;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.16em;
       margin: 0 0 12px 0;
     }
     .reason-box {
-      margin: 20px 0;
-      padding: 15px;
-      background: #fff7ed;
-      border-left: 4px solid #ea580c;
-      border-radius: 4px;
+      margin: 16px 0;
+      padding: 16px;
+      background: #FDF3E3;
+      border-left: 4px solid #C8973A;
+      border-radius: 6px;
+      font-size: 13px;
     }
     .footer {
-      margin-top: 30px;
-      padding: 20px;
-      background: #f5f5f4;
-      border-top: 2px solid #e7e5e4;
+      margin-top: 0;
+      padding: 20px 24px;
+      background: #1E3A2F;
       font-size: 12px;
-      color: #78716c;
+      color: #8FBD9E;
+    }
+    .footer strong {
+      color: #C5DFC9;
+    }
+    a {
+      color: #D4622A;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>📬 Event Submission Update</h1>
+    <div class="header-brand">Nyack Today</div>
+    <h1>Submission Update</h1>
   </div>
 
   <div class="content">
@@ -1031,22 +1089,22 @@ function generateRejectionHtmlEmail(submission: EventSubmission): string {
         ? `
     <div class="reason-box">
       <div class="section-title">Review Notes</div>
-      <p style="margin: 0;">${escapeHtml(submission.rejectionReason)}</p>
+      <p style="margin: 0; color: #1A1A14;">${escapeHtml(submission.rejectionReason)}</p>
     </div>
     `
         : ''
     }
 
-    <p>This may be because the event falls outside our geographic focus (Nyack and immediate surrounding areas), doesn't fit our event categories, or we need more information to verify the details.</p>
+    <p style="font-size: 13px;">This may be because the event falls outside our geographic focus (Nyack and immediate surrounding areas), doesn't fit our event categories, or we need more information to verify the details.</p>
 
-    <p><strong>Please don't let this discourage you!</strong> We'd love to see future events you're hosting. You can submit another event anytime at ${siteUrl}/submit</p>
+    <p style="font-size: 13px;"><strong>Please don't let this discourage you!</strong> We'd love to see future events you're hosting. You can submit another event anytime at <a href="${siteUrl}/submit">${siteUrl}/submit</a></p>
 
-    <p>If you have questions or want to discuss this submission, feel free to reply to this email.</p>
+    <p style="font-size: 13px; color: #7A7468; margin-bottom: 32px;">If you have questions or want to discuss this submission, feel free to reply to this email.</p>
   </div>
 
   <div class="footer">
     <div><strong>Submission ID:</strong> ${submission.id}</div>
-    <div><strong>Reviewed:</strong> ${reviewedAt}</div>
+    <div style="margin-top: 4px;"><strong>Reviewed:</strong> ${reviewedAt}</div>
   </div>
 </body>
 </html>
@@ -1062,7 +1120,6 @@ function generateRejectionPlainTextEmail(submission: EventSubmission): string {
     timeStyle: 'short',
   })
 
-  // Format date/time or recurrence pattern
   let dateDisplay: string
   if (submission.isRecurring) {
     const recurrence = formatRecurrencePattern(
@@ -1128,31 +1185,37 @@ function generateWelcomeHtmlEmail(unsubscribeUrl: string): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 0; }
-    .header { background-color: #f97316; color: white; padding: 30px 20px; text-align: center; }
-    .header h1 { margin: 0; font-size: 24px; font-weight: 600; }
-    .content { padding: 24px 20px; }
-    .section { margin: 20px 0; padding: 15px; background: #fafaf9; border-left: 4px solid #f97316; border-radius: 4px; }
-    .cta-button { display: inline-block; margin: 20px 0; padding: 12px 24px; background: #f97316; color: white !important; text-decoration: none; border-radius: 8px; font-weight: 600; }
-    .footer { margin-top: 30px; padding: 20px; background: #f5f5f4; border-top: 2px solid #e7e5e4; font-size: 12px; color: #78716c; }
-    a { color: #f97316; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1A1A14; max-width: 600px; margin: 0 auto; padding: 0; background-color: #F5F0E8; }
+    .header { background-color: #1E3A2F; padding: 32px 24px; text-align: center; }
+    .header-brand { font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-weight: 400; color: #8FBD9E; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+    .header h1 { margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 700; color: #F5F0E8; letter-spacing: -0.01em; }
+    .content { padding: 24px 24px 8px; background: #F5F0E8; }
+    .section { margin: 16px 0; padding: 16px; background: #FDF8F0; border-left: 4px solid #D4622A; border-radius: 6px; font-size: 13px; color: #1A1A14; }
+    .cta-button { display: inline-block; margin: 20px 0; padding: 12px 24px; background: #D4622A; color: #FEF0E6 !important; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 13px; }
+    .footer { margin-top: 0; padding: 20px 24px; background: #1E3A2F; font-size: 12px; color: #8FBD9E; }
+    .footer a { color: #C5DFC9; text-decoration: none; }
+    a { color: #D4622A; }
   </style>
 </head>
 <body>
-  <div class="header"><h1>You're in! 🎉</h1></div>
+  <div class="header">
+    <div class="header-brand">Nyack Today</div>
+    <h1>You're in!</h1>
+  </div>
   <div class="content">
     <p>Thanks for subscribing to the <strong>Nyack Today weekly digest</strong>.</p>
     <div class="section">
       Every <strong>Thursday morning</strong> you'll get a quick roundup of what's happening in Nyack and the surrounding area — this weekend and beyond.
     </div>
-    <p>In the meantime, check out what's happening right now:</p>
+    <p style="font-size: 13px;">In the meantime, check out what's happening right now:</p>
     <div style="text-align: center;">
       <a href="${siteUrl}" class="cta-button">Browse Events</a>
     </div>
+    <p style="font-size: 11px; color: #7A7468; margin-top: 32px; margin-bottom: 0;">&nbsp;</p>
   </div>
   <div class="footer">
     <div>Nyack Today &middot; <a href="${siteUrl}">${siteUrl.replace(/^https?:\/\//, '')}</a></div>
-    <div style="margin-top: 8px;"><a href="${unsubscribeUrl}" style="color: #78716c;">Unsubscribe</a></div>
+    <div style="margin-top: 8px;"><a href="${unsubscribeUrl}">Unsubscribe</a></div>
   </div>
 </body>
 </html>`.trim()
@@ -1217,16 +1280,16 @@ export function generateDigestHtml(
     })
 
   const eventRows = events.length === 0
-    ? `<p style="color: #57534e; font-style: italic;">No events found this week — check back next Thursday!</p>`
+    ? `<p style="color: #7A7468; font-style: italic; font-size: 13px;">No events found this week — check back next Thursday!</p>`
     : events.map((e, i) => `
-      ${i > 0 ? '<hr style="border: none; border-top: 1px solid #e7e5e4; margin: 12px 0;">' : ''}
+      ${i > 0 ? '<hr style="border: none; border-top: 1px solid #DDD6C6; margin: 14px 0;">' : ''}
       <div style="padding: 4px 0;">
         <div style="margin-bottom: 4px;">
-          <a href="${escapeHtml(e.sourceUrl)}" style="color: #f97316; font-weight: 600; text-decoration: underline; font-size: 16px;">${escapeHtml(e.title)}</a>
-          ${e.isFree ? '<span style="margin-left: 8px; background: #dcfce7; color: #166534; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block;">FREE</span>' : ''}
+          <a href="${escapeHtml(e.sourceUrl)}" style="color: #D4622A; font-weight: 600; text-decoration: underline; font-size: 15px;">${escapeHtml(e.title)}</a>
+          ${e.isFree ? '<span style="margin-left: 8px; background: rgba(143,189,158,0.2); color: #2C5240; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block; letter-spacing: 0.08em; text-transform: uppercase;">Free</span>' : ''}
         </div>
-        <div style="color: #57534e; font-size: 14px;">${formatEventDate(e.startDate)}</div>
-        <div style="color: #78716c; font-size: 14px;">${escapeHtml(e.venue)}</div>
+        <div style="color: #7A7468; font-size: 13px;">${formatEventDate(e.startDate)}</div>
+        <div style="color: #7A7468; font-size: 13px;">${escapeHtml(e.venue)}</div>
       </div>`).join('')
 
   return `
@@ -1236,34 +1299,35 @@ export function generateDigestHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1c1917; max-width: 600px; margin: 0 auto; padding: 0; }
-    a { color: #f97316; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #1A1A14; max-width: 600px; margin: 0 auto; padding: 0; background-color: #F5F0E8; }
+    a { color: #D4622A; }
   </style>
 </head>
 <body>
-  <div style="background-color: #f97316; color: white; padding: 30px 20px; text-align: center;">
-    <div style="font-size: 13px; font-weight: 500; opacity: 0.85; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px;">Nyack Today</div>
-    <h1 style="margin: 0; font-size: 26px; font-weight: 700;">Nyack This Week</h1>
-    <div style="font-size: 15px; margin-top: 6px; opacity: 0.9;">${escapeHtml(weekLabel)}</div>
+  <div style="background-color: #1E3A2F; padding: 32px 24px; text-align: center;">
+    <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 13px; font-weight: 400; color: #8FBD9E; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px;">Nyack Today</div>
+    <h1 style="margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 700; color: #F5F0E8; letter-spacing: -0.02em;">Nyack This Week</h1>
+    <div style="font-size: 14px; margin-top: 8px; color: #8FBD9E;">${escapeHtml(weekLabel)}</div>
   </div>
 
-  <div style="padding: 24px 20px;">
-    <div style="background: #fafaf9; border-left: 4px solid #f97316; border-radius: 4px; padding: 16px; margin-bottom: 24px; color: #44403c; font-size: 15px; line-height: 1.7;">
+  <div style="padding: 24px 24px 8px; background: #F5F0E8;">
+    <div style="background: #FDF8F0; border-left: 4px solid #D4622A; border-radius: 6px; padding: 16px; margin-bottom: 24px; color: #1A1A14; font-size: 14px; line-height: 1.7;">
       ${escapeHtml(aiSummary)}
     </div>
 
-    <h2 style="font-size: 18px; font-weight: 700; color: #1c1917; margin: 0 0 16px 0;">Upcoming Events</h2>
+    <h2 style="font-family: Georgia, 'Times New Roman', serif; font-size: 18px; font-weight: 700; color: #1A1A14; margin: 0 0 16px 0; letter-spacing: -0.01em;">Upcoming Events</h2>
     ${eventRows}
 
-    <div style="text-align: center; margin-top: 28px;">
-      <a href="${siteUrl}" style="display: inline-block; padding: 12px 28px; background: #f97316; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">See All Events</a>
+    <div style="text-align: center; margin-top: 28px; margin-bottom: 32px;">
+      <a href="${siteUrl}" style="display: inline-block; padding: 13px 28px; background: #D4622A; color: #FEF0E6; text-decoration: none; border-radius: 20px; font-weight: 600; font-size: 14px;">See All Events</a>
     </div>
   </div>
 
-  <div style="margin-top: 20px; padding: 20px; background: #f5f5f4; border-top: 2px solid #e7e5e4; font-size: 12px; color: #78716c; text-align: center;">
-    <div><strong>Nyack Today</strong> &middot; <a href="${siteUrl}" style="color: #78716c;">${siteUrl.replace(/^https?:\/\//, '')}</a></div>
+  <div style="padding: 20px 24px; background: #1E3A2F; font-size: 12px; color: #8FBD9E; text-align: center;">
+    <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 14px; color: #C5DFC9; margin-bottom: 8px;">Nyack Today</div>
+    <div><a href="${siteUrl}" style="color: #8FBD9E; text-decoration: none;">${siteUrl.replace(/^https?:\/\//, '')}</a></div>
     <div style="margin-top: 6px;">You're receiving this because you subscribed at Nyack Today.</div>
-    <div style="margin-top: 6px;"><a href="${unsubscribeUrl}" style="color: #78716c;">Unsubscribe</a></div>
+    <div style="margin-top: 6px;"><a href="${unsubscribeUrl}" style="color: #8FBD9E; text-decoration: none;">Unsubscribe</a></div>
   </div>
 </body>
 </html>`.trim()
@@ -1308,12 +1372,10 @@ Unsubscribe: ${unsubscribeUrl}
 
 /**
  * Send rejection email to submitter when event is rejected
- * Includes optional reason from admin
  */
 export async function sendSubmissionRejectionEmail(
   submission: EventSubmission
 ): Promise<void> {
-  // Validate environment variables
   const apiKey = process.env.RESEND_API_KEY
 
   if (!apiKey) {
@@ -1337,7 +1399,6 @@ export async function sendSubmissionRejectionEmail(
 
     console.log(`Rejection email sent to: ${submission.submitterEmail}`)
   } catch (error) {
-    // Log error but don't throw - email is not critical
     console.error('Failed to send rejection email:', error)
   }
 }

@@ -73,6 +73,20 @@ export const categoryGradients: Record<Category, string> = {
   OTHER:                'bg-gradient-to-br from-stone-400 to-stone-500',
 }
 
+export const categoryHexColors: Record<Category, string> = {
+  MUSIC: '#7C5BA1',
+  COMEDY: '#C8973A',
+  MOVIES: '#A24A3D',
+  THEATER: '#A0506E',
+  FAMILY_KIDS: '#5B7FA6',
+  FOOD_DRINK: '#D4622A',
+  SPORTS_RECREATION: '#4A8C7A',
+  COMMUNITY_GOVERNMENT: '#7A7468',
+  ART_GALLERIES: '#1E3A2F',
+  CLASSES_WORKSHOPS: '#5B7FA6',
+  OTHER: '#7A7468',
+}
+
 export function getCategoryColor(category: Category): string {
   const colors: Record<Category, string> = {
     MUSIC: 'bg-purple-100 text-purple-800',

@@ -1,34 +1,12 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Event } from '@prisma/client'
-import type { Category } from '@prisma/client'
 import { formatTime, formatDate } from '@/lib/utils/dates'
-import { categoryLabels, getCategoryColor, categoryGradients } from '@/lib/utils/categories'
+import { categoryLabels, categoryHexColors } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
-import {
-  Music, Laugh, Film, Mic2, Baby, UtensilsCrossed,
-  Trophy, Building2, Palette, GraduationCap, Calendar,
-} from 'lucide-react'
-
-const categoryLucideIcons: Record<Category, React.ReactNode> = {
-  MUSIC:                <Music className="w-10 h-10 text-white" />,
-  COMEDY:               <Laugh className="w-10 h-10 text-white" />,
-  MOVIES:               <Film className="w-10 h-10 text-white" />,
-  THEATER:              <Mic2 className="w-10 h-10 text-white" />,
-  FAMILY_KIDS:          <Baby className="w-10 h-10 text-white" />,
-  FOOD_DRINK:           <UtensilsCrossed className="w-10 h-10 text-white" />,
-  SPORTS_RECREATION:    <Trophy className="w-10 h-10 text-white" />,
-  COMMUNITY_GOVERNMENT: <Building2 className="w-10 h-10 text-white" />,
-  ART_GALLERIES:        <Palette className="w-10 h-10 text-white" />,
-  CLASSES_WORKSHOPS:    <GraduationCap className="w-10 h-10 text-white" />,
-  OTHER:                <Calendar className="w-10 h-10 text-white" />,
-}
-
-interface MarqueeSectionProps {
-  onShowAll: () => void
-}
+import CatIcon from './CatIcon'
 
 function convertDates(events: Event[]): Event[] {
   return events.map((e) => ({
@@ -40,132 +18,195 @@ function convertDates(events: Event[]): Event[] {
   }))
 }
 
-export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
+function FeaturedCard({ event }: { event: Event }) {
+  const color = categoryHexColors[event.category]
+  const label = categoryLabels[event.category]
+  const title = decodeHtmlEntities(event.title)
+  const startDate = new Date(event.startDate)
+
+  return (
+    <Link
+      href={event.sourceUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="col-span-full no-underline"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 18,
+        background: '#D4622A',
+        borderRadius: 16,
+        padding: '22px 24px',
+        position: 'relative',
+        overflow: 'hidden',
+        transition: 'transform 0.15s',
+        textDecoration: 'none',
+        gridColumn: '1 / -1',
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+    >
+      {/* bg circle decoration */}
+      <svg width="180" height="180" viewBox="0 0 180 180" style={{ position: 'absolute', right: -40, top: -40, opacity: 0.12, pointerEvents: 'none' }}>
+        <circle cx="90" cy="90" r="70" fill="#FEF0E6" />
+      </svg>
+
+      {/* Icon circle */}
+      <div style={{
+        width: 60, height: 60,
+        background: 'rgba(255,255,255,0.18)',
+        borderRadius: '50%',
+        flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#FEF0E6',
+      }}>
+        {event.imageUrl
+          ? <img src={event.imageUrl} alt="" style={{ width: 60, height: 60, borderRadius: '50%', objectFit: 'cover' }} />
+          : <CatIcon category={event.category} size={26} color="#FEF0E6" />
+        }
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
+        <div style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#F5C4A8', marginBottom: 4, fontWeight: 500 }}>
+          {label} · {formatDate(startDate)}
+        </div>
+        <div style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 18, fontWeight: 600, color: '#FEF0E6',
+          letterSpacing: '-0.005em', lineHeight: 1.25,
+        }}>
+          {title}
+        </div>
+        <div style={{ fontSize: 12, color: '#F5C4A8', marginTop: 6 }}>
+          {formatTime(startDate)} · {decodeHtmlEntities(event.venue)}
+          {event.isFree ? ' · Free' : event.price ? ` · ${event.price}` : ''}
+        </div>
+      </div>
+
+      <div style={{ position: 'relative', alignSelf: 'flex-start', flexShrink: 0 }}>
+        <span style={{
+          display: 'inline-block',
+          background: '#1E3A2F', color: '#C8973A',
+          fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase',
+          padding: '5px 10px', borderRadius: 12, fontWeight: 500,
+        }}>
+          ★ Big event
+        </span>
+      </div>
+    </Link>
+  )
+}
+
+function MarqueeCard({ event }: { event: Event }) {
+  const color = categoryHexColors[event.category]
+  const label = categoryLabels[event.category]
+  const title = decodeHtmlEntities(event.title)
+  const startDate = new Date(event.startDate)
+
+  return (
+    <Link
+      href={event.sourceUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#FDF8F0',
+        border: '0.5px solid #DDD6C6',
+        borderRadius: 14,
+        padding: 18,
+        textDecoration: 'none',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.borderColor = color + '50'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.borderColor = '#DDD6C6'
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <div style={{ width: 28, height: 4, borderRadius: 2, background: color, flexShrink: 0 }} />
+        <span style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#7A7468', fontWeight: 500 }}>
+          {label} · {formatDate(startDate)}
+        </span>
+      </div>
+
+      {event.imageUrl && (
+        <div style={{ borderRadius: 10, overflow: 'hidden', marginBottom: 12, aspectRatio: '16/9' }}>
+          <img src={event.imageUrl} alt={title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+
+      <div style={{
+        fontFamily: 'var(--font-display)',
+        fontSize: 15, fontWeight: 600, color: '#1A1A14',
+        lineHeight: 1.3, letterSpacing: '-0.005em', marginBottom: 6,
+      }}>
+        {title}
+      </div>
+
+      <div style={{ fontSize: 12, color: '#7A7468', lineHeight: 1.5 }}>
+        {formatTime(startDate)} · {decodeHtmlEntities(event.venue)}
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+        {event.isFree && (
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E8EFE0', color: '#1E3A2F', fontWeight: 500 }}>Free</span>
+        )}
+        {!event.isFree && event.price && (
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#F5F0E8', color: '#7A7468', fontWeight: 500 }}>{event.price}</span>
+        )}
+        {event.isFamilyFriendly && (
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#E5ECF3', color: '#3A5577', fontWeight: 500 }}>Family</span>
+        )}
+        {event.isRecurring && (
+          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: '#F5EBD9', color: '#8B6618', fontWeight: 500 }}>↻ Weekly</span>
+        )}
+      </div>
+    </Link>
+  )
+}
+
+export default function MarqueeSection() {
   const [events, setEvents] = useState<Event[]>([])
-  const [atStart, setAtStart] = useState(true)
-  const [atEnd, setAtEnd] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('/api/events?marquee=true&limit=9')
+    fetch('/api/events?marquee=true&limit=3')
       .then((r) => r.json())
-      .then((data) => {
-        const evts = convertDates(data.events ?? [])
-        setEvents(evts)
-        setAtEnd(evts.length <= 3)
-      })
+      .then((data) => setEvents(convertDates(data.events ?? [])))
       .catch(() => {})
   }, [])
-
-  const updateArrows = useCallback(() => {
-    const el = scrollRef.current
-    if (!el) return
-    setAtStart(el.scrollLeft <= 4)
-    setAtEnd(el.scrollLeft + el.clientWidth >= el.scrollWidth - 4)
-  }, [])
-
-  const scrollLeft = () => {
-    scrollRef.current?.scrollBy({ left: -scrollRef.current.clientWidth, behavior: 'smooth' })
-  }
-
-  const scrollRight = () => {
-    scrollRef.current?.scrollBy({ left: scrollRef.current.clientWidth, behavior: 'smooth' })
-  }
 
   if (events.length === 0) return null
 
   return (
-    <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-amber-700 uppercase tracking-wide">
-          ⭐ Big Events
-        </h2>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onShowAll}
-            className="text-sm text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2"
-          >
-            See all →
-          </button>
-          {events.length > 3 && (
-            <div className="flex gap-1">
-              <button
-                onClick={scrollLeft}
-                disabled={atStart}
-                className="w-7 h-7 rounded-full bg-white border border-amber-200 flex items-center justify-center text-amber-700 text-lg leading-none hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                aria-label="Previous"
-              >
-                ‹
-              </button>
-              <button
-                onClick={scrollRight}
-                disabled={atEnd}
-                className="w-7 h-7 rounded-full bg-white border border-amber-200 flex items-center justify-center text-amber-700 text-lg leading-none hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                aria-label="Next"
-              >
-                ›
-              </button>
-            </div>
-          )}
+    <div style={{ marginBottom: 48 }}>
+      {/* Section header */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 16, gap: 16 }}>
+        <div>
+          <p style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#7A7468', marginBottom: 6, fontWeight: 500 }}>
+            Big events
+          </p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, color: '#1A1A14', letterSpacing: '-0.01em', lineHeight: 1.2, margin: 0 }}>
+            Don&rsquo;t miss
+          </h2>
         </div>
       </div>
 
+      {/* Grid: featured card spans full width, remaining cards in columns */}
       <div
-        ref={scrollRef}
-        onScroll={updateArrows}
-        className="flex gap-3 overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: 14,
+        }}
+        className="grid-cols-1 md:grid-cols-2"
       >
-        {events.map((event) => {
-          const title = decodeHtmlEntities(event.title)
-          const label = categoryLabels[event.category]
-          const color = getCategoryColor(event.category)
-          const startDate = new Date(event.startDate)
-
-          return (
-            <Link
-              key={event.id}
-              href={event.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 w-[calc(33.333%-8px)] min-w-[200px] bg-white border border-amber-200 rounded-xl p-3 hover:shadow-md hover:border-amber-400 transition-all flex flex-col"
-            >
-              {event.imageUrl ? (
-                <div className="w-full aspect-video rounded-lg overflow-hidden bg-stone-100 mb-3">
-                  <img src={event.imageUrl} alt={title} className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <div className={`w-full aspect-video rounded-lg flex items-center justify-center mb-3 ${categoryGradients[event.category]}`}>
-                  {categoryLucideIcons[event.category]}
-                </div>
-              )}
-
-              <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight text-sm flex-1">
-                {title}
-              </h3>
-              <p className="text-xs text-stone-500 mt-1">
-                {formatDate(startDate)} · {formatTime(startDate)}
-              </p>
-              <p className="text-xs text-stone-500 truncate mt-0.5">
-                {decodeHtmlEntities(event.venue)}
-              </p>
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                <span className={`px-1.5 py-0.5 text-xs rounded-full font-medium ${color}`}>
-                  {label}
-                </span>
-                {event.isFree && (
-                  <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                    Free
-                  </span>
-                )}
-                {event.isFamilyFriendly && (
-                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                    Family
-                  </span>
-                )}
-              </div>
-            </Link>
-          )
-        })}
+        {events[0] && <FeaturedCard event={events[0]} />}
+        {events.slice(1).map((e) => <MarqueeCard key={e.id} event={e} />)}
       </div>
     </div>
   )

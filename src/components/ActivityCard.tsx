@@ -1,98 +1,120 @@
 import { Activity } from '@prisma/client'
-import type { Category } from '@prisma/client'
-import { categoryLabels, getCategoryColor, categoryGradients } from '@/lib/utils/categories'
+import { categoryLabels, categoryHexColors } from '@/lib/utils/categories'
 import Link from 'next/link'
-import {
-  Music, Laugh, Film, Mic2, Baby, UtensilsCrossed,
-  Trophy, Building2, Palette, GraduationCap, Calendar,
-} from 'lucide-react'
-
-const categoryLucideIcons: Record<Category, React.ReactNode> = {
-  MUSIC:                <Music className="w-8 h-8 text-white" />,
-  COMEDY:               <Laugh className="w-8 h-8 text-white" />,
-  MOVIES:               <Film className="w-8 h-8 text-white" />,
-  THEATER:              <Mic2 className="w-8 h-8 text-white" />,
-  FAMILY_KIDS:          <Baby className="w-8 h-8 text-white" />,
-  FOOD_DRINK:           <UtensilsCrossed className="w-8 h-8 text-white" />,
-  SPORTS_RECREATION:    <Trophy className="w-8 h-8 text-white" />,
-  COMMUNITY_GOVERNMENT: <Building2 className="w-8 h-8 text-white" />,
-  ART_GALLERIES:        <Palette className="w-8 h-8 text-white" />,
-  CLASSES_WORKSHOPS:    <GraduationCap className="w-8 h-8 text-white" />,
-  OTHER:                <Calendar className="w-8 h-8 text-white" />,
-}
+import CatIcon from './CatIcon'
 
 interface ActivityCardProps {
   activity: Activity
+  compact?: boolean
 }
 
-export default function ActivityCard({ activity }: ActivityCardProps) {
-  const categoryLabel = categoryLabels[activity.category]
-  const categoryColor = getCategoryColor(activity.category)
+export default function ActivityCard({ activity, compact = false }: ActivityCardProps) {
+  const label = categoryLabels[activity.category]
+  const color = categoryHexColors[activity.category]
+
+  const content = (
+    <>
+      {/* Header area with category icon */}
+      {!compact && (
+        <div style={{
+          height: 140,
+          background: color + '14',
+          backgroundImage: `repeating-linear-gradient(135deg, ${color}10 0 6px, transparent 6px 14px)`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}>
+          {activity.imageUrl ? (
+            <img src={activity.imageUrl} alt={activity.title} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute', inset: 0 }} />
+          ) : (
+            <div style={{ width: 56, height: 56, borderRadius: '50%', background: color, color: '#FEF0E6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CatIcon category={activity.category} size={26} color="#FEF0E6" />
+            </div>
+          )}
+          <div style={{ position: 'absolute', bottom: 10, left: 14, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color, fontWeight: 500 }}>
+            {label.toLowerCase()}.jpg
+          </div>
+        </div>
+      )}
+
+      {/* Body */}
+      <div style={{ padding: compact ? '14px 16px' : 18, display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        {compact && (
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: color + '18', color, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+            <CatIcon category={activity.category} size={18} color={color} />
+          </div>
+        )}
+
+        <h3 style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: compact ? 16 : 18,
+          fontWeight: 600, color: '#1A1A14',
+          letterSpacing: '-0.01em', lineHeight: 1.2, margin: 0,
+        }}>
+          {activity.title}
+        </h3>
+
+        <div style={{ fontSize: 11.5, color: '#7A7468', letterSpacing: '0.04em' }}>
+          {activity.venue}
+          {activity.city !== 'Nyack' && ` · ${activity.city}`}
+        </div>
+
+        {activity.description && (
+          <p style={{ fontSize: 13, color: '#3A3A2A', lineHeight: 1.55, margin: 0 }}>
+            {activity.description}
+          </p>
+        )}
+
+        {activity.hours && (
+          <p style={{ fontSize: 12, color: '#7A7468', margin: 0 }}>{activity.hours}</p>
+        )}
+
+        <div style={{ display: 'flex', gap: 6, marginTop: 'auto', paddingTop: 6, flexWrap: 'wrap' }}>
+          {activity.isFree && (
+            <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 10, background: '#E8EFE0', color: '#1E3A2F', fontWeight: 500, border: '0.5px solid #C8DFBE' }}>
+              Free
+            </span>
+          )}
+          {!activity.isFree && activity.price && (
+            <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 10, background: '#F5F0E8', color: '#3A3A2A', fontWeight: 500, border: '0.5px solid #DDD6C6' }}>
+              {activity.price}
+            </span>
+          )}
+          {activity.isFamilyFriendly && (
+            <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 10, background: '#E5ECF3', color: '#3A5577', fontWeight: 500, border: '0.5px solid #C0D0DF' }}>
+              Family
+            </span>
+          )}
+        </div>
+      </div>
+    </>
+  )
 
   return (
     <Link
       href={activity.websiteUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-white rounded-xl border border-stone-200 p-4 hover:shadow-md hover:border-orange-200 transition-all"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#FDF8F0',
+        border: '0.5px solid #DDD6C6',
+        borderRadius: 16,
+        overflow: 'hidden',
+        textDecoration: 'none',
+        transition: 'all 0.15s',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.borderColor = color + '50'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)'
+        e.currentTarget.style.borderColor = '#DDD6C6'
+      }}
     >
-      <div className="flex gap-4">
-        {/* Activity image or category icon fallback */}
-        {activity.imageUrl ? (
-          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-stone-100">
-            <img
-              src={activity.imageUrl}
-              alt={activity.title}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className={`w-20 h-20 flex-shrink-0 rounded-lg flex items-center justify-center ${categoryGradients[activity.category]}`}>
-            {categoryLucideIcons[activity.category]}
-          </div>
-        )}
-
-        <div className="flex-1 min-w-0">
-          {/* Title */}
-          <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
-            {activity.title}
-          </h3>
-
-          {/* Hours */}
-          {activity.hours && (
-            <p className="text-sm text-stone-600 mt-1">
-              {activity.hours}
-            </p>
-          )}
-
-          {/* Venue and location */}
-          <p className="text-sm text-stone-500 mt-0.5">
-            {activity.venue}
-            {activity.city !== 'Nyack' && <span> · {activity.city}</span>}
-          </p>
-
-          {/* Bottom row: category, price, badges */}
-          <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${categoryColor}`}>
-              {categoryLabel}
-            </span>
-
-            {activity.isFree ? (
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                Free
-              </span>
-            ) : activity.price ? (
-              <span className="text-xs text-stone-500">{activity.price}</span>
-            ) : null}
-
-            {activity.isFamilyFriendly && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                Family
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
+      {content}
     </Link>
   )
 }

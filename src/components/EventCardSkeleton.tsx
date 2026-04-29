@@ -1,38 +1,31 @@
-/**
- * Skeleton loading state for EventCard
- */
 export default function EventCardSkeleton() {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-100 p-4 animate-pulse">
-      <div className="flex gap-4">
-        {/* Image skeleton */}
-        <div className="w-20 h-20 bg-stone-200 rounded-lg flex-shrink-0" />
-
-        {/* Content skeleton */}
-        <div className="flex-1 min-w-0">
-          {/* Title */}
-          <div className="h-5 bg-stone-200 rounded w-3/4 mb-2" />
-
-          {/* Time and venue */}
-          <div className="h-4 bg-stone-100 rounded w-1/2 mb-2" />
-
-          {/* Tags row */}
-          <div className="flex gap-2 mt-2">
-            <div className="h-5 bg-stone-100 rounded w-16" />
-            <div className="h-5 bg-stone-100 rounded w-12" />
-          </div>
-        </div>
+    <div
+      className="animate-pulse"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        padding: '14px 18px',
+        borderBottom: '0.5px solid #EBE4D4',
+      }}
+    >
+      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#DDD6C6', flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ height: 14, background: '#E8E2D4', borderRadius: 4, width: '60%', marginBottom: 6 }} />
+        <div style={{ height: 11, background: '#EDE8DC', borderRadius: 4, width: '40%' }} />
+      </div>
+      <div style={{ width: 48, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ height: 11, background: '#E8E2D4', borderRadius: 4 }} />
+        <div style={{ height: 11, background: '#EDE8DC', borderRadius: 4 }} />
       </div>
     </div>
   )
 }
 
-/**
- * Multiple skeleton cards for loading state
- */
 export function EventListSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="space-y-3">
+    <div style={{ background: '#FDF8F0', border: '0.5px solid #DDD6C6', borderRadius: 16, overflow: 'hidden' }}>
       {Array.from({ length: count }).map((_, i) => (
         <EventCardSkeleton key={i} />
       ))}

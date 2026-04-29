@@ -33,47 +33,109 @@ export default function SubscribeSection() {
   }
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 p-6">
-      <h2 className="text-xl font-bold text-stone-900 mb-1">Get Nyack in Your Inbox</h2>
-      <p className="text-stone-600 text-sm mb-4">
-        Every Thursday morning, a quick roundup of what&apos;s happening in Nyack this weekend and beyond — straight to your inbox.
-      </p>
+    <div
+      id="subscribe-section"
+      style={{
+        background: '#2C5240',
+        borderRadius: 18,
+        padding: 'clamp(24px, 4vw, 36px) clamp(22px, 4vw, 40px)',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 32,
+        position: 'relative',
+        overflow: 'hidden',
+        flexWrap: 'wrap',
+      }}
+    >
+      {/* Blob decoration */}
+      <svg width="200" height="200" viewBox="0 0 200 200" style={{ position: 'absolute', right: -30, bottom: -50, opacity: 0.18, pointerEvents: 'none' }}>
+        <ellipse cx="100" cy="100" rx="80" ry="60" fill="#8FBD9E" transform="rotate(20 100 100)" />
+        <circle cx="140" cy="80" r="32" fill="#D4622A" />
+      </svg>
 
-      <div aria-live="polite">
+      <div style={{ flex: 1, position: 'relative', zIndex: 1, minWidth: 220 }}>
+        <p style={{ fontSize: 10, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#8FBD9E', marginBottom: 8, fontWeight: 500 }}>
+          Newsletter
+        </p>
+        <h3 style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 'clamp(22px, 3vw, 26px)',
+          fontWeight: 600,
+          color: '#F5F0E8',
+          letterSpacing: '-0.015em',
+          lineHeight: 1.2,
+          marginBottom: 6,
+        }}>
+          Nyack in your inbox.
+        </h3>
+        <p style={{ fontSize: 13, color: '#8FBD9E', maxWidth: 380, lineHeight: 1.55 }}>
+          Every Thursday morning — what&rsquo;s worth your weekend, hand-picked. No spam, ever.
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        style={{ display: 'flex', gap: 8, position: 'relative', zIndex: 1, flexShrink: 0, flexWrap: 'wrap', minWidth: 280 }}
+        aria-live="polite"
+      >
         {status === 'success' ? (
-          <div className="flex items-center gap-2 text-green-700 font-medium">
-            <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-            You&apos;re subscribed! Check your inbox Thursday morning.
+          <div style={{
+            background: '#F5F0E8', color: '#1E3A2F',
+            borderRadius: 20, padding: '12px 20px',
+            fontSize: 13, fontWeight: 500,
+          }}>
+            ✓ You&rsquo;re subscribed.
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+          <>
             <label htmlFor="subscribe-email" className="sr-only">Email address</label>
             <input
               id="subscribe-email"
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
+              placeholder="you@nyack.com"
               disabled={status === 'loading'}
-              className="flex-1 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
+              style={{
+                flex: 1,
+                minWidth: 200,
+                background: 'rgba(245,240,232,0.10)',
+                border: '0.5px solid rgba(245,240,232,0.25)',
+                color: '#F5F0E8',
+                borderRadius: 20,
+                padding: '11px 16px',
+                fontSize: 13,
+                outline: 'none',
+                fontFamily: 'inherit',
+              }}
             />
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+              style={{
+                background: '#D4622A',
+                color: '#FEF0E6',
+                fontSize: 13,
+                padding: '11px 18px',
+                borderRadius: 20,
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                fontFamily: 'inherit',
+                opacity: status === 'loading' ? 0.7 : 1,
+              }}
             >
-              {status === 'loading' ? 'Subscribing...' : 'Subscribe'}
+              {status === 'loading' ? 'Subscribing...' : 'Subscribe →'}
             </button>
-          </form>
+          </>
         )}
-
         {status === 'error' && (
-          <p className="mt-2 text-sm text-red-600">{errorMessage}</p>
+          <p style={{ width: '100%', fontSize: 12, color: '#F5C4A8', marginTop: 4 }}>{errorMessage}</p>
         )}
-      </div>
+      </form>
     </div>
   )
 }
