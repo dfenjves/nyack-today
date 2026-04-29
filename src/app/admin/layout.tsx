@@ -101,6 +101,7 @@ export default function AdminLayout({
     { href: '/admin/submissions', label: 'Submissions' },
     { href: '/admin/scrapers', label: 'Scrapers' },
     { href: '/admin/dedup', label: 'Dedup' },
+    { href: '/admin/generate-images', label: 'Generate Images' },
   ]
 
   return (

@@ -59,6 +59,20 @@ export function guessCategory(title: string, description?: string | null): Categ
   return Category.OTHER
 }
 
+export const categoryGradients: Record<Category, string> = {
+  MUSIC:                'bg-gradient-to-br from-purple-500 to-indigo-600',
+  COMEDY:               'bg-gradient-to-br from-yellow-400 to-orange-500',
+  MOVIES:               'bg-gradient-to-br from-red-500 to-rose-600',
+  THEATER:              'bg-gradient-to-br from-pink-500 to-rose-500',
+  FAMILY_KIDS:          'bg-gradient-to-br from-green-400 to-emerald-500',
+  FOOD_DRINK:           'bg-gradient-to-br from-orange-400 to-amber-500',
+  SPORTS_RECREATION:    'bg-gradient-to-br from-blue-400 to-cyan-500',
+  COMMUNITY_GOVERNMENT: 'bg-gradient-to-br from-slate-400 to-gray-500',
+  ART_GALLERIES:        'bg-gradient-to-br from-indigo-400 to-violet-500',
+  CLASSES_WORKSHOPS:    'bg-gradient-to-br from-teal-400 to-cyan-500',
+  OTHER:                'bg-gradient-to-br from-stone-400 to-stone-500',
+}
+
 export function getCategoryColor(category: Category): string {
   const colors: Record<Category, string> = {
     MUSIC: 'bg-purple-100 text-purple-800',

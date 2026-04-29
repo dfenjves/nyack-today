@@ -1,9 +1,28 @@
 import { Event } from '@prisma/client'
+import type { Category } from '@prisma/client'
 import { formatTime, formatDate } from '@/lib/utils/dates'
-import { categoryIcons, categoryLabels, getCategoryColor } from '@/lib/utils/categories'
+import { categoryLabels, getCategoryColor, categoryGradients } from '@/lib/utils/categories'
 import { decodeHtmlEntities } from '@/lib/utils/text'
 import Link from 'next/link'
 import CalendarDropdown from './CalendarDropdown'
+import {
+  Music, Laugh, Film, Mic2, Baby, UtensilsCrossed,
+  Trophy, Building2, Palette, GraduationCap, Calendar,
+} from 'lucide-react'
+
+const categoryLucideIcons: Record<Category, React.ReactNode> = {
+  MUSIC:                <Music className="w-8 h-8 text-white" />,
+  COMEDY:               <Laugh className="w-8 h-8 text-white" />,
+  MOVIES:               <Film className="w-8 h-8 text-white" />,
+  THEATER:              <Mic2 className="w-8 h-8 text-white" />,
+  FAMILY_KIDS:          <Baby className="w-8 h-8 text-white" />,
+  FOOD_DRINK:           <UtensilsCrossed className="w-8 h-8 text-white" />,
+  SPORTS_RECREATION:    <Trophy className="w-8 h-8 text-white" />,
+  COMMUNITY_GOVERNMENT: <Building2 className="w-8 h-8 text-white" />,
+  ART_GALLERIES:        <Palette className="w-8 h-8 text-white" />,
+  CLASSES_WORKSHOPS:    <GraduationCap className="w-8 h-8 text-white" />,
+  OTHER:                <Calendar className="w-8 h-8 text-white" />,
+}
 
 interface EventCardProps {
   event: Event
@@ -12,7 +31,6 @@ interface EventCardProps {
 
 export default function EventCard({ event, showDate = false }: EventCardProps) {
   const startDate = new Date(event.startDate)
-  const categoryIcon = categoryIcons[event.category]
   const categoryLabel = categoryLabels[event.category]
   const categoryColor = getCategoryColor(event.category)
   const title = decodeHtmlEntities(event.title)
@@ -39,8 +57,8 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
             />
           </div>
         ) : (
-          <div className={`w-20 h-20 flex-shrink-0 rounded-lg flex items-center justify-center text-3xl ${event.isMarquee ? 'bg-amber-100' : 'bg-orange-50'}`}>
-            {categoryIcon}
+          <div className={`w-20 h-20 flex-shrink-0 rounded-lg flex items-center justify-center ${categoryGradients[event.category]}`}>
+            {categoryLucideIcons[event.category]}
           </div>
         )}
 
