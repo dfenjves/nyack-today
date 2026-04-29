@@ -132,6 +132,9 @@ export function normalizeVenue(venue: string): string {
     normalized = normalized.substring(0, commaIndex).trim()
   }
 
+  // Remove trailing parenthetical qualifiers like "(outdoors)", "(outdoor stage)", "(bar)"
+  normalized = normalized.replace(/\s*\([^)]*\)\s*$/, '').trim()
+
   // Remove common words like "the" at the beginning
   if (normalized.startsWith('the ')) {
     normalized = normalized.substring(4)
