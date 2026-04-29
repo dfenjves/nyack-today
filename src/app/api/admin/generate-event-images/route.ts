@@ -20,9 +20,11 @@ function buildImagePrompt(
   )
 }
 
+const noImage = { OR: [{ imageUrl: null }, { imageUrl: '' }] }
+
 export async function GET() {
   const events = await prisma.event.findMany({
-    where: { isMarquee: true, imageUrl: null },
+    where: { isMarquee: true, ...noImage },
     select: { id: true, title: true, category: true, venue: true, startDate: true },
     orderBy: { startDate: 'asc' },
   })
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const events = await prisma.event.findMany({
-    where: { isMarquee: true, imageUrl: null },
+    where: { isMarquee: true, ...noImage },
     select: { id: true, title: true, venue: true, description: true },
   })
 
