@@ -57,7 +57,10 @@ export default function CalendarDropdown({ event }: CalendarDropdownProps) {
           e.stopPropagation()
           setIsOpen(!isOpen)
         }}
-        className="px-2 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 transition-colors"
+        className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
+        style={{ background: '#EBF0EC', color: '#1E3A2F' }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = '#D4E2D8')}
+        onMouseLeave={(e) => (e.currentTarget.style.background = '#EBF0EC')}
         aria-label="Add to calendar"
         aria-expanded={isOpen}
       >
@@ -71,7 +74,7 @@ export default function CalendarDropdown({ event }: CalendarDropdownProps) {
         >
           <button
             onClick={handleGoogleCalendar}
-            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-orange-50 rounded-t-lg transition-colors"
+            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 rounded-t-lg transition-colors"
             role="menuitem"
           >
             Google Calendar
@@ -79,7 +82,7 @@ export default function CalendarDropdown({ event }: CalendarDropdownProps) {
 
           <button
             onClick={handleDownloadICS}
-            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
             role="menuitem"
           >
             Apple Calendar
@@ -87,7 +90,7 @@ export default function CalendarDropdown({ event }: CalendarDropdownProps) {
 
           <button
             onClick={handleDownloadICS}
-            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-orange-50 transition-colors"
+            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
             role="menuitem"
           >
             Outlook
@@ -95,7 +98,7 @@ export default function CalendarDropdown({ event }: CalendarDropdownProps) {
 
           <button
             onClick={handleDownloadICS}
-            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-orange-50 rounded-b-lg transition-colors"
+            className="w-full text-left px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 rounded-b-lg transition-colors"
             role="menuitem"
           >
             Download ICS
