@@ -313,23 +313,23 @@ export default function SubmitEventPage() {
   // Success state - show confirmation
   if (success) {
     return (
-      <div className="min-h-screen bg-stone-50">
+      <div className="min-h-screen">
         <Header />
         <main className="max-w-2xl mx-auto px-4 py-12">
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-surface rounded-xl shadow-lg p-8 text-center">
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-stone-900 mb-2">Event Submitted!</h1>
-            <p className="text-stone-600 mb-6">
+            <h1 className="text-2xl font-bold text-ink mb-2">Event Submitted!</h1>
+            <p className="text-muted mb-6">
               Thank you for submitting your event. Our team will review it and it should appear on the site within 24-48 hours.
             </p>
             <div className="flex gap-4 justify-center">
               <Link
                 href="/"
-                className="px-6 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                className="px-6 py-2 bg-terra text-white rounded-lg font-medium hover:bg-terra/90 transition-colors"
               >
                 View Events
               </Link>
@@ -377,29 +377,29 @@ export default function SubmitEventPage() {
 
   // Form state - render form
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen">
       <Header />
 
       <main className="max-w-2xl mx-auto px-4 py-8">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">Submit an Event</h1>
+          <h1 className="text-3xl font-bold text-ink mb-2">Submit an Event</h1>
           <p className="text-stone-600">
             Know about an upcoming event in Nyack? Share it with the community!
             We&apos;ll review your submission and add it to the calendar.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-surface rounded-xl shadow-lg p-6 space-y-6">
           {/* Poster Scan Section */}
-          <div className="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+          <div className="bg-cream border-2 border-harvest/30 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
-              <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-terra" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              <h2 className="font-semibold text-orange-800">See a poster? Snap it to auto-fill!</h2>
+              <h2 className="font-semibold text-harvest">See a poster? Snap it to auto-fill!</h2>
             </div>
-            <p className="text-sm text-orange-700 mb-3">
+            <p className="text-sm text-harvest mb-3">
               Take a photo of an event poster and we&apos;ll fill in the details for you automatically.
             </p>
 
@@ -422,7 +422,7 @@ export default function SubmitEventPage() {
               <button
                 type="button"
                 onClick={() => posterInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 active:bg-orange-700 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-terra text-white rounded-lg font-medium hover:bg-terra/90 active:bg-terra/80 transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -437,10 +437,10 @@ export default function SubmitEventPage() {
               <div className="space-y-3">
                 {posterPreview && (
                   <div className="relative">
-                    <img src={posterPreview} alt="Poster preview" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
-                    <div className="absolute inset-0 bg-orange-900/40 rounded-lg flex items-center justify-center">
+                    <img src={posterPreview} alt="Poster preview" className="w-full max-h-48 object-contain rounded-lg border border-harvest/30" />
+                    <div className="absolute inset-0 bg-forest/60 rounded-lg flex items-center justify-center">
                       <div className="bg-white rounded-lg px-4 py-2 flex items-center gap-2">
-                        <svg className="animate-spin h-4 w-4 text-orange-500" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-terra" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
@@ -455,7 +455,7 @@ export default function SubmitEventPage() {
             {/* Success state */}
             {posterFilled && posterPreview && !scanningPoster && (
               <div className="space-y-3">
-                <img src={posterPreview} alt="Scanned poster" className="w-full max-h-48 object-contain rounded-lg border border-orange-200" />
+                <img src={posterPreview} alt="Scanned poster" className="w-full max-h-48 object-contain rounded-lg border border-harvest/30" />
                 <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-lg px-3 py-2">
                   <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -471,7 +471,7 @@ export default function SubmitEventPage() {
                     setPreviewUrl('')
                     posterInputRef.current?.click()
                   }}
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-sm text-terra hover:text-harvest font-medium"
                 >
                   Scan a different poster
                 </button>
@@ -487,7 +487,7 @@ export default function SubmitEventPage() {
                 <button
                   type="button"
                   onClick={() => posterInputRef.current?.click()}
-                  className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                  className="text-sm text-terra hover:text-harvest font-medium"
                 >
                   Try again
                 </button>
@@ -503,11 +503,11 @@ export default function SubmitEventPage() {
 
           {/* Required Fields Section */}
           <div className="border-b border-stone-200 pb-4">
-            <h2 className="font-semibold text-stone-900 mb-4">Required Information</h2>
+            <h2 className="font-semibold text-ink mb-4">Required Information</h2>
 
             {/* Title */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Event Title *
               </label>
               <input
@@ -516,7 +516,7 @@ export default function SubmitEventPage() {
                 value={formData.title}
                 onChange={(e) => updateField('title', e.target.value)}
                 placeholder="e.g., Live Jazz at The Turning Point"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               />
             </div>
 
@@ -525,7 +525,7 @@ export default function SubmitEventPage() {
               {/* Only show Event Date for one-time events */}
               {!formData.isRecurring && (
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-medium text-ink mb-1">
                     Event Date *
                   </label>
                   <input
@@ -533,12 +533,12 @@ export default function SubmitEventPage() {
                     required
                     value={formData.startDate}
                     onChange={(e) => updateField('startDate', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                   />
                 </div>
               )}
               <div className={formData.isRecurring ? 'col-span-2' : ''}>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Start Time *
                 </label>
                 <input
@@ -546,7 +546,7 @@ export default function SubmitEventPage() {
                   required
                   value={formData.startTime}
                   onChange={(e) => updateField('startTime', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                 />
               </div>
             </div>
@@ -617,14 +617,14 @@ export default function SubmitEventPage() {
 
                   {/* Recurrence End Date */}
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">
+                    <label className="block text-sm font-medium text-ink mb-1">
                       Ends on (optional)
                     </label>
                     <input
                       type="date"
                       value={formData.recurrenceEndDate}
                       onChange={(e) => updateField('recurrenceEndDate', e.target.value)}
-                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <p className="text-xs text-stone-500 mt-1">
                       Leave blank if this event continues indefinitely
@@ -636,7 +636,7 @@ export default function SubmitEventPage() {
 
             {/* Venue */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Venue *
               </label>
               <input
@@ -645,13 +645,13 @@ export default function SubmitEventPage() {
                 value={formData.venue}
                 onChange={(e) => updateField('venue', e.target.value)}
                 placeholder="e.g., The Turning Point"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               />
             </div>
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Your Email *
               </label>
               <input
@@ -660,7 +660,7 @@ export default function SubmitEventPage() {
                 value={formData.submitterEmail}
                 onChange={(e) => updateField('submitterEmail', e.target.value)}
                 placeholder="your@email.com"
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               />
               <p className="text-xs text-stone-500 mt-1">
                 We&apos;ll only use this to contact you about your submission if needed
@@ -670,11 +670,11 @@ export default function SubmitEventPage() {
 
           {/* Optional Fields Section */}
           <div>
-            <h2 className="font-semibold text-stone-900 mb-4">Additional Details (Optional)</h2>
+            <h2 className="font-semibold text-ink mb-4">Additional Details (Optional)</h2>
 
             {/* Description */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Description
               </label>
               <textarea
@@ -682,7 +682,7 @@ export default function SubmitEventPage() {
                 value={formData.description}
                 onChange={(e) => updateField('description', e.target.value)}
                 placeholder="Tell us more about this event..."
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               />
             </div>
 
@@ -690,25 +690,25 @@ export default function SubmitEventPage() {
             {!formData.isRecurring && (
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-medium text-ink mb-1">
                     End Date
                   </label>
                   <input
                     type="date"
                     value={formData.endDate}
                     onChange={(e) => updateField('endDate', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">
+                  <label className="block text-sm font-medium text-ink mb-1">
                     End Time
                   </label>
                   <input
                     type="time"
                     value={formData.endTime}
                     onChange={(e) => updateField('endTime', e.target.value)}
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                   />
                 </div>
               </div>
@@ -717,7 +717,7 @@ export default function SubmitEventPage() {
             {/* Address & City */}
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   Address
                 </label>
                 <input
@@ -725,31 +725,31 @@ export default function SubmitEventPage() {
                   value={formData.address}
                   onChange={(e) => updateField('address', e.target.value)}
                   placeholder="123 Main Street"
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">
+                <label className="block text-sm font-medium text-ink mb-1">
                   City
                 </label>
                 <input
                   type="text"
                   value={formData.city}
                   onChange={(e) => updateField('city', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                 />
               </div>
             </div>
 
             {/* Category */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Category
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => updateField('category', e.target.value)}
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               >
                 {Object.entries(categoryLabels).map(([value, label]) => (
                   <option key={value} value={value}>
@@ -767,7 +767,7 @@ export default function SubmitEventPage() {
                   id="isFree"
                   checked={formData.isFree}
                   onChange={(e) => updateField('isFree', e.target.checked)}
-                  className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                  className="rounded border-stone-300 text-terra focus:ring-terra"
                 />
                 <label htmlFor="isFree" className="text-sm text-stone-700">
                   This is a free event
@@ -779,7 +779,7 @@ export default function SubmitEventPage() {
                   placeholder="e.g., $20, $15-$30, Free"
                   value={formData.price}
                   onChange={(e) => updateField('price', e.target.value)}
-                  className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                 />
               )}
             </div>
@@ -791,7 +791,7 @@ export default function SubmitEventPage() {
                 id="isFamilyFriendly"
                 checked={formData.isFamilyFriendly}
                 onChange={(e) => updateField('isFamilyFriendly', e.target.checked)}
-                className="rounded border-stone-300 text-orange-500 focus:ring-orange-500"
+                className="rounded border-stone-300 text-terra focus:ring-terra"
               />
               <label htmlFor="isFamilyFriendly" className="text-sm text-stone-700">
                 Family-friendly event
@@ -800,7 +800,7 @@ export default function SubmitEventPage() {
 
             {/* Event URL */}
             <div className="mb-4">
-              <label className="block text-sm font-medium text-stone-700 mb-1">
+              <label className="block text-sm font-medium text-ink mb-1">
                 Event Website or More Info
               </label>
               <input
@@ -808,7 +808,7 @@ export default function SubmitEventPage() {
                 value={formData.sourceUrl}
                 onChange={(e) => updateField('sourceUrl', e.target.value)}
                 placeholder="https://..."
-                className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
               />
             </div>
 
@@ -830,7 +830,7 @@ export default function SubmitEventPage() {
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     uploadMode === 'url'
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-terra text-white'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -844,7 +844,7 @@ export default function SubmitEventPage() {
                   }}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                     uploadMode === 'file'
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-terra text-white'
                       : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
                   }`}
                 >
@@ -860,7 +860,7 @@ export default function SubmitEventPage() {
                     value={formData.imageUrl}
                     onChange={(e) => updateField('imageUrl', e.target.value)}
                     placeholder="https://example.com/image.jpg"
-                    className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
                   />
                   <p className="text-xs text-stone-500 mt-1">
                     Paste a link to an image for your event
@@ -878,8 +878,8 @@ export default function SubmitEventPage() {
                     onDrop={handleDrop}
                     className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
                       dragActive
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-stone-300 hover:border-orange-400'
+                        ? 'border-terra bg-cream'
+                        : 'border-sand hover:border-terra/40'
                     }`}
                   >
                     <input
@@ -900,7 +900,7 @@ export default function SubmitEventPage() {
                             <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
-                            <p className="font-medium text-stone-900">{selectedFile.name}</p>
+                            <p className="font-medium text-ink">{selectedFile.name}</p>
                             <p className="text-sm text-stone-500">
                               {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                             </p>
@@ -911,7 +911,7 @@ export default function SubmitEventPage() {
                                 setSelectedFile(null)
                                 setPreviewUrl('')
                               }}
-                              className="text-sm text-orange-600 hover:text-orange-700 font-medium"
+                              className="text-sm text-terra hover:text-harvest font-medium"
                             >
                               Choose Different File
                             </button>
@@ -943,7 +943,7 @@ export default function SubmitEventPage() {
 
               {/* Upload Progress */}
               {uploadProgress && (
-                <div className="mt-3 bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-lg flex items-center gap-2">
+                <div className="mt-3 bg-cream border border-harvest/30 text-harvest px-4 py-3 rounded-lg flex items-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -959,7 +959,7 @@ export default function SubmitEventPage() {
                   <img
                     src={previewUrl || formData.imageUrl}
                     alt="Event preview"
-                    className="w-full max-w-md rounded-lg border border-stone-200"
+                    className="w-full max-w-md rounded-lg border border-sand"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement
                       target.style.display = 'none'
@@ -975,7 +975,7 @@ export default function SubmitEventPage() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 px-6 py-3 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              className="flex-1 px-6 py-3 bg-terra text-white rounded-lg font-medium hover:bg-terra/90 disabled:opacity-50 transition-colors"
             >
               {saving ? 'Submitting...' : 'Submit Event for Review'}
             </button>

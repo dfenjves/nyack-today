@@ -75,15 +75,15 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
   if (events.length === 0) return null
 
   return (
-    <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+    <div className="mb-8 bg-cream border border-harvest/30 rounded-2xl p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-amber-700 uppercase tracking-wide">
-          ⭐ Big Events
+        <h2 className="text-xs font-semibold text-harvest uppercase tracking-widest">
+          ★ Big Events
         </h2>
         <div className="flex items-center gap-3">
           <button
             onClick={onShowAll}
-            className="text-sm text-amber-700 hover:text-amber-900 font-medium underline underline-offset-2"
+            className="text-sm text-terra hover:text-terra/70 font-medium"
           >
             See all →
           </button>
@@ -92,7 +92,7 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
               <button
                 onClick={scrollLeft}
                 disabled={atStart}
-                className="w-7 h-7 rounded-full bg-white border border-amber-200 flex items-center justify-center text-amber-700 text-lg leading-none hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-7 h-7 rounded-full bg-oat border border-sand flex items-center justify-center text-stone-600 text-lg leading-none hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 aria-label="Previous"
               >
                 ‹
@@ -100,7 +100,7 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
               <button
                 onClick={scrollRight}
                 disabled={atEnd}
-                className="w-7 h-7 rounded-full bg-white border border-amber-200 flex items-center justify-center text-amber-700 text-lg leading-none hover:bg-amber-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                className="w-7 h-7 rounded-full bg-oat border border-sand flex items-center justify-center text-stone-600 text-lg leading-none hover:bg-surface disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 aria-label="Next"
               >
                 ›
@@ -127,10 +127,10 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
               href={event.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 w-[calc(33.333%-8px)] min-w-[200px] bg-white border border-amber-200 rounded-xl p-3 hover:shadow-md hover:border-amber-400 transition-all flex flex-col"
+              className="flex-shrink-0 w-[calc(33.333%-8px)] min-w-[200px] bg-surface border border-sand rounded-xl p-3 hover:shadow-md hover:border-terra/30 transition-all flex flex-col"
             >
               {event.imageUrl ? (
-                <div className="w-full aspect-video rounded-lg overflow-hidden bg-stone-100 mb-3">
+                <div className="w-full aspect-video rounded-lg overflow-hidden bg-oat mb-3">
                   <img src={event.imageUrl} alt={title} className="w-full h-full object-cover" />
                 </div>
               ) : (
@@ -139,13 +139,13 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
                 </div>
               )}
 
-              <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight text-sm flex-1">
+              <h3 className="font-display font-semibold text-ink line-clamp-2 leading-tight text-sm flex-1">
                 {title}
               </h3>
-              <p className="text-xs text-stone-500 mt-1">
+              <p className="text-xs text-muted mt-1">
                 {formatDate(startDate)} · {formatTime(startDate)}
               </p>
-              <p className="text-xs text-stone-500 truncate mt-0.5">
+              <p className="text-xs text-muted truncate mt-0.5">
                 {decodeHtmlEntities(event.venue)}
               </p>
               <div className="flex items-center gap-1.5 mt-2 flex-wrap">

@@ -34,12 +34,12 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
       href={activity.websiteUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block bg-white rounded-xl border border-stone-200 p-4 hover:shadow-md hover:border-orange-200 transition-all"
+      className="block bg-surface rounded-xl border border-sand p-4 hover:shadow-md hover:border-terra/30 transition-all"
     >
       <div className="flex gap-4">
         {/* Activity image or category icon fallback */}
         {activity.imageUrl ? (
-          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-stone-100">
+          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-oat">
             <img
               src={activity.imageUrl}
               alt={activity.title}
@@ -54,7 +54,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
 
         <div className="flex-1 min-w-0">
           {/* Title */}
-          <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
+          <h3 className="font-display font-semibold text-ink line-clamp-2 leading-tight">
             {activity.title}
           </h3>
 
@@ -66,7 +66,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
           )}
 
           {/* Venue and location */}
-          <p className="text-sm text-stone-500 mt-0.5">
+          <p className="text-sm text-muted mt-0.5">
             {activity.venue}
             {activity.city !== 'Nyack' && <span> · {activity.city}</span>}
           </p>
@@ -82,7 +82,7 @@ export default function ActivityCard({ activity }: ActivityCardProps) {
                 Free
               </span>
             ) : activity.price ? (
-              <span className="text-xs text-stone-500">{activity.price}</span>
+              <span className="text-xs text-muted">{activity.price}</span>
             ) : null}
 
             {activity.isFamilyFriendly && (

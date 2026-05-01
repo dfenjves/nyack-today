@@ -223,7 +223,7 @@ export default function Home() {
   const showDate = !!customDate || (dateFilter !== 'tonight' && dateFilter !== 'tomorrow')
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen">
       <Header />
       <Hero />
 
@@ -231,10 +231,10 @@ export default function Home() {
         <MarqueeSection onShowAll={handleShowAllMarquee} />
 
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-stone-900 mb-2">
+          <h1 className="font-display font-semibold text-3xl text-ink mb-2">
             {getHeading()}
           </h1>
-          <p className="text-stone-600">
+          <p className="text-muted text-sm">
             Discover events and activities in Nyack and the surrounding area
           </p>
         </div>
@@ -254,11 +254,11 @@ export default function Home() {
         </div>
 
         {marqueeOnly && (
-          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center justify-between">
-            <span className="text-sm text-amber-800 font-medium">Showing all upcoming marquee events</span>
+          <div className="mb-4 bg-cream border border-harvest/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
+            <span className="text-sm text-harvest font-medium">Showing all upcoming marquee events</span>
             <button
               onClick={handleClearMarquee}
-              className="text-amber-600 hover:text-amber-900 text-sm font-medium"
+              className="text-terra hover:text-terra/70 text-sm font-medium"
             >
               ✕ Clear
             </button>
@@ -274,7 +274,7 @@ export default function Home() {
             <p className="text-red-500 mb-4">{error}</p>
             <button
               onClick={fetchEvents}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              className="px-4 py-2 bg-terra text-cream rounded-lg hover:bg-terra/90 transition-colors"
             >
               Try Again
             </button>

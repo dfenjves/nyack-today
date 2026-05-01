@@ -42,14 +42,14 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
       rel="noopener noreferrer"
       className={`block rounded-xl border p-4 transition-all ${
         event.isMarquee
-          ? 'bg-amber-50 border-amber-300 hover:shadow-md hover:border-amber-400'
-          : 'bg-white border-stone-200 hover:shadow-md hover:border-orange-200'
+          ? 'bg-cream border-harvest/30 hover:shadow-md hover:border-harvest/60'
+          : 'bg-surface border-sand hover:shadow-md hover:border-terra/30'
       }`}
     >
       <div className="flex gap-4">
         {/* Event image or category icon fallback */}
         {event.imageUrl ? (
-          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-stone-100">
+          <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-oat">
             <img
               src={event.imageUrl}
               alt={title}
@@ -65,12 +65,12 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
         <div className="flex-1 min-w-0">
           {/* Title */}
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-stone-900 line-clamp-2 leading-tight">
+            <h3 className="font-display font-semibold text-ink line-clamp-2 leading-tight">
               {title}
             </h3>
             {event.isMarquee && (
-              <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-200 text-amber-800">
-                ⭐ Big Event
+              <span className="flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold bg-harvest/20 text-harvest">
+                ★ Big Event
               </span>
             )}
           </div>
@@ -82,7 +82,7 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
           </p>
 
           {/* Venue and location */}
-          <p className="text-sm text-stone-500 mt-0.5">
+          <p className="text-sm text-muted mt-0.5">
             {event.venue}
             {event.city !== 'Nyack' && <span> · {event.city}</span>}
           </p>
@@ -98,7 +98,7 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
                 Free
               </span>
             ) : event.price ? (
-              <span className="text-xs text-stone-500">{event.price}</span>
+              <span className="text-xs text-muted">{event.price}</span>
             ) : null}
 
             {event.isFamilyFriendly && (

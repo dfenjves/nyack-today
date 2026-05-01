@@ -55,8 +55,8 @@ export default function DateTabs({
             px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors
             ${
               !isCustomActive && activeFilter === tab.value
-                ? 'bg-orange-500 text-white'
-                : 'bg-white text-stone-600 hover:bg-stone-100 border border-stone-200'
+                ? 'bg-terra text-cream'
+                : 'bg-surface text-stone-600 hover:bg-oat border border-sand'
             }
           `}
         >
@@ -66,11 +66,11 @@ export default function DateTabs({
 
       {/* Custom tab / active date pill */}
       {isCustomActive ? (
-        <div className="flex items-center gap-1 px-3 py-2 rounded-full bg-orange-500 text-white text-sm font-medium whitespace-nowrap flex-shrink-0">
+        <div className="flex items-center gap-1 px-3 py-2 rounded-full bg-terra text-cream text-sm font-medium whitespace-nowrap flex-shrink-0">
           <span>{formatCustomDatePill(customDate)}</span>
           <button
             onClick={onCustomDateClear}
-            className="ml-1 hover:bg-orange-600 rounded-full p-0.5 transition-colors"
+            className="ml-1 hover:bg-terra/80 rounded-full p-0.5 transition-colors"
             aria-label="Clear custom date"
           >
             <X className="w-3 h-3" />
@@ -79,19 +79,19 @@ export default function DateTabs({
       ) : (
         <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
           <Drawer.Trigger asChild>
-            <button className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-white text-stone-600 hover:bg-stone-100 border border-stone-200 flex-shrink-0">
+            <button className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-surface text-stone-600 hover:bg-oat border border-sand flex-shrink-0">
               Custom
             </button>
           </Drawer.Trigger>
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
-            <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl z-50 outline-none">
+            <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl z-50 outline-none">
               <Drawer.Title className="sr-only">Pick a Date</Drawer.Title>
               <div className="pt-3 flex justify-center">
-                <div className="w-10 h-1 bg-stone-200 rounded-full" />
+                <div className="w-10 h-1 bg-sand rounded-full" />
               </div>
               <div className="p-4 pb-8">
-                <h3 className="text-base font-semibold text-stone-900 mb-3 text-center">
+                <h3 className="text-base font-display font-semibold text-ink mb-3 text-center">
                   Pick a Date
                 </h3>
                 <div className="flex justify-center">
