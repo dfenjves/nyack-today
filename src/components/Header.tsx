@@ -34,17 +34,17 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-stone-200 shadow-sm">
-      <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl font-bold text-orange-500">Nyack</span>
-          <span className="text-2xl font-light text-stone-700">Today</span>
+    <header className="sticky top-0 z-50 bg-forest border-b border-forest shadow-sm">
+      <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="text-2xl font-display font-semibold text-oat tracking-tight">Nyack</span>
+          <span className="text-2xl font-display font-semibold text-sage tracking-tight">Today</span>
         </Link>
 
         {/* Mobile menu button */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden p-2 text-stone-600 hover:text-stone-900"
+          className="md:hidden p-2 text-oat/70 hover:text-oat"
           aria-label="Toggle menu"
         >
           <svg
@@ -75,25 +75,25 @@ export default function Header() {
         <nav className="hidden md:flex items-center gap-6">
           <button
             onClick={handleEventsClick}
-            className="text-stone-600 hover:text-orange-500 transition-colors cursor-pointer"
+            className="text-sm text-oat/70 hover:text-oat transition-colors cursor-pointer"
           >
             Events
           </button>
           <Link
             href="/activities"
-            className="text-stone-600 hover:text-orange-500 transition-colors"
+            className="text-sm text-oat/70 hover:text-oat transition-colors"
           >
             Always Available
           </Link>
           <Link
             href="/submit"
-            className="text-stone-600 hover:text-orange-500 transition-colors"
+            className="text-sm text-oat/70 hover:text-oat transition-colors"
           >
             Submit Event
           </Link>
           <button
             onClick={handleSubscribeClick}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            className="bg-terra hover:bg-terra/90 text-cream px-4 py-1.5 rounded-full text-sm font-medium transition-colors cursor-pointer"
           >
             Subscribe
           </button>
@@ -102,30 +102,30 @@ export default function Header() {
 
       {/* Mobile nav */}
       {menuOpen && (
-        <nav className="md:hidden border-t border-stone-200 bg-white">
+        <nav className="md:hidden border-t border-forest/50 bg-deep">
           <button
             onClick={handleEventsClick}
-            className="block w-full text-left px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
+            className="block w-full text-left px-4 py-3 text-oat/80 hover:bg-forest/50 hover:text-oat text-sm"
           >
             Events
           </button>
           <Link
             href="/activities"
-            className="block px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
+            className="block px-4 py-3 text-oat/80 hover:bg-forest/50 hover:text-oat text-sm"
             onClick={() => setMenuOpen(false)}
           >
             Always Available
           </Link>
           <Link
             href="/submit"
-            className="block px-4 py-3 text-stone-600 hover:bg-stone-50 hover:text-orange-500"
+            className="block px-4 py-3 text-oat/80 hover:bg-forest/50 hover:text-oat text-sm"
             onClick={() => setMenuOpen(false)}
           >
             Submit Event
           </Link>
           <button
             onClick={handleSubscribeClick}
-            className="block w-full text-left px-4 py-3 text-orange-500 hover:bg-orange-50 font-medium"
+            className="block w-full text-left px-4 py-3 text-terra font-medium text-sm hover:bg-forest/50"
           >
             Subscribe to Weekly Digest
           </button>

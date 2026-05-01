@@ -35,11 +35,11 @@ export default function FeatureHighlights() {
       {features.map((feature, index) => (
         <div
           key={index}
-          className="bg-white/90 backdrop-blur-sm rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow"
+          className="bg-surface border border-sand rounded-xl p-6 hover:shadow-md transition-shadow"
         >
-          <div className="text-orange-500 mb-4">{feature.icon}</div>
-          <h3 className="text-xl font-bold text-stone-900 mb-2">{feature.title}</h3>
-          <p className="text-stone-700 text-sm">{feature.description}</p>
+          <div className="text-terra mb-4">{feature.icon}</div>
+          <h3 className="font-display font-semibold text-xl text-ink mb-2">{feature.title}</h3>
+          <p className="text-stone-600 text-sm">{feature.description}</p>
         </div>
       ))}
     </div>

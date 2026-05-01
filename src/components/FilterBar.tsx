@@ -26,7 +26,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
       <select
         value={filters.category}
         onChange={(e) => updateFilter('category', e.target.value as Category | 'ALL')}
-        className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="px-3 py-2 rounded-lg border border-sand bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-terra"
       >
         <option value="ALL">All Categories</option>
         {Object.entries(categoryLabels).map(([value, label]) => (
@@ -40,7 +40,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
       <select
         value={filters.priceFilter}
         onChange={(e) => updateFilter('priceFilter', e.target.value as Filters['priceFilter'])}
-        className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="px-3 py-2 rounded-lg border border-sand bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-terra"
       >
         <option value="all">Any Price</option>
         <option value="free">Free Only</option>
@@ -51,7 +51,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
       <select
         value={filters.location}
         onChange={(e) => updateFilter('location', e.target.value as Filters['location'])}
-        className="px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm text-stone-700 focus:outline-none focus:ring-2 focus:ring-orange-500"
+        className="px-3 py-2 rounded-lg border border-sand bg-surface text-sm text-ink focus:outline-none focus:ring-2 focus:ring-terra"
       >
         <option value="all">All Locations</option>
         <option value="nyack">Nyack Only</option>
@@ -66,7 +66,7 @@ export default function FilterBar({ filters, onFiltersChange }: FilterBarProps) 
           ${
             filters.familyFriendly
               ? 'bg-green-100 text-green-700 border border-green-300'
-              : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
+              : 'bg-surface text-stone-600 border border-sand hover:bg-oat'
           }
         `}
       >

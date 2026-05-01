@@ -11,12 +11,12 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-200 px-4 py-2 z-50">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-forest border-t border-forest/50 px-4 py-2 z-50">
         <div className="flex justify-around">
           <Link
             href="/"
             className={`flex flex-col items-center py-2 px-4 ${
-              isEventsActive ? 'text-orange-500' : 'text-stone-500'
+              isEventsActive ? 'text-terra' : 'text-oat/50'
             }`}
           >
             <svg
@@ -37,7 +37,7 @@ export default function BottomNav() {
           <Link
             href="/activities"
             className={`flex flex-col items-center py-2 px-4 ${
-              isActivitiesActive ? 'text-orange-500' : 'text-stone-500'
+              isActivitiesActive ? 'text-terra' : 'text-oat/50'
             }`}
           >
             <svg
