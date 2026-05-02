@@ -220,7 +220,7 @@ export default function Home() {
     return 'No events found for this time period'
   }
 
-  const showDate = !!customDate || (dateFilter !== 'tonight' && dateFilter !== 'tomorrow')
+  const showDate = true
 
   return (
     <div className="min-h-screen">
