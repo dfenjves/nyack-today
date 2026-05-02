@@ -34,9 +34,9 @@ const MONTH_MAP: Record<string, number> = {
 function parseDateFromText(text: string, postDate: Date): Date | null {
   const t = text.replace(/\./g, '').toLowerCase()
 
-  // Full date: optional weekday, Month Day, optional time
+  // Full date: optional weekday, Month Day, optional year, optional time
   const fullMatch = t.match(
-    /(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)[,\s]+)?(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:[,\s]+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm))?/
+    /(?:(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)[,\s]+)?(\w+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:[,\s]+\d{4})?(?:[,\s]+(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm))?/
   )
   if (fullMatch) {
     const monthStr = fullMatch[1].toLowerCase()
