@@ -1,6 +1,16 @@
 import { Event } from '@prisma/client'
 import { stringSimilarity, normalizeVenue, normalizeTitle } from './scrapers/utils'
 
+const GENERIC_VENUE_NAMES = new Set([
+  'nyack', 'south nyack', 'upper nyack', 'west nyack',
+  'garnerville', 'piermont', 'tarrytown', 'sleepy hollow',
+  'rockland county', 'westchester',
+])
+
+function isGenericVenue(venue: string): boolean {
+  return GENERIC_VENUE_NAMES.has(normalizeVenue(venue))
+}
+
 export interface DuplicateGroup {
   winner: Event
   losers: Event[]
@@ -75,39 +85,27 @@ export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
     if (ra !== rb) parent.set(rb, ra)
   }
 
-  // Within each day, group events by similar venue then check title similarity
+  // Within each day, compare all pairs of events.
+  // Require venue similarity unless at least one event uses a generic city-level venue name.
   for (const dayEvents of byDate.values()) {
-    // Build venue groups
-    const venueGroups: Event[][] = []
-    for (const event of dayEvents) {
-      const normVenue = normalizeVenue(event.venue)
-      let placed = false
-      for (const group of venueGroups) {
-        const repVenue = normalizeVenue(group[0].venue)
-        if (stringSimilarity(normVenue, repVenue) >= VENUE_THRESHOLD) {
-          group.push(event)
-          placed = true
-          break
-        }
-      }
-      if (!placed) venueGroups.push([event])
-    }
+    for (let i = 0; i < dayEvents.length; i++) {
+      for (let j = i + 1; j < dayEvents.length; j++) {
+        const a = dayEvents[i]
+        const b = dayEvents[j]
 
-    // Within each venue group, find duplicate title pairs
-    for (const group of venueGroups) {
-      if (group.length < 2) continue
-      for (let i = 0; i < group.length; i++) {
-        for (let j = i + 1; j < group.length; j++) {
-          const a = group[i]
-          const b = group[j]
-          const normA = normalizeTitle(a.title, a.venue)
-          const normB = normalizeTitle(b.title, b.venue)
-          const titleSim = stringSimilarity(normA, normB)
-          const isDuplicate =
-            titleSim >= TITLE_THRESHOLD ||
-            (normA.length > 0 && normB.length > 0 && (normA.includes(normB) || normB.includes(normA)))
-          if (isDuplicate) union(a.id, b.id)
+        const eitherGeneric = isGenericVenue(a.venue) || isGenericVenue(b.venue)
+        if (!eitherGeneric) {
+          const venueSim = stringSimilarity(normalizeVenue(a.venue), normalizeVenue(b.venue))
+          if (venueSim < VENUE_THRESHOLD) continue
         }
+
+        const normA = normalizeTitle(a.title, a.venue)
+        const normB = normalizeTitle(b.title, b.venue)
+        const titleSim = stringSimilarity(normA, normB)
+        const isDuplicate =
+          titleSim >= TITLE_THRESHOLD ||
+          (normA.length > 0 && normB.length > 0 && (normA.includes(normB) || normB.includes(normA)))
+        if (isDuplicate) union(a.id, b.id)
       }
     }
   }
