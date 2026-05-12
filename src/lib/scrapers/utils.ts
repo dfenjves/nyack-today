@@ -76,6 +76,12 @@ export function normalizeTitle(title: string, venue?: string): string {
 
   let normalized = title.toLowerCase().trim()
 
+  // Normalize ampersand to 'and'
+  normalized = normalized.replace(/\s*&\s*/g, ' and ')
+
+  // Strip parenthetical content (e.g. "(benefitting The Angel)", "(outdoor)")
+  normalized = normalized.replace(/\s*\([^)]*\)/g, '').trim()
+
   // Remove common prefixes
   for (const prefix of prefixes) {
     if (normalized.startsWith(prefix)) {
@@ -109,10 +115,17 @@ export function normalizeTitle(title: string, venue?: string): string {
     normalized = normalized.replace(regex, '').trim()
   }
 
-  // Remove common words that don't help identify events
-  const fillerWords = ['the', 'a', 'an', 'at', 'in', 'on', 'presents', 'featuring']
+  // Strip ordinal numbers (1st, 2nd, 3rd, 25th, etc.)
+  normalized = normalized.replace(/\b\d+(?:st|nd|rd|th)\b/gi, '').trim()
+
+  // Remove common words that don't help identify events.
+  // Strip punctuation off each word first so "presents:" matches "presents".
+  const fillerWords = new Set(['the', 'a', 'an', 'at', 'in', 'on', 'of', 'to', 'presents', 'featuring', 'annual', 'benefit', 'benefitting'])
   const words = normalized.split(/\s+/)
-  normalized = words.filter(w => !fillerWords.includes(w)).join(' ')
+  normalized = words
+    .map(w => w.replace(/[^\w]/g, ''))
+    .filter(w => w.length > 0 && !fillerWords.has(w))
+    .join(' ')
 
   // Normalize whitespace
   normalized = normalized.replace(/\s+/g, ' ').trim()
