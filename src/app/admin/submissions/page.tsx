@@ -29,6 +29,8 @@ interface EventSubmission {
   reviewedAt: string | null
   rejectionReason: string | null
   approvedEventId: string | null
+  // Multiple showings
+  additionalDates: string[]
   // Recurrence fields
   isRecurring: boolean
   recurrenceDays: number[]
@@ -107,7 +109,9 @@ export default function AdminSubmissionsPage() {
   }, [filter])
 
   const approveSubmission = async (submission: EventSubmission) => {
-    if (!confirm(`Approve "${submission.title}"? This will create a new event.`)) {
+    const totalShowings = 1 + (submission.additionalDates?.length ?? 0)
+    const eventWord = totalShowings > 1 ? `${totalShowings} events` : 'a new event'
+    if (!confirm(`Approve "${submission.title}"? This will create ${eventWord}.`)) {
       return
     }
 
@@ -370,18 +374,42 @@ export default function AdminSubmissionsPage() {
               )}
 
               <div className="grid md:grid-cols-2 gap-4 mb-4 text-sm">
-                <div>
-                  <span className="font-medium text-stone-700">Date:</span>{' '}
-                  <span className="text-stone-600">
-                    {new Date(submission.startDate).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </span>
+                <div className={submission.additionalDates?.length > 0 ? 'md:col-span-2' : ''}>
+                  {submission.additionalDates?.length > 0 ? (
+                    <>
+                      <span className="font-medium text-stone-700">
+                        Showings ({1 + submission.additionalDates.length}):
+                      </span>
+                      <ul className="mt-1 space-y-0.5">
+                        {[submission.startDate, ...submission.additionalDates].map((d, i) => (
+                          <li key={i} className="text-stone-600">
+                            {new Date(d).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            })}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-stone-700">Date:</span>{' '}
+                      <span className="text-stone-600">
+                        {new Date(submission.startDate).toLocaleDateString('en-US', {
+                          weekday: 'short',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div>
                   <span className="font-medium text-stone-700">Venue:</span>{' '}

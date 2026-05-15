@@ -81,6 +81,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Parse additional showing dates
+    const additionalDates: Date[] = []
+    if (Array.isArray(data.additionalDates)) {
+      for (const raw of data.additionalDates) {
+        if (typeof raw === 'string' && raw) {
+          additionalDates.push(parseEasternTime(raw))
+        }
+      }
+    }
+
     // Create submission
     const submission = await prisma.eventSubmission.create({
       data: {
@@ -99,6 +109,8 @@ export async function POST(request: NextRequest) {
         imageUrl: data.imageUrl || null,
         submitterEmail: data.submitterEmail,
         status: 'PENDING',
+        // Multiple showings
+        additionalDates,
         // Recurrence fields
         isRecurring: data.isRecurring ?? false,
         recurrenceDays: data.recurrenceDays || [],

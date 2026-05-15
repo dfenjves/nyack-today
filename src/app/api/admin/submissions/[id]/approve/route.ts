@@ -32,33 +32,37 @@ export async function POST(
       )
     }
 
-    // Create Event from submission
-    const event = await prisma.event.create({
-      data: {
-        title: submission.title,
-        description: submission.description,
-        startDate: submission.startDate,
-        endDate: submission.endDate,
-        venue: submission.venue,
-        address: submission.address,
-        city: submission.city,
-        isNyackProper: true,
-        category: submission.category,
-        price: submission.price,
-        isFree: submission.isFree,
-        isFamilyFriendly: submission.isFamilyFriendly,
-        sourceUrl: submission.sourceUrl || '',
-        sourceName: 'User Submission',
-        imageUrl: submission.imageUrl,
-        isHidden: false,
-        // Recurrence fields
-        isRecurring: submission.isRecurring,
-        recurrenceDays: submission.recurrenceDays,
-        recurrenceEndDate: submission.recurrenceEndDate,
-      },
-    })
+    const sharedEventData = {
+      title: submission.title,
+      description: submission.description,
+      endDate: submission.endDate,
+      venue: submission.venue,
+      address: submission.address,
+      city: submission.city,
+      isNyackProper: true,
+      category: submission.category,
+      price: submission.price,
+      isFree: submission.isFree,
+      isFamilyFriendly: submission.isFamilyFriendly,
+      sourceUrl: submission.sourceUrl || '',
+      sourceName: 'User Submission',
+      imageUrl: submission.imageUrl,
+      isHidden: false,
+      isRecurring: submission.isRecurring,
+      recurrenceDays: submission.recurrenceDays,
+      recurrenceEndDate: submission.recurrenceEndDate,
+    }
 
-    // Update submission status
+    // Create one Event per showing date; primary date first
+    const showingDates = [submission.startDate, ...submission.additionalDates]
+    const createdEvents = await Promise.all(
+      showingDates.map((startDate) =>
+        prisma.event.create({ data: { ...sharedEventData, startDate } })
+      )
+    )
+    const event = createdEvents[0]
+
+    // Update submission status — link to first created event
     await prisma.eventSubmission.update({
       where: { id },
       data: {

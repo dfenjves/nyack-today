@@ -21,6 +21,12 @@ export default function SubmitEventPage() {
   const [posterFilled, setPosterFilled] = useState(false)
   const posterInputRef = useRef<HTMLInputElement>(null)
 
+  // Multiple showings state
+  const [hasMultipleShowings, setHasMultipleShowings] = useState(false)
+  const [showings, setShowings] = useState<Array<{ date: string; time: string }>>([
+    { date: '', time: '' },
+  ])
+
   // File upload state
   const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -95,10 +101,23 @@ export default function SubmitEventPage() {
         }
       }
 
+      // Validate multiple showings
+      if (hasMultipleShowings) {
+        if (showings.some((s) => !s.date || !s.time)) {
+          setError('Please fill in a date and time for every showing')
+          setSaving(false)
+          return
+        }
+      }
+
       // Calculate start date
       let startDateTime: string
+      let additionalDates: string[] = []
 
-      if (formData.isRecurring) {
+      if (hasMultipleShowings) {
+        startDateTime = `${showings[0].date}T${showings[0].time}`
+        additionalDates = showings.slice(1).map((s) => `${s.date}T${s.time}`)
+      } else if (formData.isRecurring) {
         // For recurring events, calculate the next occurrence of the first selected day
         const now = new Date()
         const currentDay = now.getDay()
@@ -149,6 +168,7 @@ export default function SubmitEventPage() {
           ? `${formData.startDate}T${formData.startTime}`
           : `${formData.startDate}T00:00`
       }
+      // additionalDates only populated in hasMultipleShowings branch above
 
       let endDateTime = null
       if (formData.endDate) {
@@ -167,6 +187,7 @@ export default function SubmitEventPage() {
           endDate: formData.isRecurring ? null : endDateTime,
           price: formData.isFree ? null : formData.price || null,
           recurrenceEndDate: formData.recurrenceEndDate || null,
+          additionalDates,
         }),
       })
 
@@ -214,14 +235,19 @@ export default function SubmitEventPage() {
 
       const { event } = await response.json()
 
-      // Fill in form fields with extracted data
+      // showings is always an array (normalised in the API)
+      const showingsData: Array<{ date: string; startTime: string | null; endTime: string | null }> =
+        event.showings ?? []
+
+      // Fill in shared form fields
       setFormData((prev) => ({
         ...prev,
         title: event.title || prev.title,
         description: event.description || prev.description,
-        startDate: event.date || prev.startDate,
-        startTime: event.startTime || prev.startTime,
-        endTime: event.endTime || prev.endTime,
+        // Single-date fields — set from first showing; UI may override via showings UI below
+        startDate: showingsData[0]?.date || prev.startDate,
+        startTime: showingsData[0]?.startTime || prev.startTime,
+        endTime: showingsData[0]?.endTime || prev.endTime,
         venue: event.venue || prev.venue,
         address: event.address || prev.address,
         city: event.city || prev.city,
@@ -231,6 +257,17 @@ export default function SubmitEventPage() {
         category: (event.category as Category) || prev.category,
         sourceUrl: event.sourceUrl || prev.sourceUrl,
       }))
+
+      // If the poster has multiple showings, activate multiple-showings mode
+      if (showingsData.length > 1) {
+        setHasMultipleShowings(true)
+        setShowings(
+          showingsData.map((s) => ({
+            date: s.date ?? '',
+            time: s.startTime ?? '',
+          }))
+        )
+      }
 
       // Use the poster as the event image
       setSelectedFile(file)
@@ -362,6 +399,9 @@ export default function SubmitEventPage() {
                   setSelectedFile(null)
                   setPreviewUrl('')
                   setUploadError('')
+                  // Reset showings state
+                  setHasMultipleShowings(false)
+                  setShowings([{ date: '', time: '' }])
                 }}
                 className="px-6 py-2 bg-stone-100 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors"
               >
@@ -520,8 +560,8 @@ export default function SubmitEventPage() {
               />
             </div>
 
-            {/* Date and Time */}
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Date and Time — hidden when multiple showings mode is active */}
+            <div className={`grid grid-cols-2 gap-4 mb-4 ${hasMultipleShowings ? 'hidden' : ''}`}>
               {/* Only show Event Date for one-time events */}
               {!formData.isRecurring && (
                 <div>
@@ -530,7 +570,7 @@ export default function SubmitEventPage() {
                   </label>
                   <input
                     type="date"
-                    required
+                    required={!hasMultipleShowings}
                     value={formData.startDate}
                     onChange={(e) => updateField('startDate', e.target.value)}
                     className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
@@ -543,7 +583,7 @@ export default function SubmitEventPage() {
                 </label>
                 <input
                   type="time"
-                  required
+                  required={!hasMultipleShowings}
                   value={formData.startTime}
                   onChange={(e) => updateField('startTime', e.target.value)}
                   className="w-full px-4 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra"
@@ -551,8 +591,89 @@ export default function SubmitEventPage() {
               </div>
             </div>
 
-            {/* Recurring Event Section */}
-            <div className="mb-4">
+            {/* Multiple Showings Section */}
+            {!formData.isRecurring && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="hasMultipleShowings"
+                    checked={hasMultipleShowings}
+                    onChange={(e) => {
+                      setHasMultipleShowings(e.target.checked)
+                      if (e.target.checked) {
+                        // Seed first row from whatever's already in the single-date fields
+                        setShowings([{ date: formData.startDate, time: formData.startTime }])
+                      } else {
+                        setShowings([{ date: '', time: '' }])
+                      }
+                    }}
+                    className="rounded border-stone-300 text-terra focus:ring-terra"
+                  />
+                  <label htmlFor="hasMultipleShowings" className="text-sm font-medium text-stone-700">
+                    This event has multiple showings / dates
+                  </label>
+                </div>
+
+                {hasMultipleShowings && (
+                  <div className="border-l-4 border-terra pl-4 py-3 bg-cream rounded-r-lg space-y-3">
+                    <p className="text-sm text-stone-600">
+                      Add each showing as a separate date and time. Each will be listed individually on the calendar.
+                    </p>
+                    {showings.map((showing, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-xs text-stone-500 w-5 text-right flex-shrink-0">{idx + 1}.</span>
+                        <input
+                          type="date"
+                          value={showing.date}
+                          onChange={(e) => {
+                            const next = [...showings]
+                            next[idx] = { ...next[idx], date: e.target.value }
+                            setShowings(next)
+                          }}
+                          className="flex-1 px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={showing.time}
+                          onChange={(e) => {
+                            const next = [...showings]
+                            next[idx] = { ...next[idx], time: e.target.value }
+                            setShowings(next)
+                          }}
+                          className="flex-1 px-3 py-2 border border-sand rounded-lg focus:outline-none focus:ring-2 focus:ring-terra text-sm"
+                        />
+                        {showings.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setShowings(showings.filter((_, i) => i !== idx))}
+                            className="text-stone-400 hover:text-red-500 transition-colors flex-shrink-0"
+                            aria-label="Remove showing"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowings([...showings, { date: '', time: '' }])}
+                      className="flex items-center gap-1 text-sm text-terra hover:text-harvest font-medium"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add another showing
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Recurring Event Section — hidden when multiple showings mode is active */}
+            <div className={`mb-4 ${hasMultipleShowings ? 'hidden' : ''}`}>
               <div className="flex items-center gap-2 mb-3">
                 <input
                   type="checkbox"
