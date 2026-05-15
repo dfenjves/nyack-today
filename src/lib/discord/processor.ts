@@ -5,17 +5,36 @@
  */
 
 import { prisma } from '@/lib/db';
+import { put } from '@vercel/blob';
 import { extractEventsFromDiscord } from '../ai/client';
 import { ExtractedEvent } from '../ai/types';
 import { fetchMessagesSince, getDiscordConfig } from './client';
 import { ProcessedDiscordMessage, DiscordMessageData } from './types';
 import {
-  isNyackProper,
   isInCoverageArea,
   parsePrice,
   guessFamilyFriendly,
 } from '../scrapers/utils';
 import { guessCategory } from '../utils/categories';
+
+async function uploadDiscordImageToBlob(discordUrl: string): Promise<string | null> {
+  try {
+    const response = await fetch(discordUrl);
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) return null;
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const ext = contentType.split('/')[1]?.split(';')[0] || 'jpg';
+    const filename = `discord-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const blob = await put(filename, buffer, { access: 'public', contentType });
+    return blob.url;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Converts AI-extracted event to EventSubmission record
@@ -28,6 +47,7 @@ async function createEventSubmission(
     messageId: string;
     channelName: string;
     authorName: string;
+    attachmentUrls: string[];
   }
 ): Promise<string | null> {
   try {
@@ -72,8 +92,12 @@ async function createEventSubmission(
       extracted.description
     );
 
-    // Use extracted event URL if available, otherwise link to Discord message
     const sourceUrl = extracted.eventUrl || `discord:${messageMetadata.messageId}`;
+
+    // Discord CDN URLs expire, so upload any image to Vercel Blob for permanent storage.
+    // Prefer the AI-identified imageUrl, fall back to the first message attachment.
+    const rawImageUrl = extracted.imageUrl || messageMetadata.attachmentUrls[0] || null;
+    const imageUrl = rawImageUrl ? await uploadDiscordImageToBlob(rawImageUrl) : null;
 
     // Create EventSubmission record
     const submission = await prisma.eventSubmission.create({
@@ -91,7 +115,7 @@ async function createEventSubmission(
         isFamilyFriendly,
         sourceName: 'Discord',
         sourceUrl,
-        imageUrl: extracted.imageUrl ?? null,
+        imageUrl,
         submitterEmail: `discord-${messageMetadata.authorName}@nyack.today`,
         status: 'PENDING',
       },
@@ -151,6 +175,7 @@ async function processDiscordMessage(
         messageId: message.messageId,
         channelName: message.channelName,
         authorName: message.authorName,
+        attachmentUrls: message.attachmentUrls,
       });
 
       if (submissionId) {

@@ -137,6 +137,10 @@ model EventSubmission {
   sourceUrl       String?
   imageUrl        String?
 
+  // Multiple showings (e.g. a play with 8 performances)
+  // startDate holds the first showing; extra showings go here
+  additionalDates     DateTime[]
+
   // Recurrence fields (for recurring events like "Every Tuesday")
   isRecurring         Boolean   @default(false)
   recurrenceDays      Int[]     // Array of day numbers: 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat

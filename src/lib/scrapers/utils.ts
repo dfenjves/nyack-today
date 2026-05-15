@@ -545,6 +545,65 @@ export function fixUtcAsEasternDate(date: Date): Date {
 }
 
 /**
+ * Parse one or more showing times from a natural-language date/time string and
+ * return an array of Eastern-time Date objects — one per showing.
+ *
+ * Handles formats like:
+ *   "Thursday, May 7 @ 7pm"          → [Date]
+ *   "Saturday, May 9 @ 1pm & 7pm"    → [Date, Date]
+ *   "Saturday, May 9 @ 1:30pm & 7pm" → [Date, Date]
+ *
+ * Pass `referenceYear` (defaults to current year) when the string has no year.
+ * Returns an empty array if the string cannot be parsed.
+ */
+export function parseShowingDates(line: string, referenceYear?: number): Date[] {
+  const year = referenceYear ?? new Date().getFullYear()
+
+  const MONTHS: Record<string, number> = {
+    january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+    july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+    jan: 0, feb: 1, mar: 2, apr: 3, jun: 5, jul: 6, aug: 7,
+    sep: 8, oct: 9, nov: 10, dec: 11,
+  }
+
+  // Extract "Month Day" from the line (day-of-week prefix is ignored)
+  const dateMatch = line.match(/([a-z]+)\s+(\d{1,2})(?:,|\s)/i)
+  if (!dateMatch) return []
+
+  const monthStr = dateMatch[1].toLowerCase()
+  const month = MONTHS[monthStr]
+  if (month === undefined) return []
+  const day = parseInt(dateMatch[2], 10)
+
+  // Extract the time portion after "@"
+  const timePart = line.split('@')[1]
+  if (!timePart) return []
+
+  // Split on "&" or "and" to handle multiple times on the same day
+  const timeTokens = timePart.split(/&|\band\b/i).map(t => t.trim()).filter(Boolean)
+
+  const parseTime = (token: string): { hour: number; minute: number } | null => {
+    const m = token.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i)
+    if (!m) return null
+    let hour = parseInt(m[1], 10)
+    const minute = m[2] ? parseInt(m[2], 10) : 0
+    const meridiem = m[3].toLowerCase()
+    if (meridiem === 'pm' && hour !== 12) hour += 12
+    if (meridiem === 'am' && hour === 12) hour = 0
+    return { hour, minute }
+  }
+
+  const dates: Date[] = []
+  for (const token of timeTokens) {
+    const time = parseTime(token)
+    if (time) {
+      dates.push(makeEasternDate(year, month, day, time.hour, time.minute))
+    }
+  }
+  return dates
+}
+
+/**
  * Fetch a URL with error handling and timeout
  */
 export async function fetchWithTimeout(

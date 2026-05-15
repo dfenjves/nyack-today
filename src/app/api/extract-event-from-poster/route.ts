@@ -9,9 +9,13 @@ Extract all visible event details and return ONLY valid JSON (no markdown, no ex
 {
   "title": "string - event name",
   "description": "string | null - event description or details",
-  "date": "string | null - date in YYYY-MM-DD format (e.g. 2026-04-15), or null if not found",
-  "startTime": "string | null - start time in HH:MM 24-hour format (e.g. 19:00), or null if not found",
-  "endTime": "string | null - end time in HH:MM 24-hour format, or null if not found",
+  "showings": [
+    {
+      "date": "string - date in YYYY-MM-DD format (e.g. 2026-04-15)",
+      "startTime": "string | null - start time in HH:MM 24-hour format (e.g. 19:00), or null if not found",
+      "endTime": "string | null - end time in HH:MM 24-hour format, or null if not found"
+    }
+  ],
   "venue": "string | null - venue or location name",
   "address": "string | null - street address if visible",
   "city": "string - city name, default to Nyack if not specified",
@@ -24,6 +28,7 @@ Extract all visible event details and return ONLY valid JSON (no markdown, no ex
 
 **Rules:**
 - Today's date is ${new Date().toISOString().split('T')[0]}. If a date is shown without a year, infer the most logical upcoming year.
+- "showings" MUST be an array with at least one entry. If the poster has multiple dates/times (e.g. "May 7 @ 7pm, May 8 @ 7pm, May 9 @ 1pm & 7pm"), list every individual showing as a separate object. A line like "May 9 @ 1pm & 7pm" produces TWO entries (same date, different times).
 - Return ALL fields, using null for anything not found on the poster.
 - For category, make your best guess based on the event type.
 - If the poster shows a QR code or website URL, include it in sourceUrl.
@@ -122,6 +127,15 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to parse AI response' },
         { status: 500 }
       )
+    }
+
+    // Normalise: ensure showings is always an array (handles old single-date responses)
+    if (!Array.isArray(parsed.showings)) {
+      parsed.showings = [{
+        date: parsed.date ?? null,
+        startTime: parsed.startTime ?? null,
+        endTime: parsed.endTime ?? null,
+      }]
     }
 
     return NextResponse.json({ event: parsed })
