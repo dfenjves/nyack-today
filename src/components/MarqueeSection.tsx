@@ -28,6 +28,7 @@ const categoryLucideIcons: Record<Category, React.ReactNode> = {
 
 interface MarqueeSectionProps {
   onShowAll: () => void
+  initialEvents?: Event[]
 }
 
 function convertDates(events: Event[]): Event[] {
@@ -40,13 +41,18 @@ function convertDates(events: Event[]): Event[] {
   }))
 }
 
-export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
-  const [events, setEvents] = useState<Event[]>([])
+export default function MarqueeSection({ onShowAll, initialEvents }: MarqueeSectionProps) {
+  const [events, setEvents] = useState<Event[]>(() =>
+    initialEvents ? convertDates(initialEvents) : []
+  )
   const [atStart, setAtStart] = useState(true)
-  const [atEnd, setAtEnd] = useState(false)
+  const [atEnd, setAtEnd] = useState(() => !initialEvents || initialEvents.length <= 3)
   const scrollRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // Skip the fetch if we already have server-rendered data
+    if (initialEvents && initialEvents.length > 0) return
+
     fetch('/api/events?marquee=true&limit=9')
       .then((r) => r.json())
       .then((data) => {
@@ -55,7 +61,7 @@ export default function MarqueeSection({ onShowAll }: MarqueeSectionProps) {
         setAtEnd(evts.length <= 3)
       })
       .catch(() => {})
-  }, [])
+  }, [initialEvents])
 
   const updateArrows = useCallback(() => {
     const el = scrollRef.current
