@@ -103,7 +103,8 @@ export function normalizeTitle(title: string, venue?: string): string {
     // Try to remove significant parts of venue name (3+ char words)
     for (const word of venueWords) {
       if (word.length >= 3) {
-        const regex = new RegExp(`\\b${word}\\b`, 'gi')
+        const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const regex = new RegExp(`\\b${escaped}\\b`, 'gi')
         normalized = normalized.replace(regex, '').trim()
       }
     }
@@ -111,7 +112,8 @@ export function normalizeTitle(title: string, venue?: string): string {
 
   // Remove location names
   for (const location of locationNames) {
-    const regex = new RegExp(`\\b${location}\\b`, 'gi')
+    const escaped = location.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const regex = new RegExp(`\\b${escaped}\\b`, 'gi')
     normalized = normalized.replace(regex, '').trim()
   }
 
