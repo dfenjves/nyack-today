@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Category } from '@prisma/client'
 import { DateFilter } from '@/lib/utils/dates'
 import { queryEvents } from '@/lib/utils/events-query'
-import { prisma } from '@/lib/db'
 
 /**
  * GET /api/events
@@ -35,29 +34,26 @@ export async function GET(request: NextRequest) {
     const customDateParam = searchParams.get('customDate')
     const customDate = dateFilter === 'custom' && customDateParam ? new Date(customDateParam) : null
 
-    const [events, total] = await Promise.all([
-      queryEvents({
-        dateFilter,
-        customDate,
-        category,
-        free,
-        familyFriendly,
-        nyackOnly,
-        nearbyOnly,
-        marqueeOnly,
-        limit,
-        offset,
-      }),
-      prisma.event.count({ where: { isHidden: false } }),
-    ])
+    const events = await queryEvents({
+      dateFilter,
+      customDate,
+      category,
+      free,
+      familyFriendly,
+      nyackOnly,
+      nearbyOnly,
+      marqueeOnly,
+      limit,
+      offset,
+    })
 
     const response = NextResponse.json({
       events,
       pagination: {
-        total,
+        total: offset + events.length,
         limit,
         offset,
-        hasMore: offset + events.length < total,
+        hasMore: events.length === limit,
       },
     })
 
