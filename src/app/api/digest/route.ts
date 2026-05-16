@@ -44,7 +44,7 @@ function buildWeekLabel(start: Date, end: Date): string {
   return `${fmt(start)} – ${fmt(end)}`
 }
 
-export async function POST(request: NextRequest) {
+function checkAuth(request: NextRequest): boolean {
   const adminPassword = request.headers.get('x-admin-password')
   const cronHeader = request.headers.get('authorization')
 
@@ -55,9 +55,25 @@ export async function POST(request: NextRequest) {
     Boolean(process.env.DIGEST_CRON_SECRET) &&
     cronHeader === `Bearer ${process.env.DIGEST_CRON_SECRET}`
 
-  if (!hasValidAdmin && !hasValidCron) {
+  return hasValidAdmin || hasValidCron
+}
+
+// GET is called by Vercel cron jobs
+export async function GET(request: NextRequest) {
+  if (!checkAuth(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  return sendDigest(request)
+}
+
+export async function POST(request: NextRequest) {
+  if (!checkAuth(request)) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  return sendDigest(request)
+}
+
+async function sendDigest(_request: NextRequest) {
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
