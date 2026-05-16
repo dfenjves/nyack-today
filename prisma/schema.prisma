@@ -73,6 +73,7 @@ model Event {
   @@index([isHidden])
   @@index([isFamilyFriendly])
   @@index([isRecurring])
+  @@index([isHidden, startDate])
 }
 
 // Always-available activities (go-karts, bowling, etc.)
