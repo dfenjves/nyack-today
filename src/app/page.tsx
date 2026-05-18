@@ -3,6 +3,8 @@ import { queryEvents } from '@/lib/utils/events-query'
 import { Event } from '@prisma/client'
 import { DateFilter } from '@/lib/utils/dates'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Home() {
   // Fetch tonight's events and marquee events in parallel on the server
   const [tonightEvents, marqueeEvents] = await Promise.all([
