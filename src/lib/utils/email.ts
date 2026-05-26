@@ -349,23 +349,42 @@ export function generateDigestHtml(
 ): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
-  const formatEventDate = (date: Date) =>
+  const formatTime = (date: Date) =>
     new Date(date).toLocaleString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     })
 
-  const eventRows = events.length === 0
-    ? `<p style="color: ${DS.muted}; font-style: italic;">No events found this week — check back next Thursday!</p>`
-    : events.map((e, i) => `
-      ${i > 0 ? `<hr style="border: none; border-top: 1px solid ${DS.sand}; margin: 14px 0;">` : ''}
-      <div style="padding: 4px 0;">
-        <div style="margin-bottom: 4px;">
-          <a href="${escapeHtml(e.sourceUrl)}" style="color: ${DS.terra}; font-weight: 600; text-decoration: underline; font-size: 15px;">${escapeHtml(e.title)}</a>
-          ${e.isFree ? `<span style="margin-left: 8px; background: #E8EFE0; color: ${DS.forest}; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block; text-transform: uppercase; letter-spacing: 0.06em;">Free</span>` : ''}
-        </div>
-        <div style="color: ${DS.muted}; font-size: 13px; margin-top: 2px;">${formatEventDate(e.startDate)}</div>
-        <div style="color: ${DS.muted}; font-size: 13px;">${escapeHtml(e.venue)}</div>
+  const formatDayHeading = (date: Date) =>
+    new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York',
+    })
+
+  const dayKey = (date: Date) =>
+    new Date(date).toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+
+  const grouped = new Map<string, { heading: string; events: typeof events }>()
+  for (const e of events) {
+    const key = dayKey(e.startDate)
+    if (!grouped.has(key)) {
+      grouped.set(key, { heading: formatDayHeading(e.startDate), events: [] })
+    }
+    grouped.get(key)!.events.push(e)
+  }
+
+  const eventRows = grouped.size === 0
+    ? `<p style="color: ${DS.muted}; font-style: italic;">No events found this week — check back tomorrow!</p>`
+    : Array.from(grouped.values()).map(({ heading, events: dayEvents }) => `
+      <div style="margin-bottom: 24px;">
+        <div style="font-size: 12px; font-weight: 700; color: ${DS.forest}; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 0; border-bottom: 2px solid ${DS.terra}; margin-bottom: 12px;">${heading}</div>
+        ${dayEvents.map((e, i) => `
+          ${i > 0 ? `<hr style="border: none; border-top: 1px solid ${DS.sand}; margin: 12px 0;">` : ''}
+          <div style="padding: 2px 0;">
+            <div style="margin-bottom: 4px;">
+              <a href="${escapeHtml(e.sourceUrl)}" style="color: ${DS.terra}; font-weight: 600; text-decoration: underline; font-size: 15px;">${escapeHtml(e.title)}</a>
+              ${e.isFree ? `<span style="margin-left: 8px; background: #E8EFE0; color: ${DS.forest}; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; display: inline-block; text-transform: uppercase; letter-spacing: 0.06em;">Free</span>` : ''}
+            </div>
+            <div style="color: ${DS.muted}; font-size: 13px; margin-top: 2px;">${formatTime(e.startDate)} · ${escapeHtml(e.venue)}</div>
+          </div>`).join('')}
       </div>`).join('')
 
   const header = `
@@ -406,16 +425,35 @@ export function generateDigestText(
   weekLabel: string
 ): string {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-  const formatEventDate = (date: Date) =>
+  const formatTime = (date: Date) =>
     new Date(date).toLocaleString('en-US', {
-      weekday: 'short', month: 'short', day: 'numeric',
       hour: 'numeric', minute: '2-digit', timeZone: 'America/New_York',
     })
 
-  const eventLines = events.length === 0
-    ? 'No events found this week — check back next Thursday!'
-    : events.map(e =>
-        `${e.title}${e.isFree ? ' [FREE]' : ''}\n${formatEventDate(e.startDate)} · ${e.venue}\n${e.sourceUrl}`
+  const formatDayHeading = (date: Date) =>
+    new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/New_York',
+    })
+
+  const dayKey = (date: Date) =>
+    new Date(date).toLocaleDateString('en-US', { timeZone: 'America/New_York' })
+
+  const grouped = new Map<string, { heading: string; events: typeof events }>()
+  for (const e of events) {
+    const key = dayKey(e.startDate)
+    if (!grouped.has(key)) {
+      grouped.set(key, { heading: formatDayHeading(e.startDate), events: [] })
+    }
+    grouped.get(key)!.events.push(e)
+  }
+
+  const eventLines = grouped.size === 0
+    ? 'No events found this week — check back tomorrow!'
+    : Array.from(grouped.values()).map(({ heading, events: dayEvents }) =>
+        `${heading.toUpperCase()}\n${'─'.repeat(heading.length)}\n` +
+        dayEvents.map(e =>
+          `${e.title}${e.isFree ? ' [FREE]' : ''}\n${formatTime(e.startDate)} · ${e.venue}\n${e.sourceUrl}`
+        ).join('\n\n')
       ).join('\n\n')
 
   return `
