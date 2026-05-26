@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { guessFamilyFriendly, makeEasternDate } from './utils'
+import { guessFamilyFriendly, makeEasternDate, toTitleCase } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 import { Category } from '@prisma/client'
 
@@ -71,7 +71,7 @@ function parseSpecificEvent(text: string): ScrapedEvent | null {
 
   const monthIndex = MONTH_NAME_TO_INDEX[match[2].toUpperCase()]
   const day = parseInt(match[3], 10)
-  const title = match[4].trim().replace(/\u200B/g, '').trim()
+  const title = toTitleCase(match[4].trim().replace(/\u200B/g, '').trim())
   let hour = parseInt(match[5], 10)
   const minute = match[6] ? parseInt(match[6], 10) : 0
   const ampm = match[7].toUpperCase()
@@ -165,7 +165,7 @@ export const olivesNyackScraper: Scraper = {
           const occurrences = getNextOccurrences(dow, RECURRING_WEEKS, parsed.hour, parsed.minute)
           for (const startDate of occurrences) {
             events.push({
-              title: parsed.name,
+              title: toTitleCase(parsed.name),
               description: null,
               startDate,
               endDate: null,

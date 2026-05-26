@@ -472,6 +472,25 @@ export function jsonLdToScrapedEvent(
 }
 
 /**
+ * Convert an all-caps (or any-case) string to title case.
+ * Minor words (articles, conjunctions, prepositions) are lowercased except at the start.
+ */
+export function toTitleCase(str: string): string {
+  const minorWords = new Set([
+    'a', 'an', 'the', 'and', 'but', 'or', 'for', 'nor',
+    'at', 'by', 'in', 'of', 'on', 'to', 'up', 'with',
+  ])
+  return str
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, i) => {
+      if (i !== 0 && minorWords.has(word)) return word
+      return word.charAt(0).toUpperCase() + word.slice(1)
+    })
+    .join(' ')
+}
+
+/**
  * Strip HTML tags from a string
  */
 export function stripHtml(html: string): string {

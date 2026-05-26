@@ -4,6 +4,7 @@ import {
   fetchWithTimeout,
   parsePrice,
   guessFamilyFriendly,
+  toTitleCase,
 } from './utils'
 
 const SOURCE_NAME = "Maureen's Jazz Cellar"
@@ -144,7 +145,7 @@ function convertInffuseEvent(event: InffuseEvent): ScrapedEvent | null {
     const isFamilyFriendly = guessFamilyFriendly(event.title, description)
 
     return {
-      title: event.title.trim(),
+      title: toTitleCase(event.title.trim()),
       description: description.trim() || null,
       startDate,
       endDate,
