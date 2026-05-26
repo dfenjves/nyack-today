@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/digest",
-      "schedule": "0 14 * * 4"
+      "schedule": "0 14 * * *"
     }
   ],
   "functions": {
