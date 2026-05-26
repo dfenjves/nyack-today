@@ -2,7 +2,7 @@ import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
 
-export const alt = 'Nyack Today - Events in Nyack, NY'
+export const alt = 'Nyack Today - What\'s Happening in Nyack, NY'
 export const size = {
   width: 1200,
   height: 630,
@@ -14,91 +14,119 @@ export default async function Image() {
     (
       <div
         style={{
-          background: 'linear-gradient(135deg, #f97316 0%, #ea580c 50%, #c2410c 100%)',
+          background: 'linear-gradient(150deg, #1E3A2F 0%, #162C24 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
+          padding: '0 80px 64px',
           fontFamily: 'system-ui, sans-serif',
         }}
       >
-        {/* Sun icon */}
+        {/* Terra accent bar at top */}
         <div
           style={{
-            width: 120,
-            height: 120,
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 32,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
+            height: 6,
+            background: 'linear-gradient(90deg, #D4622A 0%, #C8973A 100%)',
+            marginBottom: 52,
           }}
-        >
+        />
+
+        {/* Logo row */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Ring icon */}
           <div
             style={{
-              width: 60,
-              height: 60,
+              width: 52,
+              height: 52,
               borderRadius: '50%',
-              backgroundColor: '#f97316',
+              border: '5px solid #D4622A',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          />
-        </div>
-
-        {/* Title */}
-        <div
-          style={{
-            fontSize: 72,
-            fontWeight: 800,
-            color: 'white',
-            marginBottom: 16,
-            textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-          }}
-        >
-          Nyack Today
-        </div>
-
-        {/* Tagline */}
-        <div
-          style={{
-            fontSize: 32,
-            color: 'rgba(255,255,255,0.9)',
-            marginBottom: 48,
-          }}
-        >
-          What&apos;s Happening in Nyack
-        </div>
-
-        {/* Features */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 24,
-          }}
-        >
-          {['Tonight', 'This Weekend', 'Family Events', 'Free Events'].map((text) => (
+          >
             <div
-              key={text}
               style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
-                color: 'white',
-                padding: '12px 24px',
-                borderRadius: 999,
-                fontSize: 20,
-                fontWeight: 500,
+                width: 18,
+                height: 18,
+                borderRadius: '50%',
+                background: '#D4622A',
               }}
-            >
-              {text}
-            </div>
-          ))}
+            />
+          </div>
+          <span
+            style={{
+              fontSize: 26,
+              fontWeight: 600,
+              color: '#F5F0E8',
+              letterSpacing: '-0.01em',
+            }}
+          >
+            Nyack Today
+          </span>
+        </div>
+
+        {/* Main headline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <div
+            style={{
+              fontSize: 100,
+              fontWeight: 800,
+              color: '#F5F0E8',
+              lineHeight: 1,
+              letterSpacing: '-0.04em',
+            }}
+          >
+            What&apos;s Happening
+          </div>
+          <div
+            style={{
+              fontSize: 100,
+              fontWeight: 800,
+              color: '#D4622A',
+              lineHeight: 1,
+              letterSpacing: '-0.04em',
+            }}
+          >
+            in Nyack
+          </div>
+        </div>
+
+        {/* Bottom row: tagline + pills */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div
+            style={{
+              fontSize: 24,
+              color: '#8FBD9E',
+              fontWeight: 400,
+              letterSpacing: '0.01em',
+            }}
+          >
+            Events · Shows · Things To Do · nyacktoday.com
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            {['Tonight', 'This Weekend', 'Family', 'Free Events'].map((tag) => (
+              <div
+                key={tag}
+                style={{
+                  background: 'rgba(212,98,42,0.15)',
+                  border: '1px solid rgba(212,98,42,0.4)',
+                  color: '#E8A882',
+                  padding: '10px 22px',
+                  borderRadius: 999,
+                  fontSize: 20,
+                  fontWeight: 500,
+                }}
+              >
+                {tag}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     ),
-    {
-      ...size,
-    }
+    { ...size }
   )
 }
