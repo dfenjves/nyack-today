@@ -51,9 +51,11 @@ function checkAuth(request: NextRequest): boolean {
   const hasValidAdmin = Boolean(
     process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD
   )
+  // Vercel cron uses CRON_SECRET; DIGEST_CRON_SECRET kept for backward compat
+  const cronSecret = process.env.CRON_SECRET || process.env.DIGEST_CRON_SECRET
   const hasValidCron =
-    Boolean(process.env.DIGEST_CRON_SECRET) &&
-    cronHeader === `Bearer ${process.env.DIGEST_CRON_SECRET}`
+    Boolean(cronSecret) &&
+    cronHeader === `Bearer ${cronSecret}`
 
   return hasValidAdmin || hasValidCron
 }

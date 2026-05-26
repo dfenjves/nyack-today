@@ -109,17 +109,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET /api/scrape
- * Get list of available scrapers
- */
-export async function GET() {
-  return NextResponse.json({
-    scrapers: scrapers.map((s) => s.name),
-    usage: {
-      runAll: 'POST /api/scrape',
-      runOne: 'POST /api/scrape?source=Visit%20Nyack',
-      withCleanup: 'POST /api/scrape?cleanup=true',
-    },
-  })
+// GET is called by Vercel cron jobs
+export async function GET(request: NextRequest) {
+  const cronHeader = request.headers.get('authorization')
+  const cronSecret = process.env.CRON_SECRET || process.env.SCRAPER_API_KEY
+  const adminPassword = request.headers.get('x-admin-password')
+
+  const hasValidCron = Boolean(cronSecret) && cronHeader === `Bearer ${cronSecret}`
+  const hasValidAdmin = Boolean(process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD)
+
+  if (!hasValidCron && !hasValidAdmin) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  return POST(request)
 }
