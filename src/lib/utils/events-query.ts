@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import { Category, Event } from '@prisma/client'
-import { getDateRange, getCustomDateRange, DateFilter } from '@/lib/utils/dates'
+import { getDateRange, getCustomDateRange, getToday, DateFilter } from '@/lib/utils/dates'
 import { areEventsDuplicates } from '@/lib/scrapers/utils'
 import { generateRecurringInstances } from '@/lib/utils/recurrence'
 
@@ -50,7 +50,7 @@ export async function queryEvents(options: EventQueryOptions = {}): Promise<Even
   const { start, end } = (() => {
     if (dateFilter === 'custom' && customDate) return getCustomDateRange(customDate)
     if (dateFilter && dateFilter !== 'custom') return getDateRange(dateFilter)
-    return { start: new Date(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
+    return { start: getToday(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
   })()
 
   if (dateFilter === 'custom' && customDate) {

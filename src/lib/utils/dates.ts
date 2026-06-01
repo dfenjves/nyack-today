@@ -226,21 +226,19 @@ export function getMaxSelectableDate(): Date {
 }
 
 export function getDateRange(filter: DateFilter): { start: Date; end: Date } {
-  const now = new Date()
-
   switch (filter) {
     case 'tonight':
-      return { start: now, end: getEndOfToday() }
+      return { start: getToday(), end: getEndOfToday() }
     case 'tomorrow':
       return { start: getTomorrow(), end: getEndOfTomorrow() }
     case 'weekend':
       return { start: getWeekendStart(), end: getWeekendEnd() }
     case 'week':
-      return { start: now, end: getWeekEnd() }
+      return { start: getToday(), end: getWeekEnd() }
     case 'month':
-      return { start: now, end: getMonthEnd() }
+      return { start: getToday(), end: getMonthEnd() }
     default:
-      return { start: now, end: getWeekEnd() }
+      return { start: getToday(), end: getWeekEnd() }
   }
 }
 
