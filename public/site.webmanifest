@@ -4,8 +4,8 @@
   "description": "Find events, shows, and things to do in and around Nyack, NY",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#fafaf9",
-  "theme_color": "#f97316",
+  "background_color": "#ECE4D2",
+  "theme_color": "#1E3A2F",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

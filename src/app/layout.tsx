@@ -74,6 +74,22 @@ export const viewport: Viewport = {
   themeColor: "#1E3A2F",
 };
 
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Nyack Today',
+  url: 'https://nyacktoday.com',
+  description: "Find events, shows, and things to do in and around Nyack, NY.",
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://nyacktoday.com/?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -81,6 +97,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+      </head>
       <body
         className={`${plusJakartaSans.variable} ${fraunces.variable} antialiased min-h-screen`}
       >
