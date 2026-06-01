@@ -102,7 +102,6 @@ export default function AdminLayout({
     { href: '/admin/scrapers', label: 'Scrapers' },
     { href: '/admin/subscribers', label: 'Subscribers' },
     { href: '/admin/dedup', label: 'Dedup' },
-    { href: '/admin/generate-images', label: 'Generate Images' },
   ]
 
   return (
