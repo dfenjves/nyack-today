@@ -28,6 +28,34 @@ export default function EditEventPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setUploadError('')
+
+    try {
+      const data = new FormData()
+      data.append('file', file)
+      const res = await fetch('/api/upload-image', { method: 'POST', body: data })
+      const json = await res.json()
+      if (!res.ok) {
+        setUploadError(json.error || 'Upload failed')
+      } else {
+        updateField('imageUrl', json.url)
+      }
+    } catch {
+      setUploadError('Upload failed')
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -376,16 +404,50 @@ export default function EditEventPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">
-            Image URL
+          <label className="block text-sm font-medium text-stone-700 mb-2">
+            Image
           </label>
-          <input
-            type="url"
-            value={formData.imageUrl}
-            onChange={(e) => updateField('imageUrl', e.target.value)}
-            placeholder="https://..."
-            className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
+          {formData.imageUrl && (
+            <div className="mb-3 relative w-full aspect-video rounded-lg overflow-hidden bg-stone-100 border border-stone-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={formData.imageUrl}
+                alt="Event"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => updateField('imageUrl', '')}
+                className="absolute top-2 right-2 bg-black/60 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm hover:bg-black/80 transition-colors"
+                title="Remove image"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <label className="cursor-pointer px-4 py-2 bg-stone-100 border border-stone-300 text-stone-700 rounded-lg font-medium hover:bg-stone-200 transition-colors text-sm">
+              {uploading ? 'Uploading…' : 'Upload Image'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleImageUpload}
+                disabled={uploading}
+                className="hidden"
+              />
+            </label>
+            <span className="text-stone-400 text-sm">or</span>
+            <input
+              type="url"
+              value={formData.imageUrl}
+              onChange={(e) => updateField('imageUrl', e.target.value)}
+              placeholder="Paste image URL…"
+              className="flex-1 px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-sm"
+            />
+          </div>
+          {uploadError && (
+            <p className="mt-1 text-sm text-red-600">{uploadError}</p>
+          )}
         </div>
 
         <div className="flex items-center gap-2">
