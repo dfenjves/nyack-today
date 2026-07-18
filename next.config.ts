@@ -8,7 +8,12 @@ const nextConfig: NextConfig = {
     '@discordjs/ws',
     'zlib-sync',
     'bufferutil',
-    'utf-8-validate'
+    'utf-8-validate',
+    'node-ical',
+    'rrule-temporal',
+    '@js-temporal/polyfill',
+    'temporal-polyfill',
+    'jsbi'
   ],
   turbopack: {
     root: __dirname,
