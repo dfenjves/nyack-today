@@ -1,8 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+
+// The admin password is mirrored into a cookie scoped to /api/admin so the
+// browser sends it automatically on admin API calls, which src/middleware.ts
+// requires. Path-scoping keeps it off every other request to the origin.
+function setAdminCookie(password: string) {
+  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `admin_password=${encodeURIComponent(password)}; Path=/api/admin; SameSite=Strict${secure}`
+}
+
+function clearAdminCookie() {
+  document.cookie = 'admin_password=; Path=/api/admin; Max-Age=0; SameSite=Strict'
+}
 
 export default function AdminLayout({
   children,
@@ -24,6 +36,14 @@ export default function AdminLayout({
   const [error, setError] = useState('')
   const pathname = usePathname()
 
+  // Ensure the cookie is present for already-authenticated sessions (page
+  // reloads, or sessions established before cookie auth was added).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const storedPassword = sessionStorage.getItem('admin_password')
+    if (isAuthenticated && storedPassword) setAdminCookie(storedPassword)
+  }, [isAuthenticated])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -38,6 +58,7 @@ export default function AdminLayout({
       if (response.ok) {
         sessionStorage.setItem('admin_auth', 'true')
         sessionStorage.setItem('admin_password', password)
+        setAdminCookie(password)
         setIsAuthenticated(true)
       } else {
         setError('Invalid password')
@@ -50,6 +71,7 @@ export default function AdminLayout({
   const handleLogout = () => {
     sessionStorage.removeItem('admin_auth')
     sessionStorage.removeItem('admin_password')
+    clearAdminCookie()
     setIsAuthenticated(false)
     setPassword('')
   }

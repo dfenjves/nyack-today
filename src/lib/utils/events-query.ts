@@ -31,6 +31,53 @@ function deduplicateEvents(events: Event[]): Event[] {
   return deduplicated
 }
 
+// Recurring-instance stable ids are formatted as `${parentId}-${YYYY-MM-DD}` in
+// generateRecurringInstances(). cuids never contain hyphens, so a trailing
+// `-YYYY-MM-DD` unambiguously marks a recurring occurrence.
+const RECURRING_ID_PATTERN = /^(.+)-(\d{4}-\d{2}-\d{2})$/
+
+/**
+ * Resolve a single event by its stable id as returned from /api/events.
+ *
+ * Two id shapes are supported and must stay in sync with the ids emitted by
+ * queryEvents():
+ *  - A one-time event: the Prisma cuid.
+ *  - A recurring occurrence: `${parentId}-${YYYY-MM-DD}`, materialized on the fly.
+ *
+ * Returns null for hidden/missing events and for dates that are not a valid
+ * occurrence of a recurring event (callers should surface this as a 404).
+ */
+export async function getEventByStableId(stableId: string): Promise<Event | null> {
+  const match = stableId.match(RECURRING_ID_PATTERN)
+
+  if (match) {
+    const [, parentId, date] = match
+    const parent = await prisma.event.findUnique({ where: { id: parentId } })
+
+    if (parent && !parent.isHidden && parent.isRecurring) {
+      // Regenerate occurrences in a window around the target UTC day and match by
+      // exact id so we reuse the same synthesis logic that produced the id. The
+      // window spans +/- a day because the id suffix is the instance's UTC date,
+      // which can differ from its Eastern calendar date for late-evening events.
+      const target = new Date(`${date}T00:00:00.000Z`)
+      const rangeStart = new Date(target.getTime() - 24 * 60 * 60 * 1000)
+      const rangeEnd = new Date(target.getTime() + 2 * 24 * 60 * 60 * 1000)
+      const instance = generateRecurringInstances(parent, rangeStart, rangeEnd).find(
+        (i) => i.id === stableId
+      )
+      if (instance) return instance
+    }
+
+    // Matched the recurring shape but not a real occurrence — treat as not found
+    // rather than falling through to a (guaranteed-null) direct lookup.
+    return null
+  }
+
+  const event = await prisma.event.findUnique({ where: { id: stableId } })
+  if (!event || event.isHidden) return null
+  return event
+}
+
 export async function queryEvents(options: EventQueryOptions = {}): Promise<Event[]> {
   const {
     dateFilter,
