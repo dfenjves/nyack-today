@@ -18,9 +18,13 @@ export interface InstagramPostData {
 }
 
 /**
- * Status of processing an Instagram post
+ * Status of processing an Instagram post.
+ * - success: at least one EventSubmission was created
+ * - filtered: the AI found an event but it was dropped (past date, out of area)
+ * - no_events: the AI found nothing event-like
+ * - error: processing threw (network, AI, DB)
  */
-export type ProcessingStatus = 'success' | 'error' | 'no_events';
+export type ProcessingStatus = 'success' | 'filtered' | 'no_events' | 'error';
 
 /**
  * Result of processing a single Instagram post

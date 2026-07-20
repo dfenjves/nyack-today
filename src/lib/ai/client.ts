@@ -584,7 +584,7 @@ Extract event information from Instagram posts (caption + image) and return stru
 - endDate: ISO 8601 datetime
 - address: Street address
 - price: Price string (e.g., "$20", "Free", "$15-$30")
-- imageUrl: Event poster/flyer image URL (use the post's image URL when provided)
+- imageUrl: leave null — the post image is attached automatically and stored separately
 - eventUrl: Ticket/registration/info URL if present in the caption
 
 **Rules:**
@@ -640,6 +640,38 @@ Extract event information from Instagram posts (caption + image) and return stru
 }`;
 
 /**
+ * Builds an Anthropic image content block from an image URL.
+ * Instagram images are passed as `data:` URLs (fetched + inlined by the caller,
+ * because Instagram's CDN rejects third-party downloaders); everything else is
+ * passed as a plain URL source.
+ */
+type AnthropicMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
+
+function toAnthropicImageBlock(imageUrl: string):
+  | { type: 'image'; source: { type: 'url'; url: string } }
+  | { type: 'image'; source: { type: 'base64'; media_type: AnthropicMediaType; data: string } } {
+  if (imageUrl.startsWith('data:')) {
+    const match = imageUrl.match(/^data:([^;]+);base64,(.*)$/);
+    if (match) {
+      const allowed: AnthropicMediaType[] = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'image/webp',
+      ];
+      const media_type = (allowed as string[]).includes(match[1])
+        ? (match[1] as AnthropicMediaType)
+        : 'image/jpeg';
+      return {
+        type: 'image',
+        source: { type: 'base64', media_type, data: match[2] },
+      };
+    }
+  }
+  return { type: 'image', source: { type: 'url', url: imageUrl } };
+}
+
+/**
  * Builds the user prompt text for an Instagram post
  */
 function buildInstagramPrompt(post: {
@@ -653,9 +685,12 @@ function buildInstagramPrompt(post: {
     ? `Known venue for this account: ${post.venueHint}`
     : 'Known venue for this account: (unknown — infer from caption/image)';
 
+  // Note the image COUNT only — the images themselves are attached as separate
+  // image blocks. Never inline the URLs/data here (data URLs are huge and would
+  // blow up the text token count).
   const imageLine =
     post.imageUrls.length > 0
-      ? `\n\nPost image(s) (use as imageUrl for extracted events):\n${post.imageUrls.map((u, i) => `${i + 1}. ${u}`).join('\n')}`
+      ? `\n\n(${post.imageUrls.length} post image(s) attached — read them for event details.)`
       : '';
 
   return `Instagram post from @${post.handle}
@@ -683,11 +718,13 @@ async function extractFromInstagramWithOpenAI(
 
   const messageContent: Array<
     | { type: 'text'; text: string }
-    | { type: 'image_url'; image_url: { url: string } }
+    | { type: 'image_url'; image_url: { url: string; detail: 'low' | 'high' | 'auto' } }
   > = [{ type: 'text', text: buildInstagramPrompt(post) }];
 
   for (const imageUrl of post.imageUrls) {
-    messageContent.push({ type: 'image_url', image_url: { url: imageUrl } });
+    // detail: 'low' keeps each image at ~85 tokens (vs ~770 at high). Instagram
+    // flyers are legible at low detail, and it keeps us under tight TPM limits.
+    messageContent.push({ type: 'image_url', image_url: { url: imageUrl, detail: 'low' } });
   }
 
   try {
@@ -735,13 +772,11 @@ async function extractFromInstagramWithAnthropic(
   const messageContent: Array<
     | { type: 'text'; text: string }
     | { type: 'image'; source: { type: 'url'; url: string } }
+    | { type: 'image'; source: { type: 'base64'; media_type: AnthropicMediaType; data: string } }
   > = [{ type: 'text', text: buildInstagramPrompt(post) }];
 
   for (const imageUrl of post.imageUrls) {
-    messageContent.push({
-      type: 'image',
-      source: { type: 'url', url: imageUrl },
-    });
+    messageContent.push(toAnthropicImageBlock(imageUrl));
   }
 
   try {

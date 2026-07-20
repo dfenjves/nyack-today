@@ -14,7 +14,7 @@ import { put } from '@vercel/blob';
 import { extractEventsFromInstagram } from '../ai/client';
 import { ExtractedEvent } from '../ai/types';
 import { getInstagramConfig, fetchRecentPosts } from './client';
-import { InstagramPostData, ProcessedInstagramPost } from './types';
+import { InstagramPostData, ProcessedInstagramPost, ProcessingStatus } from './types';
 import {
   isInCoverageArea,
   parsePrice,
@@ -30,13 +30,45 @@ import { guessCategory } from '../utils/categories';
  * Extend this as handles are added to INSTAGRAM_HANDLES.
  */
 const HANDLE_VENUE_MAP: Record<string, string> = {
-  maureenscellar: "Maureen's Jazz Cellar",
-  olivesnyack: 'Olive’s',
-  nyacklibrary: 'Nyack Library',
+  casaofnyack: 'Casa Del Sol',
+  hotelnyack: 'Hotel Nyack',
+  'prohibition.river': 'Prohibition River',
+  edwardhopperhouse: 'Edward Hopper House Museum & Study Center',
+  nyackboatclub: 'Nyack Boat Club',
+  bigredbooks: 'Big Red Books',
 };
 
 function venueHintFor(handle: string): string | null {
   return HANDLE_VENUE_MAP[handle.toLowerCase()] || null;
+}
+
+// A browser-like User-Agent — Instagram's CDN is fine serving to normal
+// clients but rejects some server-side fetchers (notably OpenAI's image
+// downloader, which is why we fetch images ourselves and inline them).
+const IMAGE_FETCH_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+  Referer: 'https://www.instagram.com/',
+};
+
+/**
+ * Fetches an Instagram image and returns it as a base64 `data:` URL so it can be
+ * sent inline to the vision model. Instagram's CDN rejects OpenAI's downloader,
+ * so we cannot hand the model the raw URL. Returns null on failure.
+ */
+async function fetchImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url, { headers: IMAGE_FETCH_HEADERS });
+    if (!response.ok) return null;
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) return null;
+
+    const base64 = Buffer.from(await response.arrayBuffer()).toString('base64');
+    return `data:${contentType};base64,${base64}`;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -47,7 +79,7 @@ async function uploadInstagramImageToBlob(
   instagramUrl: string
 ): Promise<string | null> {
   try {
-    const response = await fetch(instagramUrl);
+    const response = await fetch(instagramUrl, { headers: IMAGE_FETCH_HEADERS });
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -93,14 +125,24 @@ async function createEventSubmission(
       }
     }
 
+    // These handles are all known Nyack-area venues, so fall back to the venue
+    // map when the AI omits the venue, and to Nyack when it omits/mis-fills the
+    // city — otherwise a legitimate event gets dropped by the coverage check.
+    const knownVenue = venueHintFor(post.handle);
+    const venue = extracted.venue || knownVenue || '';
+    let city = extracted.city || '';
+    if ((!city || !isInCoverageArea(city)) && knownVenue) {
+      city = 'Nyack';
+    }
+
     // Validate required fields
-    if (!extracted.title || !extracted.venue || !extracted.city) {
+    if (!extracted.title || !venue || !city) {
       console.warn('Event missing required fields:', extracted);
       return null;
     }
 
     // Skip if not in coverage area
-    if (!isInCoverageArea(extracted.city)) {
+    if (!isInCoverageArea(city)) {
       return null;
     }
 
@@ -114,10 +156,10 @@ async function createEventSubmission(
     // Always link back to the source post so admins can verify.
     const sourceUrl = post.url;
 
-    // Prefer the AI-identified image, fall back to the post's first image.
-    const rawImageUrl = extracted.imageUrl || post.imageUrls[0] || null;
-    const imageUrl = rawImageUrl
-      ? await uploadInstagramImageToBlob(rawImageUrl)
+    // Re-host the post's first image to Blob for permanent storage (the AI is
+    // given the image inline and no longer returns an imageUrl of its own).
+    const imageUrl = post.imageUrls[0]
+      ? await uploadInstagramImageToBlob(post.imageUrls[0])
       : null;
 
     const submission = await prisma.eventSubmission.create({
@@ -126,9 +168,9 @@ async function createEventSubmission(
         description: extracted.description ?? null,
         startDate,
         endDate,
-        venue: extracted.venue,
+        venue,
         address: extracted.address ?? null,
-        city: extracted.city,
+        city,
         category,
         price,
         isFree,
@@ -174,13 +216,23 @@ async function processInstagramPost(
 
     console.log(`  Processing post ${post.shortcode} from @${post.handle}`);
 
-    // Extract events using AI (caption + image)
+    // Fetch the post images ourselves and inline them as data URLs — Instagram's
+    // CDN rejects the vision provider's downloader. Cap the count to keep the
+    // payload/cost bounded (event flyers are almost always the first image).
+    const MAX_IMAGES = 3;
+    const dataUrls = (
+      await Promise.all(
+        post.imageUrls.slice(0, MAX_IMAGES).map(fetchImageAsDataUrl)
+      )
+    ).filter((u): u is string => u !== null);
+
+    // Extract events using AI (caption + inlined images)
     const aiResponse = await extractEventsFromInstagram({
       caption: post.caption,
       handle: post.handle,
       postedAt: post.postedAt.toISOString(),
       venueHint: venueHintFor(post.handle),
-      imageUrls: post.imageUrls,
+      imageUrls: dataUrls,
     });
 
     // Create EventSubmission records for extracted events
@@ -192,11 +244,11 @@ async function processInstagramPost(
       }
     }
 
-    const status =
+    const status: ProcessingStatus =
       submissionIds.length > 0
         ? 'success'
         : aiResponse.events.length > 0
-          ? 'error' // Events extracted but none created (filtered out)
+          ? 'filtered' // AI found an event but it was dropped (past/out-of-area)
           : 'no_events';
 
     // Record the processed post
