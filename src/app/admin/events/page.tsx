@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Event } from '@prisma/client'
 import { categoryLabels } from '@/lib/utils/categories'
 import { Category } from '@prisma/client'
 import { decodeHtmlEntities } from '@/lib/utils/text'
 
 export default function AdminEventsPage() {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const showHidden = searchParams.get('hidden') === 'true'
 
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past' | 'hidden'>(
     showHidden ? 'hidden' : 'upcoming'
   )
@@ -86,6 +88,28 @@ export default function AdminEventsPage() {
       }
     } catch (error) {
       console.error('Failed to delete event:', error)
+    }
+  }
+
+  const duplicateEvent = async (event: Event) => {
+    setDuplicatingId(event.id)
+    try {
+      const response = await fetch(
+        `/api/admin/events/${event.id}/duplicate`,
+        { method: 'POST' }
+      )
+
+      if (response.ok) {
+        const data = await response.json()
+        // Land on the copy's edit page so the date/details can be adjusted.
+        // The copy is hidden until saved from there.
+        router.push(`/admin/events/${data.event.id}`)
+      } else {
+        setDuplicatingId(null)
+      }
+    } catch (error) {
+      console.error('Failed to duplicate event:', error)
+      setDuplicatingId(null)
     }
   }
 
@@ -222,6 +246,13 @@ export default function AdminEventsPage() {
                       >
                         Edit
                       </Link>
+                      <button
+                        onClick={() => duplicateEvent(event)}
+                        disabled={duplicatingId === event.id}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded font-medium hover:bg-blue-200 disabled:opacity-50 transition-colors"
+                      >
+                        {duplicatingId === event.id ? 'Duplicating…' : 'Duplicate'}
+                      </button>
                       <button
                         onClick={() => deleteEvent(event)}
                         className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded font-medium hover:bg-red-200 transition-colors"
