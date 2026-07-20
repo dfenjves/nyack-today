@@ -219,3 +219,27 @@ model DiscordMessage {
   @@index([processedAt])
   @@index([status])
 }
+
+// Instagram posts processed for event extraction
+// Mirrors DiscordMessage — tracks which posts we've already seen so each
+// nightly run only processes genuinely new content.
+model InstagramPost {
+  id              String   @id @default(cuid())
+
+  // Instagram metadata
+  shortcode       String   @unique  // IG post shortcode (from the /p/{shortcode}/ URL)
+  handle          String              // Account the post came from
+  caption         String   @db.Text   // Post caption text
+  imageUrls       String[] @default([]) // Array of image URLs
+  postedAt        DateTime            // When the post was published to Instagram
+
+  // Processing metadata
+  processedAt     DateTime @default(now())
+  status          String   // "success", "error", "no_events"
+  eventsExtracted Int      @default(0)
+  errorMessage    String?
+
+  @@index([handle])
+  @@index([processedAt])
+  @@index([status])
+}
