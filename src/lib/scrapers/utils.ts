@@ -82,6 +82,16 @@ export function normalizeTitle(title: string, venue?: string): string {
   // Strip parenthetical content (e.g. "(benefitting The Angel)", "(outdoor)")
   normalized = normalized.replace(/\s*\([^)]*\)/g, '').trim()
 
+  // Truncate at act/subtitle separators. Recurring series are often listed as
+  // "Series Name Presents: Specific Act" by one source and just "Series Name"
+  // by another (e.g. "Music on the Hudson Presents: Dead Meat" vs "Music on
+  // the Hudson Summer Concert Series") — keep only the series name so the two
+  // forms normalize to a comparable prefix.
+  const subtitleSeparator = normalized.match(/\b(presents|featuring|feat\.?|ft\.?)\b/i)
+  if (subtitleSeparator && subtitleSeparator.index) {
+    normalized = normalized.substring(0, subtitleSeparator.index).trim()
+  }
+
   // Remove common prefixes
   for (const prefix of prefixes) {
     if (normalized.startsWith(prefix)) {
@@ -205,14 +215,20 @@ export function areEventsDuplicates(
     return false
   }
 
-  // Venues must be similar
+  // Venues must be similar — unless one side is just a bare city/area name
+  // (e.g. "Nyack"), which some sources use as a fallback when they can't
+  // extract a specific venue. That's not real venue information, so it
+  // shouldn't be able to veto a match against a source with a precise venue.
   const normalizedVenue1 = normalizeVenue(venue1)
   const normalizedVenue2 = normalizeVenue(venue2)
-  const venueSimilarity = stringSimilarity(normalizedVenue1, normalizedVenue2)
+  const venue1IsGenericCity = nearbyCities.includes(normalizedVenue1)
+  const venue2IsGenericCity = nearbyCities.includes(normalizedVenue2)
 
-  // If venues are very different, not duplicates
-  if (venueSimilarity < 0.7) {
-    return false
+  if (!venue1IsGenericCity && !venue2IsGenericCity) {
+    const venueSimilarity = stringSimilarity(normalizedVenue1, normalizedVenue2)
+    if (venueSimilarity < 0.7) {
+      return false
+    }
   }
 
   // Check title similarity
