@@ -34,9 +34,8 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
   const categoryLabel = categoryLabels[event.category]
   const categoryColor = getCategoryColor(event.category)
   const title = decodeHtmlEntities(event.title)
-  const isDiscord = event.sourceName === 'Discord'
 
-  const cardClassName = `block rounded-xl border p-4 transition-all ${
+  const cardClassName = `block rounded-xl border p-4 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-terra ${
     event.isMarquee
       ? 'bg-cream border-harvest/30 hover:shadow-md hover:border-harvest/60'
       : 'bg-surface border-sand hover:shadow-md hover:border-terra/30'
@@ -113,17 +112,8 @@ export default function EventCard({ event, showDate = false }: EventCardProps) {
     </div>
   )
 
-  if (isDiscord) {
-    return <div className={cardClassName}>{cardContent}</div>
-  }
-
   return (
-    <Link
-      href={event.sourceUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={cardClassName}
-    >
+    <Link href={`/events/${encodeURIComponent(event.id)}`} className={cardClassName}>
       {cardContent}
     </Link>
   )

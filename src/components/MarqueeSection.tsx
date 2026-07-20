@@ -130,10 +130,8 @@ export default function MarqueeSection({ onShowAll, initialEvents }: MarqueeSect
           return (
             <Link
               key={event.id}
-              href={event.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 w-[calc(33.333%-8px)] min-w-[200px] bg-surface border border-sand rounded-xl p-3 hover:shadow-md hover:border-terra/30 transition-all flex flex-col"
+              href={`/events/${encodeURIComponent(event.id)}`}
+              className="flex-shrink-0 w-[calc(33.333%-8px)] min-w-[200px] bg-surface border border-sand rounded-xl p-3 hover:shadow-md hover:border-terra/30 transition-all flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-terra"
             >
               {event.imageUrl ? (
                 <div className="w-full aspect-video rounded-lg overflow-hidden bg-oat mb-3">
