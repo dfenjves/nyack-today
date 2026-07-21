@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET is called by Vercel cron jobs
+// GET is called by Vercel cron jobs to trigger scraping, and by the admin
+// dashboard to fetch the list of available scrapers for the filter dropdown.
 export async function GET(request: NextRequest) {
   const cronHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET || process.env.SCRAPER_API_KEY
@@ -118,9 +119,11 @@ export async function GET(request: NextRequest) {
   const hasValidCron = Boolean(cronSecret) && cronHeader === `Bearer ${cronSecret}`
   const hasValidAdmin = Boolean(process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD)
 
-  if (!hasValidCron && !hasValidAdmin) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // A cron/authorized trigger runs the scrapers.
+  if (hasValidCron || hasValidAdmin) {
+    return POST(request)
   }
 
-  return POST(request)
+  // Otherwise, return the list of available scrapers for the admin dropdown.
+  return NextResponse.json({ scrapers: scrapers.map((s) => s.name) })
 }
