@@ -18,10 +18,17 @@ const APIFY_ENDPOINT = `https://api.apify.com/v2/acts/${APIFY_ACTOR}/run-sync-ge
  * Gets Instagram configuration from environment variables
  */
 export function getInstagramConfig(): InstagramConfig {
+  const seen = new Set<string>();
   const handles = (process.env.INSTAGRAM_HANDLES || '')
     .split(',')
     .map((h) => h.trim().replace(/^@/, ''))
-    .filter((h) => h.length > 0);
+    .filter((h) => h.length > 0)
+    .filter((h) => {
+      const key = h.toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
 
   const apifyToken = process.env.APIFY_API_TOKEN || '';
   const scraperEnabled = process.env.INSTAGRAM_SCRAPER_ENABLED === 'true';
