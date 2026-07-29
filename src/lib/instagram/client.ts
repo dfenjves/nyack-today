@@ -33,7 +33,7 @@ export function getInstagramConfig(): InstagramConfig {
   const apifyToken = process.env.APIFY_API_TOKEN || '';
   const scraperEnabled = process.env.INSTAGRAM_SCRAPER_ENABLED === 'true';
   const intervalHours = parseInt(
-    process.env.INSTAGRAM_SCRAPER_INTERVAL_HOURS || '72',
+    process.env.INSTAGRAM_SCRAPER_INTERVAL_HOURS || '24',
     10
   );
   const postsPerHandle = parseInt(
