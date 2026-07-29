@@ -6,11 +6,7 @@ import { DateFilter } from '@/lib/utils/dates'
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  // Fetch tonight's events and marquee events in parallel on the server
-  const [tonightEvents, marqueeEvents] = await Promise.all([
-    queryEvents({ dateFilter: 'tonight' }).catch((): Event[] => []),
-    queryEvents({ marqueeOnly: true, limit: 9 }).catch((): Event[] => []),
-  ])
+  const tonightEvents = await queryEvents({ dateFilter: 'tonight' }).catch((): Event[] => [])
 
   // Mirror the client-side fallback: if tonight is empty, show this week instead
   let initialEvents: Event[]
@@ -32,7 +28,6 @@ export default async function Home() {
       initialEvents={initialEvents}
       initialDateFilter={initialDateFilter}
       initialShowFallback={initialShowFallback}
-      initialMarqueeEvents={marqueeEvents}
     />
   )
 }
