@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
-import MarqueeSection from '@/components/MarqueeSection'
 import DateTabs from '@/components/DateTabs'
 import FilterBar, { Filters } from '@/components/FilterBar'
 import EventList from '@/components/EventList'
@@ -46,14 +45,12 @@ interface HomeClientProps {
   initialEvents: Event[]
   initialDateFilter: DateFilter
   initialShowFallback: boolean
-  initialMarqueeEvents: Event[]
 }
 
 export default function HomeClient({
   initialEvents,
   initialDateFilter,
   initialShowFallback,
-  initialMarqueeEvents,
 }: HomeClientProps) {
   const [dateFilter, setDateFilter] = useState<DateFilter>(initialDateFilter)
   const [customDate, setCustomDate] = useState<Date | null>(null)
@@ -67,7 +64,6 @@ export default function HomeClient({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showFallback, setShowFallback] = useState(initialShowFallback)
-  const [marqueeOnly, setMarqueeOnly] = useState(false)
 
   // Skip the initial fetch — we already have server-rendered data
   const isInitialMount = useRef(true)
@@ -82,11 +78,6 @@ export default function HomeClient({
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams()
-
-    if (marqueeOnly) {
-      params.set('marquee', 'true')
-      return params.toString()
-    }
 
     if (customDate) {
       params.set('date', 'custom')
@@ -111,7 +102,7 @@ export default function HomeClient({
     }
 
     return params.toString()
-  }, [dateFilter, filters, customDate, marqueeOnly])
+  }, [dateFilter, filters, customDate])
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
@@ -166,25 +157,11 @@ export default function HomeClient({
     fetchEvents()
   }, [fetchEvents])
 
-  const handleShowAllMarquee = useCallback(() => {
-    setMarqueeOnly(true)
-    pendingFallbackRef.current = false
-    setShowFallback(false)
-    setTimeout(() => {
-      document.getElementById('events-section')?.scrollIntoView({ behavior: 'smooth' })
-    }, 50)
-  }, [])
-
-  const handleClearMarquee = () => {
-    setMarqueeOnly(false)
-  }
-
   const handleDateFilterChange = (filter: DateFilter) => {
     pendingFallbackRef.current = false
     setShowFallback(false)
     setCustomDate(null)
     setDateFilter(filter)
-    setMarqueeOnly(false)
   }
 
   const handleCustomDateSelect = (date: Date) => {
@@ -205,7 +182,6 @@ export default function HomeClient({
   }
 
   const getHeading = () => {
-    if (marqueeOnly) return '⭐ Big Events'
     if (customDate) {
       return `Events on ${formatCustomDatePill(customDate)}`
     }
@@ -247,8 +223,6 @@ export default function HomeClient({
       <Hero />
 
       <main id="events-section" className="max-w-4xl mx-auto px-4 pt-3 pb-12">
-        <MarqueeSection onShowAll={handleShowAllMarquee} initialEvents={initialMarqueeEvents} />
-
         <div className="mb-6">
           <h1 className="font-display font-semibold text-3xl text-ink mb-2">
             {getHeading()}
@@ -260,7 +234,7 @@ export default function HomeClient({
 
         <div className="mb-4">
           <DateTabs
-            activeFilter={marqueeOnly ? 'custom' : dateFilter}
+            activeFilter={dateFilter}
             onFilterChange={handleDateFilterChange}
             customDate={customDate}
             onCustomDateSelect={handleCustomDateSelect}
@@ -271,18 +245,6 @@ export default function HomeClient({
         <div className="mb-6">
           <FilterBar filters={filters} onFiltersChange={setFilters} />
         </div>
-
-        {marqueeOnly && (
-          <div className="mb-4 bg-cream border border-harvest/30 rounded-xl px-4 py-2.5 flex items-center justify-between">
-            <span className="text-sm text-harvest font-medium">Showing all upcoming marquee events</span>
-            <button
-              onClick={handleClearMarquee}
-              className="text-terra hover:text-terra/70 text-sm font-medium"
-            >
-              ✕ Clear
-            </button>
-          </div>
-        )}
 
         {showFallback && (
           <FallbackBanner onDismiss={handleFallbackDismiss} />
