@@ -7,6 +7,9 @@ import {
   stripHtml,
   decodeHtmlEntities,
   makeEasternDate,
+  isNyackProper,
+  mentionsNonNyackTown,
+  detectNyackAreaVariant,
 } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 
@@ -401,15 +404,25 @@ export const nyackNewsAndViewsScraper: Scraper = {
       console.log(`[${SOURCE_NAME}] Parsed ${parsedEvents.length} events from post`)
 
       for (const parsed of parsedEvents) {
+        // The weekender roundup covers all of Rockland County under a single
+        // "Nyack" byline, so an event's real location is only findable in its
+        // text. Skip anything that explicitly names a town outside the
+        // immediate Nyack area rather than mislabeling it as Nyack.
+        const combinedText = `${parsed.title} ${parsed.description || ''}`
+        if (mentionsNonNyackTown(combinedText)) continue
+
+        const variant = detectNyackAreaVariant(combinedText)
+        const city = variant || 'Nyack'
+
         const scrapedEvent: ScrapedEvent = {
           title: parsed.title,
           description: parsed.description,
           startDate: parsed.startDate,
           endDate: null,
-          venue: 'Nyack',
+          venue: variant || 'Nyack',
           address: null,
-          city: 'Nyack',
-          isNyackProper: true,
+          city,
+          isNyackProper: isNyackProper(city),
           category: guessCategory(parsed.title, parsed.description),
           price: parsed.price,
           isFree: parsed.isFree,

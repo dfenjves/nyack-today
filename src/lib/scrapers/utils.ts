@@ -322,6 +322,71 @@ export function isInCoverageArea(city: string): boolean {
 }
 
 /**
+ * Rockland/Westchester towns that are close to Nyack but not close enough to
+ * be shown as if they were Nyack-area events. Some scrapers (e.g. regional
+ * roundup posts) aggregate events from all over the county under a single
+ * "Nyack" byline, so we need to catch an explicit other-town address in the
+ * free text and exclude that event rather than mislabel it as Nyack.
+ */
+const NON_NYACK_AREA_TOWNS = [
+  'new city',
+  'nanuet',
+  'congers',
+  'haverstraw',
+  'garnerville',
+  'stony point',
+  'spring valley',
+  'monsey',
+  'suffern',
+  'pomona',
+  'airmont',
+  'chestnut ridge',
+  'hillburn',
+  'sloatsburg',
+  'wesley hills',
+  'pearl river',
+  'thiells',
+  'valley cottage',
+  'piermont',
+  'grandview',
+  'grand view',
+  'sparkill',
+  'tappan',
+  'orangeburg',
+  'blauvelt',
+  'palisades',
+  'tarrytown',
+  'sleepy hollow',
+  'irvington',
+  'ossining',
+]
+
+/**
+ * Check whether free text (e.g. an event description) explicitly names a town
+ * outside the immediate Nyack area. Returns the matched town name, or null.
+ */
+export function mentionsNonNyackTown(text: string): string | null {
+  const lower = text.toLowerCase()
+  for (const town of NON_NYACK_AREA_TOWNS) {
+    const pattern = new RegExp(`\\b${town.replace(/\s+/g, '\\s+')}\\b`, 'i')
+    if (pattern.test(lower)) return town
+  }
+  return null
+}
+
+/**
+ * Detect an explicit "West/Upper/South Nyack" mention in free text, returning
+ * its canonical name, or null if the text doesn't name a specific variant.
+ */
+export function detectNyackAreaVariant(text: string): 'West Nyack' | 'Upper Nyack' | 'South Nyack' | null {
+  const lower = text.toLowerCase()
+  if (/\bwest nyack\b/.test(lower)) return 'West Nyack'
+  if (/\bupper nyack\b/.test(lower)) return 'Upper Nyack'
+  if (/\bsouth nyack\b/.test(lower)) return 'South Nyack'
+  return null
+}
+
+/**
  * Parse price from various formats and determine if free
  */
 export function parsePrice(priceData: string | number | undefined | null): { price: string | null; isFree: boolean } {

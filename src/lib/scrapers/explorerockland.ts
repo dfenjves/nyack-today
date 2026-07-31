@@ -7,7 +7,7 @@ const SOURCE_NAME = 'Explore Rockland'
 const ICAL_URL = 'https://explorerocklandny.com/?post_type=tribe_events&ical=1&eventDisplay=list'
 
 // Cities we care about
-const ALLOWED_CITIES = ['nyack', 'west nyack', 'upper nyack']
+const ALLOWED_CITIES = ['nyack', 'west nyack', 'upper nyack', 'south nyack']
 
 /**
  * node-ical returns string fields as either a plain string or, when the
@@ -76,6 +76,9 @@ export const exploreRocklandScraper: Scraper = {
           isNyackProper = false
         } else if (locationLower.includes('upper nyack')) {
           city = 'Upper Nyack'
+          isNyackProper = false
+        } else if (locationLower.includes('south nyack')) {
+          city = 'South Nyack'
           isNyackProper = false
         }
 
