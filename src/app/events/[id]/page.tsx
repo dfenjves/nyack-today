@@ -1,8 +1,8 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
+import BackToEventsLink from '@/components/BackToEventsLink'
 import CalendarDropdown from '@/components/CalendarDropdown'
 import { getEventByStableId } from '@/lib/utils/events-query'
 import { formatDate, formatTime } from '@/lib/utils/dates'
@@ -12,7 +12,7 @@ import type { Category } from '@prisma/client'
 import {
   Music, Laugh, Film, Mic2, Baby, UtensilsCrossed,
   Trophy, Building2, Palette, GraduationCap, Calendar,
-  MapPin, ExternalLink, ArrowLeft,
+  MapPin, ExternalLink,
 } from 'lucide-react'
 
 const categoryLucideIcons: Record<Category, React.ReactNode> = {
@@ -54,6 +54,9 @@ export async function generateMetadata({ params }: EventPageProps): Promise<Meta
   return {
     title,
     description,
+    alternates: {
+      canonical: `/events/${id}`,
+    },
     openGraph: {
       title,
       description,
@@ -115,13 +118,7 @@ export default async function EventPage({ params }: EventPageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
 
-        <Link
-          href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-terra transition-colors mb-4 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-terra"
-        >
-          <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          Back to events
-        </Link>
+        <BackToEventsLink />
 
         <article className="bg-surface border border-sand rounded-2xl overflow-hidden">
           {event.imageUrl ? (
