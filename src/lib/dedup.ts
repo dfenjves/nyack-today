@@ -12,12 +12,21 @@ function isGenericVenue(venue: string): boolean {
 }
 
 export interface DuplicateGroup {
+  groupKey: string
   winner: Event
   losers: Event[]
+  members: Event[]
   similarity: {
     titleSimilarity: number
     venueSimilarity: number
   }
+}
+
+// Stable identifier for a group across the scan and merge requests, so a
+// user's choice of winner (picked during the dry-run scan) can be matched
+// back up to the same group when the merge actually runs.
+export function groupKeyFor(memberIds: string[]): string {
+  return [...memberIds].sort().join(',')
 }
 
 export function scoreEventCompleteness(event: Event): number {
@@ -83,7 +92,10 @@ function sharedEventPhrase(titleA: string, titleB: string): boolean {
   return SHARED_EVENT_PHRASES.some(phrase => a.includes(phrase) && b.includes(phrase))
 }
 
-export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
+export function findDuplicateGroups(
+  events: Event[],
+  winnerOverrides?: Record<string, string>
+): DuplicateGroup[] {
   const VENUE_THRESHOLD = 0.7
   const TITLE_THRESHOLD = 0.75
 
@@ -171,8 +183,12 @@ export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
       return a.createdAt.getTime() - b.createdAt.getTime()
     })
 
-    const winner = sorted[0]
-    const losers = sorted.slice(1)
+    const groupKey = groupKeyFor(memberIds)
+    const overrideId = winnerOverrides?.[groupKey]
+    const overrideWinner = overrideId ? sorted.find(e => e.id === overrideId) : undefined
+
+    const winner = overrideWinner ?? sorted[0]
+    const losers = sorted.filter(e => e.id !== winner.id)
 
     // Best similarity score across pairs involving winner
     let bestTitleSim = 0
@@ -184,7 +200,13 @@ export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
       if (vs > bestVenueSim) bestVenueSim = vs
     }
 
-    groups.push({ winner, losers, similarity: { titleSimilarity: bestTitleSim, venueSimilarity: bestVenueSim } })
+    groups.push({
+      groupKey,
+      winner,
+      losers,
+      members: sorted,
+      similarity: { titleSimilarity: bestTitleSim, venueSimilarity: bestVenueSim },
+    })
   }
 
   return groups
