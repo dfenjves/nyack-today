@@ -74,6 +74,15 @@ export function normalizeTitle(title: string, venue?: string): string {
     'sleepy hollow',
   ]
 
+  // Generic venue/address words that are too common to safely strip from a
+  // title just because they also appear in the venue name (e.g. stripping
+  // "street" from "Street Fair Sunday" because the venue is "Main Street").
+  const genericVenueWords = new Set([
+    'street', 'st', 'avenue', 'ave', 'road', 'rd', 'boulevard', 'blvd',
+    'park', 'plaza', 'square', 'hall', 'center', 'centre', 'main',
+    'upper', 'lower', 'north', 'south', 'east', 'west', 'village', 'town', 'city',
+  ])
+
   let normalized = title.toLowerCase().trim()
 
   // Normalize ampersand to 'and'
@@ -110,9 +119,10 @@ export function normalizeTitle(title: string, venue?: string): string {
       normalized = normalized.replace(venueLower, '').trim()
     }
 
-    // Try to remove significant parts of venue name (3+ char words)
+    // Try to remove significant parts of venue name (3+ char words),
+    // skipping generic words that are too common to safely strip from a title.
     for (const word of venueWords) {
-      if (word.length >= 3) {
+      if (word.length >= 3 && !genericVenueWords.has(word)) {
         const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
         const regex = new RegExp(`\\b${escaped}\\b`, 'gi')
         normalized = normalized.replace(regex, '').trim()
@@ -160,9 +170,13 @@ export function normalizeVenue(venue: string): string {
   // Remove trailing parenthetical qualifiers like "(outdoors)", "(outdoor stage)", "(bar)"
   normalized = normalized.replace(/\s*\([^)]*\)\s*$/, '').trim()
 
-  // Remove common words like "the" at the beginning
-  if (normalized.startsWith('the ')) {
-    normalized = normalized.substring(4)
+  // Remove common leading qualifiers that don't identify the venue itself
+  // (e.g. "Village of Nyack Memorial Park" vs "Nyack Memorial Park (Upper Park)")
+  for (const prefix of ['the ', 'village of ', 'town of ']) {
+    if (normalized.startsWith(prefix)) {
+      normalized = normalized.substring(prefix.length)
+      break
+    }
   }
 
   // Normalize whitespace

@@ -46,11 +46,41 @@ export function buildMergedEventData(winner: Event, loser: Event): Partial<Event
   return updates
 }
 
+// Bucket by calendar day in Eastern Time, not the server's local timezone —
+// the DB stores UTC, so e.g. an 8pm Eastern event is already past midnight UTC
+// and would otherwise land in the wrong day's bucket.
+const dateKeyFormatter = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/New_York',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
 function toLocalDateStr(d: Date): string {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return dateKeyFormatter.format(d) // en-CA formats as YYYY-MM-DD
+}
+
+// Phrases that identify a recurring, city-wide one-off event type. When two
+// events on the same day in the same city both mention the same phrase, treat
+// them as duplicate candidates even if the rest of the title differs a lot
+// (different sources often give the same street fair a different name each
+// time, e.g. "Street Fair Sunday" vs "Fall Fest Street Fair").
+const SHARED_EVENT_PHRASES = [
+  'street fair',
+  'block party',
+  'farmers market',
+  'sidewalk sale',
+  'art walk',
+  'wine walk',
+  'restaurant week',
+  'tree lighting',
+  'car show',
+]
+
+function sharedEventPhrase(titleA: string, titleB: string): boolean {
+  const a = titleA.toLowerCase()
+  const b = titleB.toLowerCase()
+  return SHARED_EVENT_PHRASES.some(phrase => a.includes(phrase) && b.includes(phrase))
 }
 
 export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
@@ -92,6 +122,15 @@ export function findDuplicateGroups(events: Event[]): DuplicateGroup[] {
       for (let j = i + 1; j < dayEvents.length; j++) {
         const a = dayEvents[i]
         const b = dayEvents[j]
+
+        // Same city + a shared "type of event" phrase (e.g. "street fair") is
+        // treated as a duplicate regardless of how different the rest of the
+        // title/venue text is — different sources often name these one-offs
+        // differently each time.
+        if (a.city === b.city && sharedEventPhrase(a.title, b.title)) {
+          union(a.id, b.id)
+          continue
+        }
 
         const eitherGeneric = isGenericVenue(a.venue) || isGenericVenue(b.venue)
         if (!eitherGeneric) {
