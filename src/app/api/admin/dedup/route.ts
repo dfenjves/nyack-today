@@ -9,6 +9,14 @@ export async function POST(request: NextRequest) {
     // Default to dryRun=true for safety — require explicit ?dryRun=false to mutate
     const dryRun = searchParams.get('dryRun') !== 'false'
 
+    // Optional per-group winner selection, keyed by groupKeyFor(memberIds),
+    // sent back from the scan results when the user picks a non-default winner.
+    let winnerOverrides: Record<string, string> | undefined
+    if (!dryRun) {
+      const body = await request.json().catch(() => null)
+      winnerOverrides = body?.winnerOverrides ?? undefined
+    }
+
     const now = new Date()
     const events = await prisma.event.findMany({
       where: {
@@ -19,7 +27,7 @@ export async function POST(request: NextRequest) {
       orderBy: { startDate: 'asc' },
     })
 
-    const groups = findDuplicateGroups(events)
+    const groups = findDuplicateGroups(events, winnerOverrides)
 
     let eventsDeleted = 0
     let eventsUpdated = 0
@@ -59,6 +67,7 @@ export async function POST(request: NextRequest) {
       eventsDeleted,
       eventsUpdated,
       groups: groups.map(group => ({
+        groupKey: group.groupKey,
         winner: {
           id: group.winner.id,
           title: group.winner.title,
@@ -74,6 +83,14 @@ export async function POST(request: NextRequest) {
           startDate: l.startDate,
           sourceName: l.sourceName,
           sourceUrl: l.sourceUrl,
+        })),
+        members: group.members.map(m => ({
+          id: m.id,
+          title: m.title,
+          venue: m.venue,
+          startDate: m.startDate,
+          sourceName: m.sourceName,
+          sourceUrl: m.sourceUrl,
         })),
         similarity: group.similarity,
       })),

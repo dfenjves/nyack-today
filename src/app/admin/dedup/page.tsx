@@ -12,8 +12,9 @@ interface EventSummary {
 }
 
 interface GroupResult {
+  groupKey: string
   winner: EventSummary
-  losers: EventSummary[]
+  members: EventSummary[]
   similarity: {
     titleSimilarity: number
     venueSimilarity: number
@@ -39,30 +40,52 @@ function formatDate(dateStr: string) {
   })
 }
 
-function EventCard({ event, label, color }: { event: EventSummary; label: string; color: 'green' | 'red' }) {
-  const borderClass = color === 'green' ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
-  const badgeClass = color === 'green' ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
+function EventCard({
+  event,
+  isWinner,
+  groupKey,
+  onSelect,
+}: {
+  event: EventSummary
+  isWinner: boolean
+  groupKey: string
+  onSelect: (groupKey: string, eventId: string) => void
+}) {
+  const borderClass = isWinner ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+  const badgeClass = isWinner ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
+  const inputId = `winner-${groupKey}-${event.id}`
 
   return (
-    <div className={`border ${borderClass} rounded-lg p-4 mb-2`}>
-      <div className="flex items-center gap-2 mb-1">
-        <span className={`text-xs font-semibold ${badgeClass} px-2 py-0.5 rounded`}>
-          {label}
-        </span>
-        <a
-          href={event.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-stone-900 hover:text-orange-600 hover:underline"
-        >
-          {event.title}
-        </a>
+    <label htmlFor={inputId} className={`flex gap-3 items-start border ${borderClass} rounded-lg p-4 mb-2 cursor-pointer`}>
+      <input
+        id={inputId}
+        type="radio"
+        name={`winner-${groupKey}`}
+        checked={isWinner}
+        onChange={() => onSelect(groupKey, event.id)}
+        className="mt-1"
+      />
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`text-xs font-semibold ${badgeClass} px-2 py-0.5 rounded`}>
+            {isWinner ? 'KEEP' : 'DELETE'}
+          </span>
+          <a
+            href={event.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={e => e.stopPropagation()}
+            className="font-medium text-stone-900 hover:text-orange-600 hover:underline"
+          >
+            {event.title}
+          </a>
+        </div>
+        <p className="text-sm text-stone-600">
+          {event.venue} &middot; {formatDate(event.startDate)}
+        </p>
+        <p className="text-xs text-stone-400 mt-1">Source: {event.sourceName}</p>
       </div>
-      <p className="text-sm text-stone-600">
-        {event.venue} &middot; {formatDate(event.startDate)}
-      </p>
-      <p className="text-xs text-stone-400 mt-1">Source: {event.sourceName}</p>
-    </div>
+    </label>
   )
 }
 
@@ -72,6 +95,7 @@ export default function AdminDedupPage() {
   const [result, setResult] = useState<DedupResult | null>(null)
   const [mergeResult, setMergeResult] = useState<DedupResult | null>(null)
   const [error, setError] = useState('')
+  const [selectedWinners, setSelectedWinners] = useState<Record<string, string>>({})
 
   const scan = async () => {
     setScanning(true)
@@ -83,6 +107,9 @@ export default function AdminDedupPage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Scan failed'); return }
       setResult(data)
+      setSelectedWinners(
+        Object.fromEntries((data as DedupResult).groups.map((g: GroupResult) => [g.groupKey, g.winner.id]))
+      )
     } catch {
       setError('Scan failed')
     } finally {
@@ -90,13 +117,21 @@ export default function AdminDedupPage() {
     }
   }
 
+  const selectWinner = (groupKey: string, eventId: string) => {
+    setSelectedWinners(prev => ({ ...prev, [groupKey]: eventId }))
+  }
+
   const mergeAll = async () => {
-    const loserCount = result!.groups.reduce((n, g) => n + g.losers.length, 0)
+    const loserCount = result!.groups.reduce((n, g) => n + g.members.length - 1, 0)
     if (!confirm(`Merge ${result!.groupsFound} duplicate group(s) and delete ${loserCount} event(s)?`)) return
     setMerging(true)
     setError('')
     try {
-      const res = await fetch('/api/admin/dedup?dryRun=false', { method: 'POST' })
+      const res = await fetch('/api/admin/dedup?dryRun=false', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ winnerOverrides: selectedWinners }),
+      })
       const data = await res.json()
       if (!res.ok) { setError(data.error || 'Merge failed'); return }
       setMergeResult(data)
@@ -108,7 +143,7 @@ export default function AdminDedupPage() {
     }
   }
 
-  const loserCount = result?.groups.reduce((n, g) => n + g.losers.length, 0) ?? 0
+  const loserCount = result?.groups.reduce((n, g) => n + g.members.length - 1, 0) ?? 0
 
   return (
     <div>
@@ -173,24 +208,33 @@ export default function AdminDedupPage() {
             )}
           </div>
 
-          {result.groups.map((group, i) => (
-            <div key={group.winner.id} className="bg-white border border-stone-200 rounded-xl p-5 mb-4">
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs font-medium bg-stone-100 text-stone-600 px-2 py-1 rounded">
-                  Group {i + 1}
-                </span>
-                <span className="text-xs text-stone-500">
-                  Title similarity: {(group.similarity.titleSimilarity * 100).toFixed(0)}%
-                  {' · '}
-                  Venue similarity: {(group.similarity.venueSimilarity * 100).toFixed(0)}%
-                </span>
+          {result.groups.map((group, i) => {
+            const winnerId = selectedWinners[group.groupKey] ?? group.winner.id
+            return (
+              <div key={group.groupKey} className="bg-white border border-stone-200 rounded-xl p-5 mb-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-xs font-medium bg-stone-100 text-stone-600 px-2 py-1 rounded">
+                    Group {i + 1}
+                  </span>
+                  <span className="text-xs text-stone-500">
+                    Title similarity: {(group.similarity.titleSimilarity * 100).toFixed(0)}%
+                    {' · '}
+                    Venue similarity: {(group.similarity.venueSimilarity * 100).toFixed(0)}%
+                  </span>
+                </div>
+                <p className="text-xs text-stone-400 mb-2">Select which event to keep:</p>
+                {group.members.map(member => (
+                  <EventCard
+                    key={member.id}
+                    event={member}
+                    isWinner={member.id === winnerId}
+                    groupKey={group.groupKey}
+                    onSelect={selectWinner}
+                  />
+                ))}
               </div>
-              <EventCard event={group.winner} label="KEEP" color="green" />
-              {group.losers.map(loser => (
-                <EventCard key={loser.id} event={loser} label="DELETE" color="red" />
-              ))}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
