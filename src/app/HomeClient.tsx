@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Header from '@/components/Header'
 import Hero from '@/components/Hero'
 import DateTabs from '@/components/DateTabs'
@@ -44,22 +45,24 @@ function isFallbackDismissed(): boolean {
 interface HomeClientProps {
   initialEvents: Event[]
   initialDateFilter: DateFilter
+  initialCustomDate: string | null
+  initialFilters: Filters
   initialShowFallback: boolean
 }
 
 export default function HomeClient({
   initialEvents,
   initialDateFilter,
+  initialCustomDate,
+  initialFilters,
   initialShowFallback,
 }: HomeClientProps) {
+  const router = useRouter()
   const [dateFilter, setDateFilter] = useState<DateFilter>(initialDateFilter)
-  const [customDate, setCustomDate] = useState<Date | null>(null)
-  const [filters, setFilters] = useState<Filters>({
-    category: 'ALL',
-    priceFilter: 'all',
-    location: 'all',
-    familyFriendly: false,
-  })
+  const [customDate, setCustomDate] = useState<Date | null>(
+    initialCustomDate ? new Date(initialCustomDate) : null
+  )
+  const [filters, setFilters] = useState<Filters>(initialFilters)
   const [events, setEvents] = useState<Event[]>(() => convertEventDates(initialEvents))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -67,6 +70,7 @@ export default function HomeClient({
 
   // Skip the initial fetch — we already have server-rendered data
   const isInitialMount = useRef(true)
+  const isInitialUrlSync = useRef(true)
   const pendingFallbackRef = useRef(false)
 
   // Server can't read sessionStorage — hide banner if user previously dismissed it
@@ -75,6 +79,17 @@ export default function HomeClient({
       setShowFallback(false)
     }
   }, [initialShowFallback])
+
+  // Lets the event detail page's back button know it can safely use
+  // router.back() (which restores this page's filter state) instead of
+  // pushing a fresh "/" navigation (which would reset to "tonight").
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('nyack-visited-home', 'true')
+    } catch {
+      // sessionStorage unavailable
+    }
+  }, [])
 
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams()
@@ -103,6 +118,22 @@ export default function HomeClient({
 
     return params.toString()
   }, [dateFilter, filters, customDate])
+
+  // Keep the URL in sync with the current filters via the Next.js router (rather
+  // than raw History API calls, which leave Next's own router state out of sync
+  // and get overridden on back navigation) so that navigating to an event and
+  // back — which forces a fresh server render of this dynamic page — restores
+  // the same view instead of resetting to tonight. The initial render's URL
+  // already matches (it came from the server), so skip that render to avoid a
+  // redundant replace.
+  useEffect(() => {
+    if (isInitialUrlSync.current) {
+      isInitialUrlSync.current = false
+      return
+    }
+    const queryString = buildQueryString()
+    router.replace(`/?${queryString}`, { scroll: false })
+  }, [buildQueryString, router])
 
   const fetchEvents = useCallback(async () => {
     setLoading(true)
