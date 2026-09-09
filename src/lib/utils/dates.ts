@@ -197,24 +197,44 @@ export function getMonthEnd(): Date {
 export type DateFilter = 'tonight' | 'tomorrow' | 'weekend' | 'week' | 'month' | 'custom'
 
 /**
- * Get date range for a specific date (midnight to 11:59:59 PM Eastern)
+ * Get date range for a custom selection: midnight of the start date to
+ * 11:59:59 PM of the end date (both Eastern). Pass a single date to select
+ * just that day.
  */
-export function getCustomDateRange(date: Date): { start: Date; end: Date } {
-  const parts = getEasternDateParts(date)
-  const start = easternToUtc(parts.year, parts.month, parts.day, 0, 0, 0, 0)
-  const end = easternToUtc(parts.year, parts.month, parts.day, 23, 59, 59, 999)
-  return { start, end }
+export function getCustomDateRange(start: Date, end: Date = start): { start: Date; end: Date } {
+  const startParts = getEasternDateParts(start)
+  const endParts = getEasternDateParts(end)
+  return {
+    start: easternToUtc(startParts.year, startParts.month, startParts.day, 0, 0, 0, 0),
+    end: easternToUtc(endParts.year, endParts.month, endParts.day, 23, 59, 59, 999),
+  }
+}
+
+function isSameEasternDay(a: Date, b: Date): boolean {
+  const partsA = getEasternDateParts(a)
+  const partsB = getEasternDateParts(b)
+  return partsA.year === partsB.year && partsA.month === partsB.month && partsA.day === partsB.day
 }
 
 /**
- * Format a date for the custom date pill (e.g., "Mar 28")
+ * Format a custom date selection for the pill (e.g., "Mar 28" for a single
+ * day, or "Mar 28 – Apr 2" for a range).
  */
-export function formatCustomDatePill(date: Date): string {
-  return date.toLocaleDateString('en-US', {
+export function formatCustomDatePill(start: Date, end: Date = start): string {
+  const startStr = start.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     timeZone: TIMEZONE,
   })
+
+  if (isSameEasternDay(start, end)) return startStr
+
+  const endStr = end.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: TIMEZONE,
+  })
+  return `${startStr} – ${endStr}`
 }
 
 /**

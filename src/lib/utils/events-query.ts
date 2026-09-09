@@ -7,6 +7,7 @@ import { generateRecurringInstances } from '@/lib/utils/recurrence'
 export interface EventQueryOptions {
   dateFilter?: DateFilter | null
   customDate?: Date | null
+  customEndDate?: Date | null
   category?: Category | null
   free?: boolean
   familyFriendly?: boolean
@@ -82,6 +83,7 @@ export async function queryEvents(options: EventQueryOptions = {}): Promise<Even
   const {
     dateFilter,
     customDate,
+    customEndDate,
     category,
     free,
     familyFriendly,
@@ -95,7 +97,7 @@ export async function queryEvents(options: EventQueryOptions = {}): Promise<Even
   const where: Record<string, unknown> = { isHidden: false }
 
   const { start, end } = (() => {
-    if (dateFilter === 'custom' && customDate) return getCustomDateRange(customDate)
+    if (dateFilter === 'custom' && customDate) return getCustomDateRange(customDate, customEndDate ?? customDate)
     if (dateFilter && dateFilter !== 'custom') return getDateRange(dateFilter)
     return { start: getToday(), end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) }
   })()
