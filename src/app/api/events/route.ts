@@ -8,7 +8,8 @@ import { queryEvents } from '@/lib/utils/events-query'
  * Fetch events with filtering
  *
  * Query params:
- * - date: DateFilter ('tonight' | 'tomorrow' | 'weekend' | 'week')
+ * - date: DateFilter ('tonight' | 'tomorrow' | 'weekend' | 'week' | 'month' | 'custom')
+ * - customStart, customEnd: ISO date strings, required when date=custom (customEnd defaults to customStart)
  * - category: Category enum value
  * - free: 'true' to show only free events
  * - familyFriendly: 'true' to show only family-friendly events
@@ -31,12 +32,15 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50', 10)
     const offset = parseInt(searchParams.get('offset') || '0', 10)
 
-    const customDateParam = searchParams.get('customDate')
-    const customDate = dateFilter === 'custom' && customDateParam ? new Date(customDateParam) : null
+    const customStartParam = searchParams.get('customStart')
+    const customEndParam = searchParams.get('customEnd')
+    const customDate = dateFilter === 'custom' && customStartParam ? new Date(customStartParam) : null
+    const customEndDate = dateFilter === 'custom' && customEndParam ? new Date(customEndParam) : null
 
     const events = await queryEvents({
       dateFilter,
       customDate,
+      customEndDate,
       category,
       free,
       familyFriendly,
