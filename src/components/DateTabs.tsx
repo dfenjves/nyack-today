@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { DayPicker, DateRange } from 'react-day-picker'
 import { Drawer } from 'vaul'
@@ -28,6 +28,10 @@ const tabs: { value: DateFilter; label: string }[] = [
   { value: 'month', label: 'This Month' },
 ]
 
+// Width of the fade at each edge, kept narrow enough that it reads as a hint
+// rather than obscuring a whole pill.
+const SCROLL_FADE = '28px'
+
 export default function DateTabs({
   activeFilter,
   onFilterChange,
@@ -40,6 +44,43 @@ export default function DateTabs({
   const maxDate = getMaxSelectableDate()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const updateFades = () => {
+      setCanScrollLeft(el.scrollLeft > 1)
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1)
+    }
+
+    updateFades()
+    el.addEventListener('scroll', updateFades, { passive: true })
+    window.addEventListener('resize', updateFades)
+    const resizeObserver = new ResizeObserver(updateFades)
+    resizeObserver.observe(el)
+
+    return () => {
+      el.removeEventListener('scroll', updateFades)
+      window.removeEventListener('resize', updateFades)
+      resizeObserver.disconnect()
+    }
+  }, [])
+
+  // Fade the actual pill pixels to transparent at whichever edges still have
+  // hidden content, rather than overlaying a solid-color gradient (which
+  // shows as a color-mismatched smear over the colored active pill).
+  const edgeMask = canScrollLeft && canScrollRight
+    ? `linear-gradient(to right, transparent, black ${SCROLL_FADE}, black calc(100% - ${SCROLL_FADE}), transparent)`
+    : canScrollRight
+      ? `linear-gradient(to right, black calc(100% - ${SCROLL_FADE}), transparent)`
+      : canScrollLeft
+        ? `linear-gradient(to left, black calc(100% - ${SCROLL_FADE}), transparent)`
+        : undefined
 
   const handleOpenChange = (open: boolean) => {
     setDrawerOpen(open)
@@ -58,7 +99,11 @@ export default function DateTabs({
   const isCustomActive = !!customRange
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 items-center">
+    <div
+      ref={scrollRef}
+      className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 items-center"
+      style={edgeMask ? { WebkitMaskImage: edgeMask, maskImage: edgeMask } : undefined}
+    >
       {/* Preset tabs */}
       {tabs.map((tab) => (
         <button
