@@ -4,6 +4,7 @@ import Header from '@/components/Header'
 import BottomNav from '@/components/BottomNav'
 import BackToEventsLink from '@/components/BackToEventsLink'
 import CalendarDropdown from '@/components/CalendarDropdown'
+import ShareButton from '@/components/ShareButton'
 import { getEventByStableId } from '@/lib/utils/events-query'
 import { formatDate, formatTime } from '@/lib/utils/dates'
 import { categoryLabels, getCategoryColor, categoryGradients } from '@/lib/utils/categories'
@@ -120,7 +121,7 @@ export default async function EventPage({ params }: EventPageProps) {
 
         <BackToEventsLink />
 
-        <article className="bg-surface border border-sand rounded-2xl overflow-hidden">
+        <article className="bg-surface border border-sand rounded-2xl">
           {event.imageUrl ? (
             <div className="w-full bg-oat">
               <img
@@ -130,7 +131,7 @@ export default async function EventPage({ params }: EventPageProps) {
               />
             </div>
           ) : (
-            <div className={`w-full aspect-video flex items-center justify-center ${categoryGradients[event.category]}`}>
+            <div className={`w-full aspect-video rounded-t-2xl overflow-hidden flex items-center justify-center ${categoryGradients[event.category]}`}>
               {categoryLucideIcons[event.category]}
             </div>
           )}
@@ -209,6 +210,7 @@ export default async function EventPage({ params }: EventPageProps) {
               )}
 
               <CalendarDropdown event={event} />
+              <ShareButton title={title} path={`/events/${id}`} />
             </div>
 
             {event.sourceName && (

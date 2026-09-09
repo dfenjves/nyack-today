@@ -28,7 +28,8 @@ export default async function Home({ searchParams }: HomePageProps) {
   const params = await searchParams
 
   const dateParam = firstValue(params.date) as DateFilter | undefined
-  const customDateParam = firstValue(params.customDate)
+  const customStartParam = firstValue(params.customStart)
+  const customEndParam = firstValue(params.customEnd)
   const categoryParam = firstValue(params.category) as Category | undefined
   const free = firstValue(params.free) === 'true'
   const familyFriendly = firstValue(params.familyFriendly) === 'true'
@@ -52,16 +53,18 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   let initialEvents: Event[]
   let initialDateFilter: DateFilter
-  let initialCustomDate: string | null = null
+  let initialCustomRange: { start: string; end: string } | null = null
   let initialShowFallback = false
 
-  if (dateParam === 'custom' && customDateParam) {
-    initialCustomDate = customDateParam
+  if (dateParam === 'custom' && customStartParam) {
+    const customEnd = customEndParam ?? customStartParam
+    initialCustomRange = { start: customStartParam, end: customEnd }
     initialDateFilter = 'tonight'
     initialEvents = await queryEvents({
       ...baseQueryOptions,
       dateFilter: 'custom',
-      customDate: new Date(customDateParam),
+      customDate: new Date(customStartParam),
+      customEndDate: new Date(customEnd),
     }).catch((): Event[] => [])
   } else {
     const requestedFilter: DateFilter = dateParam ?? 'tonight'
@@ -88,7 +91,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     <HomeClient
       initialEvents={initialEvents}
       initialDateFilter={initialDateFilter}
-      initialCustomDate={initialCustomDate}
+      initialCustomRange={initialCustomRange}
       initialFilters={initialFilters}
       initialShowFallback={initialShowFallback}
     />

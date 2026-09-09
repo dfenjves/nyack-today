@@ -2,16 +2,21 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { DayPicker } from 'react-day-picker'
+import { DayPicker, DateRange } from 'react-day-picker'
 import { Drawer } from 'vaul'
 import { DateFilter, formatCustomDatePill, getMaxSelectableDate } from '@/lib/utils/dates'
 import 'react-day-picker/style.css'
 
+interface CustomRange {
+  start: Date
+  end: Date
+}
+
 interface DateTabsProps {
   activeFilter: DateFilter
   onFilterChange: (filter: DateFilter) => void
-  customDate: Date | null
-  onCustomDateSelect: (date: Date) => void
+  customRange: CustomRange | null
+  onCustomRangeSelect: (start: Date, end: Date) => void
   onCustomDateClear: () => void
 }
 
@@ -26,23 +31,31 @@ const tabs: { value: DateFilter; label: string }[] = [
 export default function DateTabs({
   activeFilter,
   onFilterChange,
-  customDate,
-  onCustomDateSelect,
+  customRange,
+  onCustomRangeSelect,
   onCustomDateClear,
 }: DateTabsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [pendingRange, setPendingRange] = useState<DateRange | undefined>(undefined)
   const maxDate = getMaxSelectableDate()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      onCustomDateSelect(date)
+  const handleOpenChange = (open: boolean) => {
+    setDrawerOpen(open)
+    if (open) {
+      setPendingRange(customRange ? { from: customRange.start, to: customRange.end } : undefined)
+    }
+  }
+
+  const handleApply = () => {
+    if (pendingRange?.from) {
+      onCustomRangeSelect(pendingRange.from, pendingRange.to ?? pendingRange.from)
       setDrawerOpen(false)
     }
   }
 
-  const isCustomActive = !!customDate
+  const isCustomActive = !!customRange
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 items-center">
@@ -65,9 +78,9 @@ export default function DateTabs({
       ))}
 
       {/* Custom tab / active date pill */}
-      {isCustomActive ? (
+      {customRange ? (
         <div className="flex items-center gap-1 px-3 py-2 rounded-full bg-terra text-cream text-sm font-medium whitespace-nowrap flex-shrink-0">
-          <span>{formatCustomDatePill(customDate)}</span>
+          <span>{formatCustomDatePill(customRange.start, customRange.end)}</span>
           <button
             onClick={onCustomDateClear}
             className="ml-1 hover:bg-terra/80 rounded-full p-0.5 transition-colors"
@@ -77,7 +90,7 @@ export default function DateTabs({
           </button>
         </div>
       ) : (
-        <Drawer.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <Drawer.Root open={drawerOpen} onOpenChange={handleOpenChange}>
           <Drawer.Trigger asChild>
             <button className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-surface text-stone-600 hover:bg-oat border border-sand flex-shrink-0">
               Custom
@@ -86,23 +99,35 @@ export default function DateTabs({
           <Drawer.Portal>
             <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
             <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl z-50 outline-none">
-              <Drawer.Title className="sr-only">Pick a Date</Drawer.Title>
+              <Drawer.Title className="sr-only">Pick a Date Range</Drawer.Title>
               <div className="pt-3 flex justify-center">
                 <div className="w-10 h-1 bg-sand rounded-full" />
               </div>
               <div className="p-4 pb-8">
-                <h3 className="text-base font-display font-semibold text-ink mb-3 text-center">
-                  Pick a Date
+                <h3 className="text-base font-display font-semibold text-ink mb-1 text-center">
+                  Pick a Date Range
                 </h3>
+                <p className="text-sm text-muted mb-3 text-center">
+                  {pendingRange?.from
+                    ? formatCustomDatePill(pendingRange.from, pendingRange.to ?? pendingRange.from)
+                    : 'Select a start date, then an end date'}
+                </p>
                 <div className="flex justify-center">
                   <DayPicker
-                    mode="single"
-                    selected={customDate ?? undefined}
-                    onSelect={handleDateSelect}
+                    mode="range"
+                    selected={pendingRange}
+                    onSelect={setPendingRange}
                     disabled={[{ before: today }, { after: maxDate }]}
                     className="rdp-custom"
                   />
                 </div>
+                <button
+                  onClick={handleApply}
+                  disabled={!pendingRange?.from}
+                  className="w-full mt-2 px-4 py-2.5 rounded-full text-sm font-medium bg-terra text-cream disabled:opacity-40 transition-colors"
+                >
+                  Apply
+                </button>
               </div>
             </Drawer.Content>
           </Drawer.Portal>

@@ -42,10 +42,15 @@ function isFallbackDismissed(): boolean {
   }
 }
 
+interface CustomRange {
+  start: Date
+  end: Date
+}
+
 interface HomeClientProps {
   initialEvents: Event[]
   initialDateFilter: DateFilter
-  initialCustomDate: string | null
+  initialCustomRange: { start: string; end: string } | null
   initialFilters: Filters
   initialShowFallback: boolean
 }
@@ -53,14 +58,16 @@ interface HomeClientProps {
 export default function HomeClient({
   initialEvents,
   initialDateFilter,
-  initialCustomDate,
+  initialCustomRange,
   initialFilters,
   initialShowFallback,
 }: HomeClientProps) {
   const router = useRouter()
   const [dateFilter, setDateFilter] = useState<DateFilter>(initialDateFilter)
-  const [customDate, setCustomDate] = useState<Date | null>(
-    initialCustomDate ? new Date(initialCustomDate) : null
+  const [customRange, setCustomRange] = useState<CustomRange | null>(
+    initialCustomRange
+      ? { start: new Date(initialCustomRange.start), end: new Date(initialCustomRange.end) }
+      : null
   )
   const [filters, setFilters] = useState<Filters>(initialFilters)
   const [events, setEvents] = useState<Event[]>(() => convertEventDates(initialEvents))
@@ -94,9 +101,10 @@ export default function HomeClient({
   const buildQueryString = useCallback(() => {
     const params = new URLSearchParams()
 
-    if (customDate) {
+    if (customRange) {
       params.set('date', 'custom')
-      params.set('customDate', customDate.toISOString())
+      params.set('customStart', customRange.start.toISOString())
+      params.set('customEnd', customRange.end.toISOString())
     } else {
       params.set('date', dateFilter)
     }
@@ -117,7 +125,7 @@ export default function HomeClient({
     }
 
     return params.toString()
-  }, [dateFilter, filters, customDate])
+  }, [dateFilter, filters, customRange])
 
   // Keep the URL in sync with the current filters via the Next.js router (rather
   // than raw History API calls, which leave Next's own router state out of sync
@@ -153,7 +161,7 @@ export default function HomeClient({
       // Tonight is empty → switch to This Week tab and show fallback banner
       if (
         dateFilter === 'tonight' &&
-        !customDate &&
+        !customRange &&
         eventsWithDates.length === 0 &&
         !isFallbackDismissed()
       ) {
@@ -178,7 +186,7 @@ export default function HomeClient({
     } finally {
       setLoading(false)
     }
-  }, [buildQueryString, dateFilter, customDate])
+  }, [buildQueryString, dateFilter, customRange])
 
   useEffect(() => {
     if (isInitialMount.current) {
@@ -191,16 +199,16 @@ export default function HomeClient({
   const handleDateFilterChange = (filter: DateFilter) => {
     pendingFallbackRef.current = false
     setShowFallback(false)
-    setCustomDate(null)
+    setCustomRange(null)
     setDateFilter(filter)
   }
 
-  const handleCustomDateSelect = (date: Date) => {
-    setCustomDate(date)
+  const handleCustomRangeSelect = (start: Date, end: Date) => {
+    setCustomRange({ start, end })
   }
 
   const handleCustomDateClear = () => {
-    setCustomDate(null)
+    setCustomRange(null)
   }
 
   const handleFallbackDismiss = () => {
@@ -213,8 +221,10 @@ export default function HomeClient({
   }
 
   const getHeading = () => {
-    if (customDate) {
-      return `Events on ${formatCustomDatePill(customDate)}`
+    if (customRange) {
+      const isSingleDay = customRange.start.toDateString() === customRange.end.toDateString()
+      const label = formatCustomDatePill(customRange.start, customRange.end)
+      return isSingleDay ? `Events on ${label}` : `Events ${label}`
     }
     switch (dateFilter) {
       case 'tonight':
@@ -233,8 +243,10 @@ export default function HomeClient({
   }
 
   const getEmptyMessage = () => {
-    if (customDate) {
-      return `No events on ${formatCustomDatePill(customDate)}`
+    if (customRange) {
+      const isSingleDay = customRange.start.toDateString() === customRange.end.toDateString()
+      const label = formatCustomDatePill(customRange.start, customRange.end)
+      return isSingleDay ? `No events on ${label}` : `No events ${label}`
     }
     if (dateFilter === 'tonight') {
       return 'No events tonight'
@@ -267,8 +279,8 @@ export default function HomeClient({
           <DateTabs
             activeFilter={dateFilter}
             onFilterChange={handleDateFilterChange}
-            customDate={customDate}
-            onCustomDateSelect={handleCustomDateSelect}
+            customRange={customRange}
+            onCustomRangeSelect={handleCustomRangeSelect}
             onCustomDateClear={handleCustomDateClear}
           />
         </div>
