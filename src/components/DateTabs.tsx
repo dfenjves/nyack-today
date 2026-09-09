@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 import { DayPicker, DateRange } from 'react-day-picker'
 import { Drawer } from 'vaul'
@@ -54,6 +54,22 @@ export default function DateTabs({
       setDrawerOpen(false)
     }
   }
+
+  // react-day-picker's calendar grid intercepts keydown events for its own
+  // navigation, which stops vaul's built-in Escape handling from reaching the
+  // drawer. Listen in the capture phase so Escape closes the sheet regardless.
+  useEffect(() => {
+    if (!drawerOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setDrawerOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown, true)
+    return () => document.removeEventListener('keydown', handleKeyDown, true)
+  }, [drawerOpen])
 
   const isCustomActive = !!customRange
 
