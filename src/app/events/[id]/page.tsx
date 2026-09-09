@@ -123,11 +123,11 @@ export default async function EventPage({ params }: EventPageProps) {
 
         <article className="bg-surface border border-sand rounded-2xl">
           {event.imageUrl ? (
-            <div className="w-full aspect-video bg-oat rounded-t-2xl overflow-hidden">
+            <div className="w-full bg-oat">
               <img
                 src={event.imageUrl}
                 alt={title}
-                className="w-full h-full object-cover"
+                className="w-full h-auto"
               />
             </div>
           ) : (
