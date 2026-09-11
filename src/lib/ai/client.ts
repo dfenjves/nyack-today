@@ -517,6 +517,32 @@ export async function extractEventsFromDiscord(discordMessage: {
     config.model = process.env.DISCORD_AI_MODEL;
   }
 
+  try {
+    return await runDiscordExtraction(discordMessage, config);
+  } catch (error) {
+    // A processed message is never revisited (see processDiscordMessage's
+    // dedup check), so a transient failure here — e.g. both providers
+    // momentarily failing to download the same Discord CDN image — would
+    // otherwise drop the message for good. Wait briefly and retry once.
+    console.warn(
+      'Discord extraction failed, retrying once after a short delay',
+      error
+    );
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    return await runDiscordExtraction(discordMessage, config);
+  }
+}
+
+async function runDiscordExtraction(
+  discordMessage: {
+    content: string;
+    authorName: string;
+    postedAt: string;
+    channelName: string;
+    attachmentUrls: string[];
+  },
+  config: AIConfig
+): Promise<AIEventExtractionResponse> {
   // Try primary provider
   try {
     if (config.provider === 'openai') {
