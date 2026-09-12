@@ -17,6 +17,16 @@ import {
 } from '../scrapers/utils';
 import { guessCategory } from '../utils/categories';
 
+// Messages that just link back to our own site (e.g. someone resharing an
+// event already listed on nyacktoday.com) aren't new event submissions.
+const SITE_HOSTNAME = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://nyacktoday.com'
+).hostname;
+
+function linksToOwnSite(content: string): boolean {
+  return content.toLowerCase().includes(SITE_HOSTNAME.toLowerCase());
+}
+
 async function uploadDiscordImageToBlob(discordUrl: string): Promise<string | null> {
   try {
     const response = await fetch(discordUrl);
@@ -145,6 +155,35 @@ async function processDiscordMessage(
 
     if (existing) {
       console.log(`  ⤳ Message ${message.messageId} already processed, skipping`);
+      return {
+        messageId: message.messageId,
+        channelName: message.channelName,
+        authorName: message.authorName,
+        status: 'no_events',
+        eventsExtracted: 0,
+        submissionIds: [],
+      };
+    }
+
+    if (linksToOwnSite(message.content)) {
+      console.log(
+        `  ⤳ Message ${message.messageId} links to ${SITE_HOSTNAME}, skipping`
+      );
+      await prisma.discordMessage.create({
+        data: {
+          messageId: message.messageId,
+          channelId: message.channelId,
+          channelName: message.channelName,
+          authorId: message.authorId,
+          authorName: message.authorName,
+          content: message.content,
+          attachmentUrls: message.attachmentUrls,
+          postedAt: message.postedAt,
+          status: 'no_events',
+          eventsExtracted: 0,
+          errorMessage: null,
+        },
+      });
       return {
         messageId: message.messageId,
         channelName: message.channelName,
