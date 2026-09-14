@@ -32,10 +32,15 @@ export function getInstagramConfig(): InstagramConfig {
 
   const apifyToken = process.env.APIFY_API_TOKEN || '';
   const scraperEnabled = process.env.INSTAGRAM_SCRAPER_ENABLED === 'true';
-  const intervalHours = parseInt(
-    process.env.INSTAGRAM_SCRAPER_INTERVAL_HOURS || '24',
+  // One knob controls both cadence and lookback: Apify is called at most once
+  // every `intervalDays` days, and each call only pulls posts from the last
+  // `intervalDays` days. Default is 5 to keep Apify credit usage low.
+  const parsedDays = parseInt(
+    process.env.INSTAGRAM_SCRAPER_INTERVAL_DAYS || '',
     10
   );
+  const intervalDays =
+    Number.isFinite(parsedDays) && parsedDays > 0 ? parsedDays : 5;
   const postsPerHandle = parseInt(
     process.env.INSTAGRAM_POSTS_PER_HANDLE || '10',
     10
@@ -47,7 +52,7 @@ export function getInstagramConfig(): InstagramConfig {
     handles,
     apifyToken,
     scraperEnabled,
-    intervalHours,
+    intervalDays,
     postsPerHandle,
     aiProvider,
     aiModel,
@@ -118,7 +123,7 @@ function normalizePost(raw: ApifyPost): InstagramPostData | null {
  *
  * @param handles - Instagram usernames (no @)
  * @param config - Instagram config (for token, interval, posts-per-handle)
- * @returns Normalized posts newer than `intervalHours`, across all handles
+ * @returns Normalized posts newer than `intervalDays` days, across all handles
  */
 export async function fetchRecentPosts(
   handles: string[],
@@ -133,10 +138,17 @@ export async function fetchRecentPosts(
     (h) => `https://www.instagram.com/${h}/`
   );
 
+  const cutoff = new Date(
+    Date.now() - config.intervalDays * 24 * 60 * 60 * 1000
+  );
+
   const input = {
     directUrls,
     resultsType: 'posts',
     resultsLimit: config.postsPerHandle,
+    // Ask Apify to stop at the lookback boundary so we are not billed for
+    // older posts we would discard anyway. Date-only (YYYY-MM-DD) format.
+    onlyPostsNewerThan: cutoff.toISOString().slice(0, 10),
     addParentData: false,
   };
 
@@ -160,8 +172,6 @@ export async function fetchRecentPosts(
   if (!Array.isArray(items)) {
     throw new Error('Unexpected Apify response: expected an array of posts');
   }
-
-  const cutoff = new Date(Date.now() - config.intervalHours * 60 * 60 * 1000);
 
   const posts: InstagramPostData[] = [];
   for (const raw of items) {

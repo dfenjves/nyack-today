@@ -45,7 +45,7 @@ export interface InstagramConfig {
   handles: string[]; // Account usernames to monitor (no @)
   apifyToken: string;
   scraperEnabled: boolean;
-  intervalHours: number; // Only process posts newer than this many hours
+  intervalDays: number; // Run Apify at most once per this many days; also the lookback window for posts
   postsPerHandle: number; // Max posts to pull per handle per run
   aiProvider?: string; // Optional override for AI provider
   aiModel?: string; // Optional override for AI model
