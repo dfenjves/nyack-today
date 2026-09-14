@@ -13,12 +13,44 @@
  * - OPENAI_API_KEY or ANTHROPIC_API_KEY
  *
  * Optional:
- * - INSTAGRAM_SCRAPER_INTERVAL_HOURS (default: 24)
+ * - INSTAGRAM_SCRAPER_INTERVAL_DAYS (default: 5) — call Apify at most once per
+ *   this many days, and only pull posts from the last this-many days
  * - INSTAGRAM_POSTS_PER_HANDLE (default: 10)
  * - INSTAGRAM_AI_PROVIDER / INSTAGRAM_AI_MODEL (default: AI_PROVIDER / AI_MODEL)
+ *
+ * Cadence: the scrape job runs daily, but Apify charges per result, so this
+ * scraper checks ScraperLog and skips the Apify call unless the last real run
+ * was at least INSTAGRAM_SCRAPER_INTERVAL_DAYS ago (with a 12-hour grace so a
+ * daily cron lands on day N rather than day N+1). Skipped runs are logged with
+ * SKIP_PREFIX so they don't count as real runs.
  */
 
+import { prisma } from '@/lib/db';
 import { Scraper, ScraperResult } from './types';
+
+const SOURCE_NAME = 'Instagram';
+const SKIP_PREFIX = 'Skipped Apify fetch';
+const GRACE_MS = 12 * 60 * 60 * 1000;
+
+/**
+ * Returns the time of the most recent run that actually called Apify
+ * (success/partial, not a skip), or null if there is none.
+ */
+async function getLastApifyRunAt(): Promise<Date | null> {
+  const last = await prisma.scraperLog.findFirst({
+    where: {
+      sourceName: SOURCE_NAME,
+      status: { in: ['success', 'partial'] },
+      OR: [
+        { errorMessage: null },
+        { NOT: { errorMessage: { startsWith: SKIP_PREFIX } } },
+      ],
+    },
+    orderBy: { runAt: 'desc' },
+    select: { runAt: true },
+  });
+  return last?.runAt ?? null;
+}
 
 export const instagramScraper: Scraper = {
   name: 'Instagram',
@@ -71,6 +103,24 @@ export const instagramScraper: Scraper = {
           errorMessage:
             'OPENAI_API_KEY or ANTHROPIC_API_KEY not configured. Please add an AI API key to environment variables.',
         };
+      }
+
+      // Rate-limit Apify calls: skip unless the interval has (nearly) elapsed.
+      const lastRunAt = await getLastApifyRunAt();
+      if (lastRunAt) {
+        const intervalMs = config.intervalDays * 24 * 60 * 60 * 1000;
+        const elapsedMs = Date.now() - lastRunAt.getTime();
+        if (elapsedMs < intervalMs - GRACE_MS) {
+          const nextRunAt = new Date(lastRunAt.getTime() + intervalMs);
+          const message = `${SKIP_PREFIX}: last run ${lastRunAt.toISOString()}, interval ${config.intervalDays}d, next eligible ${nextRunAt.toISOString()}`;
+          console.log(`Instagram scraper: ${message}`);
+          return {
+            sourceName: 'Instagram',
+            events: [],
+            status: 'success',
+            errorMessage: message,
+          };
+        }
       }
 
       const result = await processInstagramPosts();

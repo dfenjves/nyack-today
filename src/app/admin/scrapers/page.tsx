@@ -215,7 +215,9 @@ export default function AdminScrapersPage() {
                           <div>
                             <p className="font-medium text-stone-900">{log.sourceName}</p>
                             {log.errorMessage && (
-                              <p className="text-xs text-red-600 mt-1 line-clamp-2">{log.errorMessage}</p>
+                              <p className={`text-xs mt-1 line-clamp-2 ${log.status === 'success' ? 'text-stone-500' : 'text-red-600'}`}>
+                                {log.errorMessage}
+                              </p>
                             )}
                           </div>
                         </div>

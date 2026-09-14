@@ -323,7 +323,7 @@ export async function processInstagramPosts(): Promise<{
 
   console.log('Instagram processor configuration:', {
     handles: config.handles,
-    intervalHours: config.intervalHours,
+    intervalDays: config.intervalDays,
     postsPerHandle: config.postsPerHandle,
   });
 
