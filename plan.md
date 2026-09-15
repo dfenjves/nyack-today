@@ -96,6 +96,11 @@ Tasks:
 
 Done when: `/admin/pulse` shows real numbers for every row in the §1 table, and OTHER share is under 10%.
 
+**Sequencing note (2026-09-15).** The Pulse baseline showed 11 of 14 days thin, 10 subscribers, 0 devices. Coverage is the bottleneck, not measurement, so the order changes:
+- Next: #5 re-categorization (prompt: `docs/prompts/recategorize-other.md`) and Phase 1 item 1b, the generic AI source scraper (prompt: `docs/prompts/generic-source-scraper.md`). They touch different files and can run as parallel sessions.
+- Deferred: #3 quiet-day alert. With 11 thin days it would fire every morning and train us to ignore it. Build it once thin days are under 3 per fortnight. #1 analytics moves after 1b; the baseline it would capture is the pre-coverage number and would only need re-baselining anyway.
+- Human, this week: #6 Search Console + Business Profile; hand-enter 15–20 standing weekly events via `/admin/events/new` (Phase 1 item 1d) since that fills Tuesday nights with zero code; start the Instagram Business / Meta app review.
+
 - **Done 2026-09-15 — #2 Admin Pulse page.** `/admin/pulse` + `GET /api/admin/pulse`: 14-day Eastern-time coverage grid (per-day totals verified to match the public site's single-day query), source health (never/stale/zero/ok, `partial` counts as success), and subscriber/device/submission counts. Thresholds live in `PULSE_THRESHOLDS` (`src/lib/utils/pulse.ts`) for the quiet-day alert (#3) to reuse. WAL tile stays "—" until #1 ships.
 
 ---
