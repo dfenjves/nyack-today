@@ -204,7 +204,15 @@ async function getSources(now: Date): Promise<PulseSource[]> {
   const createdByName = new Map(createdEvents.map((r) => [r.sourceName, r._count._all]))
   const upcomingByName = new Map(upcoming.map((r) => [r.sourceName, r._count._all]))
 
-  const registeredNames = scrapers.map((s) => s.name)
+  // Config-driven sources (/admin/sources) are real scrapers even though they
+  // aren't in the static registry — count them as registered so their health
+  // shows up here instead of being filed under "manual".
+  const genericSourceNames = await prisma.source
+    .findMany({ where: { enabled: true }, select: { name: true } })
+    .then((rows) => rows.map((r) => r.name))
+    .catch(() => [] as string[])
+
+  const registeredNames = [...scrapers.map((s) => s.name), ...genericSourceNames]
   const registeredSet = new Set(registeredNames)
   const unregisteredNames = [
     ...new Set([...lastRuns.map((r) => r.sourceName), ...upcoming.map((r) => r.sourceName)]),

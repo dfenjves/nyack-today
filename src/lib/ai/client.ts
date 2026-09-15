@@ -13,7 +13,13 @@ import {
   AIExtractionError,
   AIProvider,
 } from './types';
-import { SYSTEM_PROMPT, buildUserPrompt, cleanEmailHtml } from './prompts';
+import {
+  SYSTEM_PROMPT,
+  WEBPAGE_SYSTEM_PROMPT,
+  buildUserPrompt,
+  buildWebPagePrompt,
+  cleanEmailHtml,
+} from './prompts';
 
 /**
  * Gets AI configuration from environment variables
@@ -61,27 +67,25 @@ function createOpenAIClient(): OpenAI {
 }
 
 /**
- * Extracts events from email content using Anthropic Claude
+ * Runs a plain text system+user prompt through Anthropic Claude and parses the
+ * JSON response. Shared by every text-only extraction path (email, web page).
+ *
+ * `label` only shapes the error message, e.g. "Anthropic web page extraction".
  */
-async function extractWithAnthropic(
-  emailContent: {
-    subject: string;
-    from: string;
-    date: string;
-    body: string;
-  },
-  config: AIConfig
+async function runTextPromptWithAnthropic(
+  systemPrompt: string,
+  userPrompt: string,
+  config: AIConfig,
+  label: string
 ): Promise<AIEventExtractionResponse> {
   const client = createAnthropicClient();
-
-  const userPrompt = buildUserPrompt(emailContent);
 
   try {
     const response = await client.messages.create({
       model: config.model,
       max_tokens: config.maxTokens,
       temperature: config.temperature,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [
         {
           role: 'user',
@@ -97,11 +101,10 @@ async function extractWithAnthropic(
     }
 
     // Parse JSON response
-    const parsed = parseAIResponse(textContent.text);
-    return parsed;
+    return parseAIResponse(textContent.text);
   } catch (error) {
     throw new AIExtractionError(
-      `Anthropic extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `${label} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'anthropic',
       error
     );
@@ -109,20 +112,16 @@ async function extractWithAnthropic(
 }
 
 /**
- * Extracts events from email content using OpenAI GPT
+ * Runs a plain text system+user prompt through OpenAI and parses the JSON
+ * response. Shared by every text-only extraction path (email, web page).
  */
-async function extractWithOpenAI(
-  emailContent: {
-    subject: string;
-    from: string;
-    date: string;
-    body: string;
-  },
-  config: AIConfig
+async function runTextPromptWithOpenAI(
+  systemPrompt: string,
+  userPrompt: string,
+  config: AIConfig,
+  label: string
 ): Promise<AIEventExtractionResponse> {
   const client = createOpenAIClient();
-
-  const userPrompt = buildUserPrompt(emailContent);
 
   try {
     const response = await client.chat.completions.create({
@@ -132,7 +131,7 @@ async function extractWithOpenAI(
       messages: [
         {
           role: 'system',
-          content: SYSTEM_PROMPT,
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -148,14 +147,56 @@ async function extractWithOpenAI(
     }
 
     // Parse JSON response
-    const parsed = parseAIResponse(content);
-    return parsed;
+    return parseAIResponse(content);
   } catch (error) {
     throw new AIExtractionError(
-      `OpenAI extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      `${label} failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       'openai',
       error
     );
+  }
+}
+
+/**
+ * Runs a text prompt through the configured provider, falling back to the other
+ * provider if the primary fails. Throws the PRIMARY error when both fail, so
+ * callers see the failure that matters.
+ */
+async function runTextPromptWithFallback(
+  systemPrompt: string,
+  userPrompt: string,
+  config: AIConfig,
+  label: string
+): Promise<AIEventExtractionResponse> {
+  const run = (cfg: AIConfig) =>
+    cfg.provider === 'openai'
+      ? runTextPromptWithOpenAI(systemPrompt, userPrompt, cfg, `OpenAI ${label}`)
+      : runTextPromptWithAnthropic(systemPrompt, userPrompt, cfg, `Anthropic ${label}`);
+
+  try {
+    return await run(config);
+  } catch (primaryError) {
+    console.warn(
+      `Primary AI provider (${config.provider}) failed, trying fallback`,
+      primaryError
+    );
+
+    const fallbackProvider: AIProvider =
+      config.provider === 'openai' ? 'anthropic' : 'openai';
+
+    try {
+      return await run({
+        ...config,
+        provider: fallbackProvider,
+        model:
+          fallbackProvider === 'openai'
+            ? 'gpt-4o'
+            : 'claude-3-5-sonnet-20241022',
+      });
+    } catch {
+      // Both providers failed, throw original error
+      throw primaryError;
+    }
   }
 }
 
@@ -222,50 +263,74 @@ export async function extractEventsFromEmail(emailContent: {
     return { events: [] };
   }
 
-  const content = {
+  const userPrompt = buildUserPrompt({
     subject: emailContent.subject,
     from: emailContent.from,
     date: emailContent.date,
     body,
-  };
+  });
 
-  // Try primary provider
-  try {
-    if (config.provider === 'openai') {
-      return await extractWithOpenAI(content, config);
-    } else {
-      return await extractWithAnthropic(content, config);
-    }
-  } catch (primaryError) {
-    console.warn(
-      `Primary AI provider (${config.provider}) failed, trying fallback`,
-      primaryError
-    );
+  return runTextPromptWithFallback(
+    SYSTEM_PROMPT,
+    userPrompt,
+    config,
+    'extraction'
+  );
+}
 
-    // Try fallback provider
-    const fallbackProvider: AIProvider =
-      config.provider === 'openai' ? 'anthropic' : 'openai';
-
-    try {
-      const fallbackConfig: AIConfig = {
-        ...config,
-        provider: fallbackProvider,
-        model:
-          fallbackProvider === 'openai'
-            ? 'gpt-4o'
-            : 'claude-3-5-sonnet-20241022',
-      };
-
-      if (fallbackProvider === 'openai') {
-        return await extractWithOpenAI(content, fallbackConfig);
-      } else {
-        return await extractWithAnthropic(content, fallbackConfig);
-      }
-    } catch (fallbackError) {
-      // Both providers failed, throw original error
-      throw primaryError;
-    }
+/**
+ * Extracts events from a web page that has been reduced to readable text.
+ *
+ * The fourth extraction entry point, used by the config-driven generic scraper
+ * (src/lib/scrapers/generic.ts) for CHEERIO, PUPPETEER, and RSS fetch modes.
+ * Shares the provider fallback and JSON parsing with the other three.
+ *
+ * The caller is responsible for reducing and capping the page text; this
+ * function sends whatever it is given.
+ *
+ * @param params.text - Readable page text (links inline as [text](url))
+ * @param params.today - Today's date in America/New_York, e.g. "Monday, September 15, 2026"
+ * @returns Extracted events (dates are ISO strings, still need Eastern-time handling)
+ */
+export async function extractEventsFromWebPage(params: {
+  sourceName: string;
+  url: string;
+  text: string;
+  defaultVenue?: string | null;
+  defaultAddress?: string | null;
+  defaultCity?: string | null;
+  defaultCategory?: string | null;
+  today: string;
+}): Promise<AIEventExtractionResponse> {
+  if (!params.text.trim()) {
+    return { events: [] };
   }
+
+  const config = getAIConfig();
+
+  // Allow a separate provider/model for web pages, matching the Discord and
+  // Instagram overrides (these pages are text-only, so a cheaper model works).
+  if (process.env.WEBPAGE_AI_PROVIDER) {
+    config.provider = process.env.WEBPAGE_AI_PROVIDER as AIProvider;
+  }
+  if (process.env.WEBPAGE_AI_MODEL) {
+    config.model = process.env.WEBPAGE_AI_MODEL;
+  }
+
+  // A month calendar can carry 60+ events. The 4096-token default that suits a
+  // single email would truncate the JSON mid-array and lose the whole response,
+  // so give web pages more room unless the operator has set a larger value.
+  config.maxTokens = Math.max(
+    config.maxTokens,
+    parseInt(process.env.WEBPAGE_AI_MAX_TOKENS || '12288', 10)
+  );
+
+  return runTextPromptWithFallback(
+    WEBPAGE_SYSTEM_PROMPT,
+    buildWebPagePrompt(params),
+    config,
+    'web page extraction'
+  );
 }
 
 /**

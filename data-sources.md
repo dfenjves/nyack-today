@@ -25,6 +25,39 @@ A running list of event and activity sources for the Nyack area.
 
 ---
 
+## Generic sources (config-driven, no code)
+
+Rows in the `Source` table, managed at `/admin/sources`. The generic scraper
+(`src/lib/scrapers/generic.ts`) fetches the page, reduces it to readable text,
+and runs it through AI extraction — no bespoke scraper file, no deploy. All of
+these start in **review mode** (`autoPublish = false`), so their events land in
+`/admin/submissions` rather than going live.
+
+Onboarded 2026-09-15. "Events" is the first real run.
+
+| Source | URL | Mode | Events | Notes |
+|--------|-----|------|--------|-------|
+| Nyack Library | https://www.nyacklibrary.org/eventscalendar.html | PUPPETEER | **40** | LocalHop widget renders in an **iframe** — the main frame is nearly empty, so PUPPETEER mode concatenates every frame. Its Parse API (`api.getlocalhop.com/1`, app id in the embed JS) needs an app-id header and there is no public `.ics`, so no ICAL/JSONLD option. Shows the current month, so coverage rolls forward daily. |
+| Edward Hopper House | https://www.edwardhopperhouse.org/calendar.html | PUPPETEER | 5 | Weebly site; CHEERIO returns only the nav. |
+| Nyack Chamber of Commerce | https://www.nyackchamber.org/ | CHEERIO | 3 | No calendar page — the homepage carries Farmers Market, Halloween Parade, Holiday Lights. |
+| Nyack Center | https://nyackcenter.org/upcoming-events | CHEERIO | 2 | Squarespace; events are in the static HTML. |
+| Creative Arts Workshop | https://www.arts-workshop.com/ | CHEERIO | 1 | Wix; one-off events on the homepage, classes live in a booking widget. |
+| Big Red Books | https://www.bigredbooks.net/ | — | ❌ disabled | Shopify storefront with no events page (`/pages/events` 404s, sitemap is products only). They announce readings on Instagram — add `@bigredbooks` to `INSTAGRAM_HANDLES` instead. |
+| Homebody Books | https://www.homebodybooks.net/events-1-1 | — | ❌ disabled | The Squarespace events page still holds unedited demo content ("Event Five", January 2026 placeholders). Page shape is fine; re-enable once they start using it. |
+| Helen Hayes Youth Theatre | https://helenhayesyouththeatre.com/ | — | ❌ disabled | No dated listings on the site; performance dates live in the Arts People ticketing app (`app.arts-people.com/index.php?ticketing=hhy01`), which returns no readable text even rendered. Needs a bespoke approach or hand entry. |
+
+**Fetch modes:** `CHEERIO` (static HTML → text → AI), `PUPPETEER` (render first,
+includes iframes), `JSONLD` (schema.org Event data, no AI, falls back to
+CHEERIO), `ICAL` (`.ics` feed, no AI, recurrences expanded 60 days), `RSS`
+(feed items batched through AI).
+
+**Adding one:** `/admin/sources` → Add source → paste the URL → Test → adjust
+mode/defaults → Test again → Save. Start with CHEERIO; if the test comes back
+nearly empty, try PUPPETEER. Look for a `.ics` or `/feed` URL first — those
+modes skip the AI call entirely and give exact times.
+
+---
+
 ## Planned Sources
 
 ### Tier 2: JavaScript-Rendered (Need Puppeteer)

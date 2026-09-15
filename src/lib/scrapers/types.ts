@@ -30,6 +30,15 @@ export interface ScraperResult {
   events: ScrapedEvent[]
   status: 'success' | 'error' | 'partial'
   errorMessage?: string
+  /**
+   * How many events the source produced, when that differs from `events.length`.
+   *
+   * Scrapers that route their events to `EventSubmission` for review (the
+   * generic source scraper) return an empty `events` array but still need
+   * ScraperLog — and therefore /admin/pulse — to show a live source rather than
+   * a source stuck at zero. Defaults to `events.length`.
+   */
+  eventsFound?: number
 }
 
 /**

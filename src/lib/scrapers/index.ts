@@ -18,11 +18,12 @@ import { olivesNyackScraper } from './olivesnyack'
 import { rocklandChessScraper } from './rocklandchess'
 import { patchScraper } from './patch'
 import { nyackNewsAndViewsScraper } from './nyacknewsandviews'
+import { genericSourceScrapers } from './generic'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 import { categorizeScrapedEvents } from '@/lib/ai/categorize'
 
 /**
- * All registered scrapers
+ * All statically registered scrapers (one file each)
  */
 export const scrapers: Scraper[] = [
   visitNyackScraper,
@@ -45,6 +46,23 @@ export const scrapers: Scraper[] = [
 ]
 
 /**
+ * Every scraper for this run: the static ones above, then one per enabled
+ * `Source` row (see src/lib/scrapers/generic.ts). Generic sources run last so a
+ * slow or newly added site can't starve the established scrapers of the 300 s
+ * Vercel budget.
+ */
+export async function getAllScrapers(): Promise<Scraper[]> {
+  return [...scrapers, ...(await genericSourceScrapers())]
+}
+
+/**
+ * Names of every available scraper, for the admin dropdown.
+ */
+export async function getScraperNames(): Promise<string[]> {
+  return (await getAllScrapers()).map((s) => s.name)
+}
+
+/**
  * Result of running all scrapers
  */
 export interface OrchestratorResult {
@@ -65,8 +83,8 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
   let totalEventsUpdated = 0
   let totalEventsDuplicate = 0
 
-  // Run each scraper
-  for (const scraper of scrapers) {
+  // Run each scraper (static first, then the config-driven generic sources)
+  for (const scraper of await getAllScrapers()) {
     console.log(`Running scraper: ${scraper.name}`)
 
     try {
@@ -92,7 +110,7 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
       await logScraperRun(
         scraper.name,
         result.status,
-        result.events.length,
+        result.eventsFound ?? result.events.length,
         scraperEventsAdded,
         result.errorMessage
       )
@@ -142,7 +160,8 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
  * Run a single scraper by name
  */
 export async function runScraper(name: string): Promise<ScraperResult | null> {
-  const scraper = scrapers.find((s) => s.name.toLowerCase() === name.toLowerCase())
+  const available = await getAllScrapers()
+  const scraper = available.find((s) => s.name.toLowerCase() === name.toLowerCase())
 
   if (!scraper) {
     console.error(`Scraper not found: ${name}`)
@@ -168,7 +187,7 @@ export async function runScraper(name: string): Promise<ScraperResult | null> {
   await logScraperRun(
     scraper.name,
     result.status,
-    result.events.length,
+    result.eventsFound ?? result.events.length,
     added,
     result.errorMessage
   )

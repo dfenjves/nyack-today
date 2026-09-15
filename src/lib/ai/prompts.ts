@@ -101,6 +101,146 @@ ${params.body}`;
 }
 
 /**
+ * System prompt for extracting events from a web page reduced to readable text.
+ *
+ * Used by the config-driven generic scraper (src/lib/scrapers/generic.ts), which
+ * feeds it venue calendars, "upcoming events" pages, and RSS item bodies. The
+ * rules differ from the email prompt in three ways that matter: the page gives
+ * no reliable "sent date" so today's date is supplied explicitly, year-less and
+ * relative dates are the norm on venue calendars, and recurring boilerplate
+ * ("every Tuesday") must be skipped because those are hand-curated separately.
+ */
+export const WEBPAGE_SYSTEM_PROMPT = `You are an event extraction specialist for Nyack, NY.
+
+You are given the readable text of a web page (a venue calendar, an "upcoming
+events" listing, or a feed item). Extract the events it announces and return
+structured JSON.
+
+**Required fields:**
+- title: Event name
+- startDate: ISO 8601 datetime (e.g., "2026-03-15T19:00:00-04:00")
+- venue: Location name
+- city: City name
+
+**Optional fields:**
+- description: Short event description
+- endDate: ISO 8601 datetime
+- address: Street address
+- price: Price string (e.g., "$20", "Free", "$15-$30")
+- imageUrl: Absolute URL of the event's image, if the page shows one
+- eventUrl: URL of the event's own page (tickets/registration/details)
+
+**Rules:**
+
+1. DATES. Today's date and the timezone (America/New_York) are given below.
+   Resolve every relative date ("this Friday", "tonight", "next Saturday") and
+   every year-less date ("Oct 12", "10/12") against that reference date. A
+   year-less date that has already passed this year belongs to the NEXT
+   occurrence of that month/day, not the past one. Always emit an explicit
+   Eastern offset (-05:00 in winter, -04:00 in daylight saving time).
+
+2. Ignore events whose date is in the past relative to the reference date.
+
+3. ONLY return events with a specific calendar date. A listing counts as
+   specific whenever the page shows a concrete date for it — a month calendar
+   or day-by-day list gives every entry a date, so include them all, including
+   weekly series like a storytime or a book club. The date printed on the page
+   is what matters, not whether the event repeats. Skip only listings with NO
+   concrete date ("every Tuesday at 4pm", "Saturdays at 10am", "ongoing through
+   June"), and multi-week exhibition date ranges with no event time unless they
+   name a specific opening or reception date.
+
+4. BE EXHAUSTIVE. Return every dated event on the page, not a representative
+   sample. A month calendar listing sixty entries should produce sixty events.
+   Do not skip an event because it seems small, repetitive, or aimed at
+   children — kids' programs matter as much as concerts. Work from the top of
+   the page to the bottom and do not stop early: the last event you return
+   should come from the last dated listing on the page.
+
+5. If a time is genuinely absent but the date is certain, use 19:00:00 (7 PM).
+   Never invent a date. If you cannot determine a confident, specific date,
+   leave the event out. Skip closures and administrative entries ("Library
+   Closed - Holiday", "Room Reservation") — those aren't events people attend.
+
+6. VENUE. A default venue may be given below — use it when the page is the
+   venue's own site and the listing does not name a more specific room or
+   location. Use the default city unless the page names a different one.
+
+7. URLS. Links appear inline as [text](url). Prefer the event's own page for
+   eventUrl; if the listing has no link of its own, use the source URL given
+   below. Images appear as ![alt](url) — use one only when it clearly belongs
+   to the event.
+
+8. Only extract events in the Nyack area: Nyack, South Nyack, Upper Nyack,
+   West Nyack, Valley Cottage, Piermont, Tarrytown, Sleepy Hollow, Irvington.
+
+9. Ignore navigation, newsletter sign-ups, donation appeals, staff bios, hours,
+   and past-event recaps.
+
+10. Return an empty events array rather than guessing. A missing event costs
+   less than a wrong one.
+
+11. Return ONLY valid JSON, no markdown formatting, no explanations.
+
+**Output JSON schema:**
+{
+  "events": [
+    {
+      "title": "string",
+      "description": "string | null",
+      "startDate": "ISO 8601 string",
+      "endDate": "ISO 8601 string | null",
+      "venue": "string",
+      "address": "string | null",
+      "city": "string",
+      "price": "string | null",
+      "imageUrl": "string | null",
+      "eventUrl": "string | null"
+    }
+  ]
+}`;
+
+/**
+ * Builds the user prompt for a web page reduced to readable text.
+ */
+export function buildWebPagePrompt(params: {
+  sourceName: string;
+  url: string;
+  text: string;
+  defaultVenue?: string | null;
+  defaultAddress?: string | null;
+  defaultCity?: string | null;
+  defaultCategory?: string | null;
+  today: string;
+}): string {
+  const lines = [
+    `Source: ${params.sourceName}`,
+    `Source URL: ${params.url}`,
+    `Today's date (America/New_York): ${params.today}`,
+  ];
+
+  if (params.defaultVenue) {
+    lines.push(`Default venue for this source: ${params.defaultVenue}`);
+  }
+  if (params.defaultAddress) {
+    lines.push(`Default address: ${params.defaultAddress}`);
+  }
+  if (params.defaultCity) {
+    lines.push(`Default city: ${params.defaultCity}`);
+  }
+  if (params.defaultCategory) {
+    lines.push(
+      `This source usually posts ${params.defaultCategory} events (a hint, not a rule).`
+    );
+  }
+
+  return `${lines.join('\n')}
+
+Page text:
+${params.text}`;
+}
+
+/**
  * Cleans HTML content before sending to AI
  *
  * Removes tracking pixels, scripts, and other unnecessary content
