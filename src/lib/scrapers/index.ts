@@ -19,6 +19,7 @@ import { rocklandChessScraper } from './rocklandchess'
 import { patchScraper } from './patch'
 import { nyackNewsAndViewsScraper } from './nyacknewsandviews'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
+import { categorizeScrapedEvents } from '@/lib/ai/categorize'
 
 /**
  * All registered scrapers
@@ -74,6 +75,9 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
       totalEventsFound += result.events.length
 
       console.log(`  Found ${result.events.length} events (${result.status})`)
+
+      // AI-categorize the events that are new to us, in one batched call
+      await categorizeScrapedEvents(result.events, scraper.name)
 
       // Save events to database
       let scraperEventsAdded = 0
@@ -149,6 +153,9 @@ export async function runScraper(name: string): Promise<ScraperResult | null> {
   const result = await scraper.scrape()
 
   console.log(`  Found ${result.events.length} events (${result.status})`)
+
+  // AI-categorize the events that are new to us, in one batched call
+  await categorizeScrapedEvents(result.events, scraper.name)
 
   // Save events to database
   let added = 0

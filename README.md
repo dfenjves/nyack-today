@@ -98,6 +98,11 @@ EMAIL_MAX_PER_RUN="50"
 OPENAI_API_KEY="sk-..."
 AI_PROVIDER="openai"
 AI_MODEL="gpt-4o"
+
+# Model used to categorize events (runs on every newly scraped event, so keep
+# it cheap). Optional — defaults to gpt-4o-mini (OpenAI) or
+# claude-3-5-haiku-20241022 (Anthropic).
+AI_CATEGORIZE_MODEL="gpt-4o-mini"
 ```
 
 ### Optional (Other)

@@ -21,6 +21,11 @@ import {
   guessFamilyFriendly,
 } from '../scrapers/utils';
 import { guessCategory } from '../utils/categories';
+import {
+  categorizeEvent,
+  resolveIngestCategory,
+  resolveIngestFamilyFriendly,
+} from '../ai/categorize';
 
 /**
  * Known venue name per Instagram handle. Used as a venue hint for the AI when a
@@ -147,10 +152,26 @@ async function createEventSubmission(
     }
 
     const { price, isFree } = parsePrice(extracted.price);
-    const category = guessCategory(extracted.title, extracted.description);
-    const isFamilyFriendly = guessFamilyFriendly(
+    // The AI classifier decides the category (falling back to keywords
+    // internally if it fails) so the submission reaches the admin reviewer
+    // pre-categorized.
+    const guessedFamilyFriendly = guessFamilyFriendly(
       extracted.title,
       extracted.description
+    );
+    const classified = await categorizeEvent({
+      title: extracted.title,
+      description: extracted.description,
+      venue,
+      sourceName: 'Instagram',
+    });
+    const category = resolveIngestCategory(
+      guessCategory(extracted.title, extracted.description),
+      classified
+    );
+    const isFamilyFriendly = resolveIngestFamilyFriendly(
+      guessedFamilyFriendly,
+      classified
     );
 
     // Always link back to the source post so admins can verify.

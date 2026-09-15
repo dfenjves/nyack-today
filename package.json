@@ -7,6 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "tsx --test tests/*.test.ts",
     "postinstall": "prisma generate",
     "generate-favicons": "tsx scripts/generate-favicons.ts",
     "seed-activities": "tsx scripts/seed-activities.ts"

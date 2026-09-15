@@ -16,6 +16,11 @@ import {
   guessFamilyFriendly,
 } from '../scrapers/utils';
 import { guessCategory } from '../utils/categories';
+import {
+  categorizeEvent,
+  resolveIngestCategory,
+  resolveIngestFamilyFriendly,
+} from '../ai/categorize';
 
 // Messages that just link back to our own site (e.g. someone resharing an
 // event already listed on nyacktoday.com) aren't new event submissions.
@@ -95,11 +100,26 @@ async function createEventSubmission(
     // Parse price
     const { price, isFree } = parsePrice(extracted.price);
 
-    // Determine category and family-friendliness
-    const category = guessCategory(extracted.title, extracted.description);
-    const isFamilyFriendly = guessFamilyFriendly(
+    // Determine category and family-friendliness. The AI classifier decides
+    // the category (falling back to keywords internally if it fails) so the
+    // submission reaches the admin reviewer pre-categorized.
+    const guessedFamilyFriendly = guessFamilyFriendly(
       extracted.title,
       extracted.description
+    );
+    const classified = await categorizeEvent({
+      title: extracted.title,
+      description: extracted.description,
+      venue: extracted.venue,
+      sourceName: 'Discord',
+    });
+    const category = resolveIngestCategory(
+      guessCategory(extracted.title, extracted.description),
+      classified
+    );
+    const isFamilyFriendly = resolveIngestFamilyFriendly(
+      guessedFamilyFriendly,
+      classified
     );
 
     const sourceUrl = extracted.eventUrl || `discord:${messageMetadata.messageId}`;
