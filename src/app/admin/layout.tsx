@@ -122,6 +122,7 @@ export default function AdminLayout({
     { href: '/admin/activities', label: 'Activities' },
     { href: '/admin/submissions', label: 'Submissions' },
     { href: '/admin/scrapers', label: 'Scrapers' },
+    { href: '/admin/sources', label: 'Sources' },
     { href: '/admin/pulse', label: 'Pulse' },
     { href: '/admin/subscribers', label: 'Subscribers' },
     { href: '/admin/dedup', label: 'Dedup' },
