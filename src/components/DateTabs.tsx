@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import { DayPicker, DateRange } from 'react-day-picker'
 import { Drawer } from 'vaul'
@@ -37,9 +37,32 @@ export default function DateTabs({
 }: DateTabsProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [pendingRange, setPendingRange] = useState<DateRange | undefined>(undefined)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const maxDate = getMaxSelectableDate()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const updateScrollState = () => {
+      setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 1)
+    }
+
+    updateScrollState()
+    el.addEventListener('scroll', updateScrollState)
+    window.addEventListener('resize', updateScrollState)
+    const resizeObserver = new ResizeObserver(updateScrollState)
+    resizeObserver.observe(el)
+
+    return () => {
+      el.removeEventListener('scroll', updateScrollState)
+      window.removeEventListener('resize', updateScrollState)
+      resizeObserver.disconnect()
+    }
+  }, [customRange])
 
   const handleOpenChange = (open: boolean) => {
     setDrawerOpen(open)
@@ -58,80 +81,91 @@ export default function DateTabs({
   const isCustomActive = !!customRange
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 items-center">
-      {/* Preset tabs */}
-      {tabs.map((tab) => (
-        <button
-          key={tab.value}
-          onClick={() => onFilterChange(tab.value)}
-          className={`
-            px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors
-            ${
-              !isCustomActive && activeFilter === tab.value
-                ? 'bg-terra text-cream'
-                : 'bg-surface text-stone-600 hover:bg-oat border border-sand'
-            }
-          `}
-        >
-          {tab.label}
-        </button>
-      ))}
-
-      {/* Custom tab / active date pill */}
-      {customRange ? (
-        <div className="flex items-center gap-1 px-3 py-2 rounded-full bg-terra text-cream text-sm font-medium whitespace-nowrap flex-shrink-0">
-          <span>{formatCustomDatePill(customRange.start, customRange.end)}</span>
+    <div className="relative">
+      <div
+        ref={scrollRef}
+        className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 items-center"
+      >
+        {/* Preset tabs */}
+        {tabs.map((tab) => (
           <button
-            onClick={onCustomDateClear}
-            className="ml-1 hover:bg-terra/80 rounded-full p-0.5 transition-colors"
-            aria-label="Clear custom date"
+            key={tab.value}
+            onClick={() => onFilterChange(tab.value)}
+            className={`
+              px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors
+              ${
+                !isCustomActive && activeFilter === tab.value
+                  ? 'bg-terra text-cream'
+                  : 'bg-surface text-stone-600 hover:bg-oat border border-sand'
+              }
+            `}
           >
-            <X className="w-3 h-3" />
+            {tab.label}
           </button>
-        </div>
-      ) : (
-        <Drawer.Root open={drawerOpen} onOpenChange={handleOpenChange}>
-          <Drawer.Trigger asChild>
-            <button className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-surface text-stone-600 hover:bg-oat border border-sand flex-shrink-0">
-              Custom
+        ))}
+
+        {/* Custom tab / active date pill */}
+        {customRange ? (
+          <div className="flex items-center gap-1 px-3 py-2 rounded-full bg-terra text-cream text-sm font-medium whitespace-nowrap flex-shrink-0">
+            <span>{formatCustomDatePill(customRange.start, customRange.end)}</span>
+            <button
+              onClick={onCustomDateClear}
+              className="ml-1 hover:bg-terra/80 rounded-full p-0.5 transition-colors"
+              aria-label="Clear custom date"
+            >
+              <X className="w-3 h-3" />
             </button>
-          </Drawer.Trigger>
-          <Drawer.Portal>
-            <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
-            <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl z-50 outline-none">
-              <Drawer.Title className="sr-only">Pick a Date Range</Drawer.Title>
-              <div className="pt-3 flex justify-center">
-                <div className="w-10 h-1 bg-sand rounded-full" />
-              </div>
-              <div className="p-4 pb-8">
-                <h3 className="text-base font-display font-semibold text-ink mb-1 text-center">
-                  Pick a Date Range
-                </h3>
-                <p className="text-sm text-muted mb-3 text-center">
-                  {pendingRange?.from
-                    ? formatCustomDatePill(pendingRange.from, pendingRange.to ?? pendingRange.from)
-                    : 'Select a start date, then an end date'}
-                </p>
-                <div className="flex justify-center">
-                  <DayPicker
-                    mode="range"
-                    selected={pendingRange}
-                    onSelect={setPendingRange}
-                    disabled={[{ before: today }, { after: maxDate }]}
-                    className="rdp-custom"
-                  />
+          </div>
+        ) : (
+          <Drawer.Root open={drawerOpen} onOpenChange={handleOpenChange}>
+            <Drawer.Trigger asChild>
+              <button className="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors bg-surface text-stone-600 hover:bg-oat border border-sand flex-shrink-0">
+                Custom
+              </button>
+            </Drawer.Trigger>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+              <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-surface rounded-t-2xl z-50 outline-none">
+                <Drawer.Title className="sr-only">Pick a Date Range</Drawer.Title>
+                <div className="pt-3 flex justify-center">
+                  <div className="w-10 h-1 bg-sand rounded-full" />
                 </div>
-                <button
-                  onClick={handleApply}
-                  disabled={!pendingRange?.from}
-                  className="w-full mt-2 px-4 py-2.5 rounded-full text-sm font-medium bg-terra text-cream disabled:opacity-40 transition-colors"
-                >
-                  Apply
-                </button>
-              </div>
-            </Drawer.Content>
-          </Drawer.Portal>
-        </Drawer.Root>
+                <div className="p-4 pb-8">
+                  <h3 className="text-base font-display font-semibold text-ink mb-1 text-center">
+                    Pick a Date Range
+                  </h3>
+                  <p className="text-sm text-muted mb-3 text-center">
+                    {pendingRange?.from
+                      ? formatCustomDatePill(pendingRange.from, pendingRange.to ?? pendingRange.from)
+                      : 'Select a start date, then an end date'}
+                  </p>
+                  <div className="flex justify-center">
+                    <DayPicker
+                      mode="range"
+                      selected={pendingRange}
+                      onSelect={setPendingRange}
+                      disabled={[{ before: today }, { after: maxDate }]}
+                      className="rdp-custom"
+                    />
+                  </div>
+                  <button
+                    onClick={handleApply}
+                    disabled={!pendingRange?.from}
+                    className="w-full mt-2 px-4 py-2.5 rounded-full text-sm font-medium bg-terra text-cream disabled:opacity-40 transition-colors"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+        )}
+      </div>
+      {canScrollRight && (
+        <div
+          className="pointer-events-none absolute top-0 right-0 bottom-2 w-10 bg-gradient-to-l from-background to-transparent"
+          aria-hidden="true"
+        />
       )}
     </div>
   )
