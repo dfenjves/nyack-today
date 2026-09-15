@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { runAllScrapers, runScraper, cleanupOldEvents, scrapers } from '@/lib/scrapers'
+import { runAllScrapers, runScraper, cleanupOldEvents, getScraperNames } from '@/lib/scrapers'
 import { notifyScraperError } from '@/lib/utils/notifications'
 
 /**
@@ -124,6 +124,7 @@ export async function GET(request: NextRequest) {
     return POST(request)
   }
 
-  // Otherwise, return the list of available scrapers for the admin dropdown.
-  return NextResponse.json({ scrapers: scrapers.map((s) => s.name) })
+  // Otherwise, return the list of available scrapers for the admin dropdown —
+  // static scrapers plus every enabled Source from /admin/sources.
+  return NextResponse.json({ scrapers: await getScraperNames() })
 }
