@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 
 interface ScraperLog {
   id: string
@@ -21,11 +22,13 @@ interface AddedEvent {
 }
 
 export default function AdminScrapersPage() {
+  const searchParams = useSearchParams()
   const [logs, setLogs] = useState<ScraperLog[]>([])
   const [scrapers, setScrapers] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [running, setRunning] = useState(false)
-  const [selectedScraper, setSelectedScraper] = useState('all')
+  // ?source=<name> preselects a scraper (linked from /admin/pulse)
+  const [selectedScraper, setSelectedScraper] = useState(() => searchParams.get('source') ?? 'all')
   const [statusFilter, setStatusFilter] = useState('all')
   const [error, setError] = useState('')
 

@@ -29,14 +29,17 @@ None of that happens unless the underlying promise holds: **if it's happening in
 | Categories with ≥ 1 event this week | 8 of 11 | 10 of 11 | 11 of 11 |
 | FAMILY_KIDS events per 30 days | 1 | 25 | 50 |
 | Events categorized OTHER (share) | 23% | < 10% | < 5% |
-| Email subscribers | *check admin* | 400 | 1,000 |
-| iOS devices registered | *check admin* | 100 | 400 |
+| Thin days (< 5 events) in the next 14 days | 11 of 14 (0 empty) | 0 | 0 |
+| Email subscribers | 10 active (+1 this week) | 400 | 1,000 |
+| iOS devices registered | 0 active | 100 | 400 |
 | Organizer submissions per week | ~2 | 5 | 10 |
 | Local sites linking to nyacktoday.com | *unknown* | 5 | 12 |
 
 The 6-month WAL target is roughly one in eight people in the three Nyacks (population ~12,100) showing up every week. That is what "go-to" looks like numerically.
 
 Baseline figures come from the live API on 2026-09-14 (`/api/events?date=…` counts and a 100-event sample of the 30-day window). Items marked *unknown* are the first thing Phase 0 measures.
+
+Subscriber, device, and thin-day baselines come from `/admin/pulse` on 2026-09-15. The same reading showed 32 events in the next 7 days, 10 of 11 categories this week, and OTHER at 28% of the 14-day window. It also showed 10 submissions in the last 7 days, but most came from AI ingest (Discord, email, Instagram), not organizers, so the ~2 organizer figure stands. Sources flagged that day: Email Newsletters (no success since 2026-03-24) and Instagram (since 2026-08-25) are stale; Visit Nyack, Eventbrite, and Rivertown Film ran but found 0 events.
 
 ---
 
@@ -92,6 +95,8 @@ Tasks:
 6. **Google Search Console + Business Profile.** Verify the domain, submit the sitemap, claim "Nyack Today". Zero code, high leverage. *(Human step — Danny.)*
 
 Done when: `/admin/pulse` shows real numbers for every row in the §1 table, and OTHER share is under 10%.
+
+- **Done 2026-09-15 — #2 Admin Pulse page.** `/admin/pulse` + `GET /api/admin/pulse`: 14-day Eastern-time coverage grid (per-day totals verified to match the public site's single-day query), source health (never/stale/zero/ok, `partial` counts as success), and subscriber/device/submission counts. Thresholds live in `PULSE_THRESHOLDS` (`src/lib/utils/pulse.ts`) for the quiet-day alert (#3) to reuse. WAL tile stays "—" until #1 ships.
 
 ---
 
