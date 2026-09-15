@@ -34,6 +34,16 @@ enum SubmissionStatus {
   REJECTED
 }
 
+// How the generic, config-driven scraper should fetch a Source's pages.
+// See src/lib/scrapers/generic.ts.
+enum SourceFetchMode {
+  CHEERIO // static HTML → readable text → AI
+  PUPPETEER // JS-rendered page → readable text → AI
+  ICAL // .ics feed → structured, no AI needed
+  RSS // RSS/Atom → items → AI on each item body
+  JSONLD // page with schema.org Event JSON-LD → structured, no AI needed
+}
+
 // One-time or recurring events with specific dates
 model Event {
   id              String    @id @default(cuid())
@@ -242,4 +252,33 @@ model InstagramPost {
   @@index([handle])
   @@index([processedAt])
   @@index([status])
+}
+
+// A config-driven scraping target. One row = one page (or set of pages) that
+// the generic scraper fetches, reduces to readable text, and runs through AI
+// extraction. Managed entirely from /admin/sources — no deploy needed to add
+// or retire a source. See src/lib/scrapers/generic.ts.
+model Source {
+  id                 String          @id @default(cuid())
+  name               String          @unique // becomes sourceName on events + ScraperLog
+  slug               String          @unique
+  urls               String[] // one or more pages/feeds to fetch (max 3 used per run)
+  fetchMode          SourceFetchMode @default(CHEERIO)
+  defaultVenue       String? // used when AI can't determine venue
+  defaultAddress     String?
+  defaultCity        String          @default("Nyack")
+  isNyackProper      Boolean         @default(true)
+  defaultCategory    Category? // hint passed to AI; AI may override
+  familyFriendlyHint Boolean? // null = let the heuristic decide
+  autoPublish        Boolean         @default(false) // false = events go to EventSubmission for review
+  cleanRuns          Int             @default(0) // consecutive reviewed runs with no rejections
+  enabled            Boolean         @default(true)
+  notes              String? // admin notes, e.g. "calendar is at bottom of page"
+  lastRunAt          DateTime?
+  lastStatus         String?
+  lastError          String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([enabled])
 }
