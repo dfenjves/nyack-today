@@ -28,7 +28,7 @@ None of that happens unless the underlying promise holds: **if it's happening in
 | Events this week | 33 | 75 | 120 |
 | Categories with ≥ 1 event this week | 8 of 11 | 10 of 11 | 11 of 11 |
 | FAMILY_KIDS events per 30 days | 1 | 25 | 50 |
-| Events categorized OTHER (share) | 23% | < 10% | < 5% |
+| Events categorized OTHER (share) | 0% (was 23%; 14% before the 2026-09-15 backfill) | < 10% | < 5% |
 | Thin days (< 5 events) in the next 14 days | 11 of 14 (0 empty) | 0 | 0 |
 | Email subscribers | 10 active (+1 this week) | 400 | 1,000 |
 | iOS devices registered | 0 active | 100 | 400 |
@@ -92,6 +92,7 @@ Tasks:
 3. **Quiet-day alert.** After the 6 AM scrape, if tomorrow has < 5 events, post to the Discord webhook. Turns thin days into a to-do instead of a surprise.
 4. **Fix the trust bugs.** #97 (non-Nyack events shown as Nyack), #28 (recurring events always in upcoming), #103 (bottom nav clips last card), #105 (Escape on date sheet). Merge PR #110.
 5. **AI re-categorization pass.** One-off script over all `OTHER` events using the existing `src/lib/ai` client; then make categorization AI-assisted at ingest for every scraper (`src/lib/scrapers/utils.ts`), not just email/Discord/Instagram.
+   - **Done 2026-09-15.** OTHER share of upcoming events went from 14.4% (28 of 194) to 0% (0 of 194); `/admin/pulse` now shows `Other: 0%` over the 14-day window (was 28%). Shared classifier in `src/lib/ai/categorize.ts` (cheap model via `AI_CATEGORIZE_MODEL`, batches of 20, in-memory cache, keyword fallback), hooked into `saveEvent`'s ingest path for every scraper and into the Discord/Instagram submission processors. Backfill script: `scripts/recategorize-other.ts`. Existing events are never re-categorized on update, so admin corrections stick.
 6. **Google Search Console + Business Profile.** Verify the domain, submit the sitemap, claim "Nyack Today". Zero code, high leverage. *(Human step — Danny.)*
 
 Done when: `/admin/pulse` shows real numbers for every row in the §1 table, and OTHER share is under 10%.
