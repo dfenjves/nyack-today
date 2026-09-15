@@ -18,7 +18,8 @@ export interface EventQueryOptions {
   offset?: number
 }
 
-function deduplicateEvents(events: Event[]): Event[] {
+// Exported so /admin/pulse counts events the same way the public site shows them.
+export function deduplicateEvents(events: Event[]): Event[] {
   const deduplicated: Event[] = []
   for (const event of events) {
     const isDuplicate = deduplicated.some(existing =>

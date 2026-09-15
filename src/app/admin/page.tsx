@@ -135,6 +135,12 @@ export default function AdminDashboard() {
             >
               View Scraper Logs
             </Link>
+            <Link
+              href="/admin/pulse"
+              className="block px-4 py-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors"
+            >
+              View Pulse (coverage &amp; sources)
+            </Link>
           </div>
         </div>
 
