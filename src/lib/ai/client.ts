@@ -317,6 +317,14 @@ export async function extractEventsFromWebPage(params: {
     config.model = process.env.WEBPAGE_AI_MODEL;
   }
 
+  // A month calendar can carry 60+ events. The 4096-token default that suits a
+  // single email would truncate the JSON mid-array and lose the whole response,
+  // so give web pages more room unless the operator has set a larger value.
+  config.maxTokens = Math.max(
+    config.maxTokens,
+    parseInt(process.env.WEBPAGE_AI_MAX_TOKENS || '12288', 10)
+  );
+
   return runTextPromptWithFallback(
     WEBPAGE_SYSTEM_PROMPT,
     buildWebPagePrompt(params),

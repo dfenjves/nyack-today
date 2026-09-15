@@ -2,12 +2,14 @@
  * Print a page exactly as the generic scraper sees it: raw HTML matches,
  * or the reduced readable text with --text.
  *
- *   npx tsx scripts/peek-page.ts <url> [--text] [--grep=<regex>] [--limit=N]
+ *   npx tsx scripts/peek-page.ts <url> [--render] [--text] [--grep=<regex>] [--limit=N]
+ *
+ * --render loads the page in headless Chrome first (what PUPPETEER mode sees).
  */
 import { config as loadEnv } from 'dotenv'
 loadEnv({ path: '.env.local' })
 
-import { htmlToReadableText } from '../src/lib/scrapers/generic'
+import { fetchRenderedHtml, htmlToReadableText } from '../src/lib/scrapers/generic'
 
 const USER_AGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 NyackToday/1.0 (+https://nyacktoday.com)'
@@ -23,16 +25,44 @@ async function main() {
   const grepArg = process.argv.find((a) => a.startsWith('--grep='))?.slice(7)
   const limit = parseInt(process.argv.find((a) => a.startsWith('--limit='))?.slice(8) ?? '80', 10)
 
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': USER_AGENT,
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9',
-    },
-    redirect: 'follow',
-  })
-  console.log(`HTTP ${response.status} ${response.statusText} — ${response.headers.get('content-type')}`)
-  const html = await response.text()
+  let html: string
+  if (process.argv.includes('--scraper-render')) {
+    // Exactly what PUPPETEER fetch mode sees.
+    html = await fetchRenderedHtml(url)
+  } else if (process.argv.includes('--render')) {
+    const puppeteer = (await import('puppeteer')).default
+    const browser = await puppeteer.launch({ headless: true })
+    try {
+      const page = await browser.newPage()
+      await page.setUserAgent(USER_AGENT)
+      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 })
+      // Include iframe documents, which is where embedded calendar widgets live.
+      const frames = await Promise.all(
+        page.frames().map(async (frame) => {
+          try {
+            return `<!-- frame: ${frame.url()} -->\n${await frame.content()}`
+          } catch {
+            return ''
+          }
+        })
+      )
+      html = frames.join('\n')
+    } finally {
+      await browser.close()
+    }
+    console.log(`rendered ${(html.match(/<!-- frame: /g) ?? []).length} frame(s)`)
+  } else {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': USER_AGENT,
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'follow',
+    })
+    console.log(`HTTP ${response.status} ${response.statusText} — ${response.headers.get('content-type')}`)
+    html = await response.text()
+  }
   console.log(`bytes: ${html.length}`)
 
   const body = wantText ? htmlToReadableText(html, url) : html

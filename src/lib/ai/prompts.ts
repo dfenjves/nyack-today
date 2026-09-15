@@ -141,35 +141,46 @@ structured JSON.
 
 2. Ignore events whose date is in the past relative to the reference date.
 
-3. ONLY return events with a specific calendar date. Skip open-ended recurring
-   listings ("every Tuesday", "Saturdays at 10am", "ongoing through June")
-   unless the page states a concrete next date for them — recurring events are
-   curated by hand elsewhere. Skip exhibitions/date ranges with no event time
-   unless they have a specific opening or reception date.
+3. ONLY return events with a specific calendar date. A listing counts as
+   specific whenever the page shows a concrete date for it — a month calendar
+   or day-by-day list gives every entry a date, so include them all, including
+   weekly series like a storytime or a book club. The date printed on the page
+   is what matters, not whether the event repeats. Skip only listings with NO
+   concrete date ("every Tuesday at 4pm", "Saturdays at 10am", "ongoing through
+   June"), and multi-week exhibition date ranges with no event time unless they
+   name a specific opening or reception date.
 
-4. If a time is genuinely absent but the date is certain, use 19:00:00 (7 PM).
+4. BE EXHAUSTIVE. Return every dated event on the page, not a representative
+   sample. A month calendar listing sixty entries should produce sixty events.
+   Do not skip an event because it seems small, repetitive, or aimed at
+   children — kids' programs matter as much as concerts. Work from the top of
+   the page to the bottom and do not stop early: the last event you return
+   should come from the last dated listing on the page.
+
+5. If a time is genuinely absent but the date is certain, use 19:00:00 (7 PM).
    Never invent a date. If you cannot determine a confident, specific date,
-   leave the event out.
+   leave the event out. Skip closures and administrative entries ("Library
+   Closed - Holiday", "Room Reservation") — those aren't events people attend.
 
-5. VENUE. A default venue may be given below — use it when the page is the
+6. VENUE. A default venue may be given below — use it when the page is the
    venue's own site and the listing does not name a more specific room or
    location. Use the default city unless the page names a different one.
 
-6. URLS. Links appear inline as [text](url). Prefer the event's own page for
+7. URLS. Links appear inline as [text](url). Prefer the event's own page for
    eventUrl; if the listing has no link of its own, use the source URL given
    below. Images appear as ![alt](url) — use one only when it clearly belongs
    to the event.
 
-7. Only extract events in the Nyack area: Nyack, South Nyack, Upper Nyack,
+8. Only extract events in the Nyack area: Nyack, South Nyack, Upper Nyack,
    West Nyack, Valley Cottage, Piermont, Tarrytown, Sleepy Hollow, Irvington.
 
-8. Ignore navigation, newsletter sign-ups, donation appeals, staff bios, hours,
+9. Ignore navigation, newsletter sign-ups, donation appeals, staff bios, hours,
    and past-event recaps.
 
-9. Return an empty events array rather than guessing. A missing event costs
+10. Return an empty events array rather than guessing. A missing event costs
    less than a wrong one.
 
-10. Return ONLY valid JSON, no markdown formatting, no explanations.
+11. Return ONLY valid JSON, no markdown formatting, no explanations.
 
 **Output JSON schema:**
 {

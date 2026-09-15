@@ -364,7 +364,7 @@ async function fetchText(url: string, timeoutMs = FETCH_TIMEOUT_MS): Promise<str
  * (@sparticuz/chromium on Vercel, a local Chrome otherwise). Imported lazily so
  * the common CHEERIO path never loads Chromium.
  */
-async function fetchRenderedHtml(url: string): Promise<string> {
+export async function fetchRenderedHtml(url: string): Promise<string> {
   const puppeteer = (await import('puppeteer-core')).default
   type BrowserLike = Awaited<ReturnType<typeof puppeteer.launch>>
   let browser: BrowserLike | null = null
@@ -404,7 +404,20 @@ async function fetchRenderedHtml(url: string): Promise<string> {
     const page = await browser.newPage()
     await page.setUserAgent(USER_AGENT)
     await page.goto(url, { waitUntil: 'networkidle2', timeout: PUPPETEER_TIMEOUT_MS })
-    return await page.content()
+
+    // Embedded calendar widgets (LocalHop, Tockify, Google Calendar) render
+    // inside an iframe, so the main frame's HTML is nearly empty. Concatenate
+    // every frame's document instead.
+    const documents = await Promise.all(
+      page.frames().map(async (frame) => {
+        try {
+          return await frame.content()
+        } catch {
+          return ''
+        }
+      })
+    )
+    return documents.filter(Boolean).join('\n')
   } finally {
     await browser?.close().catch(() => undefined)
   }

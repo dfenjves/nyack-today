@@ -51,7 +51,24 @@ Categories: MUSIC, COMEDY, MOVIES, THEATER, FAMILY_KIDS, FOOD_DRINK, SPORTS_RECR
 - `src/lib/scrapers/` - Individual scrapers per data source (to be built)
 - `data-sources.md` - Running list of scraping targets with tier classification
 
-## Scraper Tiers
+## Scrapers
+
+**Start with the generic scraper.** `src/lib/scrapers/generic.ts` is
+config-driven: a `Source` row in the database describes a page, the scraper
+fetches it, reduces it to readable text, and runs it through the existing AI
+extraction. Adding a venue takes minutes at `/admin/sources` — paste a URL, hit
+Test, adjust, Save — with no code and no deploy. Write a bespoke scraper only
+when the generic one genuinely can't do the job (a private API, an unusual auth
+flow, a site that needs multi-step navigation).
+
+Fetch modes, in order of preference: `ICAL` and `JSONLD` (structured, no AI
+call, exact times), `RSS`, `CHEERIO` (static HTML), `PUPPETEER` (renders JS;
+includes iframe documents, which is how the Nyack Library's LocalHop widget is
+read). New sources default to `autoPublish = false`, so their events become
+`EventSubmission` rows for review in `/admin/submissions` instead of going live.
+See `data-sources.md` for the onboarded list.
+
+Bespoke scrapers (one file each in `src/lib/scrapers/`) fall into three tiers:
 
 1. **Tier 1** (Cheerio): Sites with JSON-LD or clean HTML - visitnyack.org, eventbrite.com, levitylive.com
 2. **Tier 2** (Puppeteer): JS-rendered pages - nyacklibrary.org, tickets.tarrytownmusichall.org
