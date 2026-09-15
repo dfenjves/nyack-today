@@ -5,6 +5,7 @@ import {
   parsePrice,
   guessFamilyFriendly,
   toTitleCase,
+  makeEasternDate,
 } from './utils'
 
 const SOURCE_NAME = "Maureen's Jazz Cellar"
@@ -111,9 +112,9 @@ function convertInffuseEvent(event: InffuseEvent): ScrapedEvent | null {
     // This ensures the date represents the correct day in EST/EDT
     const [year, month, day] = event.startDate.split('-').map(Number)
 
-    // Create date at 8:00 PM EST/EDT (default event time at Maureen's)
+    // Create date at 8:00 PM Eastern (default event time at Maureen's)
     // Note: month is 0-indexed in JavaScript Date
-    const startDate = new Date(year, month - 1, day, 20, 0, 0)
+    const startDate = makeEasternDate(year, month - 1, day, 20, 0)
 
     // Skip past events
     const now = new Date()
@@ -125,7 +126,7 @@ function convertInffuseEvent(event: InffuseEvent): ScrapedEvent | null {
     let endDate: Date | null = null
     if (event.endDate && event.endDate !== event.startDate) {
       const [endYear, endMonth, endDay] = event.endDate.split('-').map(Number)
-      endDate = new Date(endYear, endMonth - 1, endDay, 23, 0, 0)
+      endDate = makeEasternDate(endYear, endMonth - 1, endDay, 23, 0)
     }
 
     // Parse price from description
