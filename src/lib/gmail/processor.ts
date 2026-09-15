@@ -106,7 +106,11 @@ function extractedEventToScrapedEvent(
     // Parse price
     const { price, isFree } = parsePrice(extracted.price);
 
-    // Determine category and family-friendliness
+    // Determine category and family-friendliness.
+    // Unlike the Discord/Instagram processors, this path returns ScrapedEvents
+    // that flow through the "Email Newsletters" scraper into saveEvent(), where
+    // `categorizeScrapedEvents()` AI-categorizes them in one batched call. This
+    // keyword guess is just the pre-AI seed value.
     const category = guessCategory(extracted.title, extracted.description);
     const isFamilyFriendly = guessFamilyFriendly(
       extracted.title,
