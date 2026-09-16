@@ -142,7 +142,15 @@ Trivia nights, open mics, jazz sessions, farmers market, library storytime, yoga
 
 **1e. Expand Instagram monitoring.** Many Nyack businesses only announce on Instagram. Grow `INSTAGRAM_HANDLES` from the current list to ~40 accounts (every venue in 1c that has one). Watch Apify cost; cap posts per handle. As of Sept 2026 the Apify call is rate-limited to once every 5 days with a 5-day lookback (`INSTAGRAM_SCRAPER_INTERVAL_DAYS`) because daily runs burned credits too fast; revisit the interval and `INSTAGRAM_POSTS_PER_HANDLE` as handles grow.
 
+- **Done 2026-09-16 — handles are admin-managed.** `/admin/instagram` (`InstagramHandle` table) adds, pauses, and removes accounts with a per-handle venue hint for the AI, and shows posts read / events found per account. `INSTAGRAM_HANDLES` is still merged in and can be imported from the page, then removed from Vercel. Growing the list to ~40 accounts is now a Danny task, no deploy needed.
+
 Done when: the coverage grid on `/admin/pulse` shows no red days for two consecutive weeks and FAMILY_KIDS has ≥ 25 events in the next 30 days.
+
+**Progress note (2026-09-16).** PRs #115 (AI categorization) and #116 (generic sources) merged. Live counts moved from 2 / 4 / 10 / 33 (tonight / tomorrow / weekend / week) on 09-14 to 7 / 11 / 12 / 49 on 09-16, with the 45 generic-source submissions still unreviewed. Next in this phase, in order:
+1. Split the daily scrape into bounded groups + categorize review-mode sources (prompt: `docs/prompts/split-daily-scrape.md`). Blocks adding more sources.
+2. Danny: review `/admin/submissions` (45 pending, 40 from the library); hand-enter standing weekly events (1d); add the bookstores and Phase 1c venues to `INSTAGRAM_HANDLES` in Vercel (1e).
+3. 1a Venue model, which fixes #97 and unblocks Phase 2 venue pages.
+4. Then back to Phase 0 #1 analytics, so the WAL baseline is captured after coverage stabilizes.
 
 ---
 

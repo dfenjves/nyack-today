@@ -142,6 +142,12 @@ export default function AdminDashboard() {
               + Add a Source (no deploy needed)
             </Link>
             <Link
+              href="/admin/instagram"
+              className="block px-4 py-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors"
+            >
+              + Add an Instagram account to monitor
+            </Link>
+            <Link
               href="/admin/pulse"
               className="block px-4 py-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors"
             >
