@@ -42,7 +42,7 @@ export interface ProcessedInstagramPost {
  * Configuration for the Instagram scraper
  */
 export interface InstagramConfig {
-  handles: string[]; // Account usernames to monitor (no @)
+  envHandles: string[]; // Legacy INSTAGRAM_HANDLES list; merged with the InstagramHandle table
   apifyToken: string;
   scraperEnabled: boolean;
   intervalDays: number; // Run Apify at most once per this many days; also the lookback window for posts

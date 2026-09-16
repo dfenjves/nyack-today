@@ -26,25 +26,18 @@ import {
   resolveIngestCategory,
   resolveIngestFamilyFriendly,
 } from '../ai/categorize';
+import { resolveInstagramHandles } from './handles';
 
 /**
- * Known venue name per Instagram handle. Used as a venue hint for the AI when a
- * post's caption doesn't name a specific venue (the account usually IS the
- * venue). Keys are lowercase handles without the leading @.
- *
- * Extend this as handles are added to INSTAGRAM_HANDLES.
+ * Venue hints (lowercase handle → venue name) for the current run. Populated
+ * from the InstagramHandle table by processInstagramPosts(); the account
+ * usually IS the venue, so this is what the AI falls back to when a caption
+ * names no venue. Managed at /admin/instagram.
  */
-const HANDLE_VENUE_MAP: Record<string, string> = {
-  casaofnyack: 'Casa Del Sol',
-  hotelnyack: 'Hotel Nyack',
-  'prohibition.river': 'Prohibition River',
-  edwardhopperhouse: 'Edward Hopper House Museum & Study Center',
-  nyackboatclub: 'Nyack Boat Club',
-  bigredbooks: 'Big Red Books',
-};
+let venueHints: Record<string, string> = {};
 
 function venueHintFor(handle: string): string | null {
-  return HANDLE_VENUE_MAP[handle.toLowerCase()] || null;
+  return venueHints[handle.toLowerCase()] || null;
 }
 
 // A browser-like User-Agent — Instagram's CDN is fine serving to normal
@@ -341,15 +334,19 @@ export async function processInstagramPosts(): Promise<{
   errorCount: number;
 }> {
   const config = getInstagramConfig();
+  const resolved = await resolveInstagramHandles();
+  venueHints = resolved.venueHints;
 
   console.log('Instagram processor configuration:', {
-    handles: config.handles,
+    handles: resolved.handles,
+    fromDb: resolved.fromDb,
+    fromEnv: resolved.fromEnv,
     intervalDays: config.intervalDays,
     postsPerHandle: config.postsPerHandle,
   });
 
-  if (config.handles.length === 0) {
-    console.warn('INSTAGRAM_HANDLES is empty. No posts will be processed.');
+  if (resolved.handles.length === 0) {
+    console.warn('No Instagram handles configured. No posts will be processed.');
     return {
       processedPosts: [],
       totalSubmissions: 0,
@@ -358,7 +355,7 @@ export async function processInstagramPosts(): Promise<{
     };
   }
 
-  const posts = await fetchRecentPosts(config.handles, config);
+  const posts = await fetchRecentPosts(resolved.handles, config);
 
   console.log(`Found ${posts.length} recent Instagram posts`);
 

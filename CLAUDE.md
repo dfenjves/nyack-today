@@ -61,6 +61,10 @@ Test, adjust, Save — with no code and no deploy. Write a bespoke scraper only
 when the generic one genuinely can't do the job (a private API, an unusual auth
 flow, a site that needs multi-step navigation).
 
+Instagram accounts are managed the same way at `/admin/instagram` (the
+`InstagramHandle` table, with a per-handle venue hint for the AI). The legacy
+`INSTAGRAM_HANDLES` env var is still merged in; the page can import it.
+
 Fetch modes, in order of preference: `ICAL` and `JSONLD` (structured, no AI
 call, exact times), `RSS`, `CHEERIO` (static HTML), `PUPPETEER` (renders JS;
 includes iframe documents, which is how the Nyack Library's LocalHop widget is

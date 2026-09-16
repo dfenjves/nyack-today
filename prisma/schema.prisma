@@ -230,6 +230,21 @@ model DiscordMessage {
   @@index([status])
 }
 
+// Instagram accounts monitored by the Instagram scraper. Managed from
+// /admin/instagram. INSTAGRAM_HANDLES (env) is still honored and merged in, so
+// nothing breaks for existing deployments; the admin page can import it.
+model InstagramHandle {
+  id        String   @id @default(cuid())
+  handle    String   @unique // lowercase, no leading @
+  venueName String?          // venue hint for the AI when a caption names no venue
+  notes     String?
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([enabled])
+}
+
 // Instagram posts processed for event extraction
 // Mirrors DiscordMessage — tracks which posts we've already seen so each
 // nightly run only processes genuinely new content.

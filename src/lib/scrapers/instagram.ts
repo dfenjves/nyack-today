@@ -8,7 +8,8 @@
  *
  * Environment variables:
  * - INSTAGRAM_SCRAPER_ENABLED (default: false)
- * - INSTAGRAM_HANDLES (comma-separated handles, no @)
+ * - Handles: managed at /admin/instagram (InstagramHandle table); the legacy
+ *   INSTAGRAM_HANDLES env var (comma-separated, no @) is still merged in
  * - APIFY_API_TOKEN
  * - OPENAI_API_KEY or ANTHROPIC_API_KEY
  *
@@ -62,8 +63,10 @@ export const instagramScraper: Scraper = {
       // Dynamically import to keep the module graph light for the common path
       const { getInstagramConfig } = await import('../instagram/client');
       const { processInstagramPosts } = await import('../instagram/processor');
+      const { resolveInstagramHandles } = await import('../instagram/handles');
 
       const config = getInstagramConfig();
+      const { handles } = await resolveInstagramHandles();
 
       if (!config.scraperEnabled) {
         return {
@@ -85,13 +88,13 @@ export const instagramScraper: Scraper = {
         };
       }
 
-      if (config.handles.length === 0) {
+      if (handles.length === 0) {
         return {
           sourceName: 'Instagram',
           events: [],
           status: 'error',
           errorMessage:
-            'INSTAGRAM_HANDLES is empty. Please add handles to environment variables.',
+            'No Instagram handles configured. Add accounts at /admin/instagram.',
         };
       }
 
