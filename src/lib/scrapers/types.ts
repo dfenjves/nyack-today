@@ -39,6 +39,13 @@ export interface ScraperResult {
    * a source stuck at zero. Defaults to `events.length`.
    */
   eventsFound?: number
+  /**
+   * Wall-clock time the scrape took, in milliseconds. Filled in by the
+   * orchestrator (see `runAllScrapers`), not by the scrapers themselves, so
+   * `/api/scrape` and the GitHub Actions log can show where the 300 s Vercel
+   * budget actually goes.
+   */
+  durationMs?: number
 }
 
 /**
@@ -47,6 +54,13 @@ export interface ScraperResult {
 export interface Scraper {
   name: string
   scrape(): Promise<ScraperResult>
+  /**
+   * How long this scraper may run before the orchestrator abandons it and logs
+   * a timeout. Generic sources set this from their fetch mode (a Puppeteer
+   * render needs far longer than an iCal fetch); static scrapers leave it unset
+   * and get `DEFAULT_SCRAPER_TIMEOUT_MS`.
+   */
+  timeoutMs?: number
 }
 
 /**

@@ -163,16 +163,26 @@ export async function notifyScraperComplete(summary: {
   totalEventsAdded: number
   totalEventsUpdated: number
   failedScrapers: string[]
+  /**
+   * Which slice of the daily run this was ("static", "generic batch 1", ...).
+   * The nightly scrape is several invocations now, so without this the three
+   * notifications it sends are indistinguishable.
+   */
+  group?: string
 }): Promise<void> {
   const hasFailures = summary.failedScrapers.length > 0
+  const suffix = summary.group ? ` — ${summary.group}` : ''
 
   await sendNotification({
     type: hasFailures ? 'warning' : 'success',
-    title: hasFailures ? 'Scraper Run Completed with Errors' : 'Scraper Run Completed',
+    title: hasFailures
+      ? `Scraper Run Completed with Errors${suffix}`
+      : `Scraper Run Completed${suffix}`,
     message: hasFailures
       ? `Some scrapers failed: ${summary.failedScrapers.join(', ')}`
       : 'All scrapers completed successfully',
     details: {
+      ...(summary.group ? { Group: summary.group } : {}),
       'Events Found': summary.totalEventsFound,
       'Events Added': summary.totalEventsAdded,
       'Events Updated': summary.totalEventsUpdated,

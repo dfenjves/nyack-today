@@ -18,7 +18,8 @@ import { olivesNyackScraper } from './olivesnyack'
 import { rocklandChessScraper } from './rocklandchess'
 import { patchScraper } from './patch'
 import { nyackNewsAndViewsScraper } from './nyacknewsandviews'
-import { genericSourceScrapers } from './generic'
+import { enabledSources, genericSourceScrapers, makeSourceScraper } from './generic'
+import { takeBatch, withTimeout } from './batching'
 import { notifyScraperComplete, notifyScraperError } from '@/lib/utils/notifications'
 import { categorizeScrapedEvents } from '@/lib/ai/categorize'
 
@@ -46,6 +47,16 @@ export const scrapers: Scraper[] = [
 ]
 
 /**
+ * Wall-clock budget for a scraper that doesn't declare its own `timeoutMs`,
+ * i.e. every static scraper. Generic sources set theirs from their fetch mode
+ * (`SOURCE_TIMEOUT_MS` in ./generic).
+ */
+export const DEFAULT_SCRAPER_TIMEOUT_MS = 90_000
+
+/** Generic sources per batch when `/api/scrape?group=generic` is given no batchSize. */
+export const DEFAULT_GENERIC_BATCH_SIZE = 4
+
+/**
  * Every scraper for this run: the static ones above, then one per enabled
  * `Source` row (see src/lib/scrapers/generic.ts). Generic sources run last so a
  * slow or newly added site can't starve the established scrapers of the 300 s
@@ -53,6 +64,46 @@ export const scrapers: Scraper[] = [
  */
 export async function getAllScrapers(): Promise<Scraper[]> {
   return [...scrapers, ...(await genericSourceScrapers())]
+}
+
+/**
+ * The statically registered scrapers only (`?group=static`).
+ */
+export function getStaticScrapers(): Scraper[] {
+  return [...scrapers]
+}
+
+export interface GenericScraperBatch {
+  scrapers: Scraper[]
+  /** How many enabled Sources exist in total, not just in this batch. */
+  totalSources: number
+  batch: number
+  /** The batch size actually used; equals `totalSources` when unbatched. */
+  batchSize: number
+  hasMore: boolean
+}
+
+/**
+ * The enabled generic sources as scrapers (`?group=generic`), optionally one
+ * page at a time.
+ *
+ * Sources are ordered by name (see `enabledSources`), so `batch` is a stable
+ * 0-based slice of that list and the daily workflow can walk it with
+ * `hasMore`. A batch past the end returns no scrapers rather than an error, so
+ * a workflow loop that overshoots ends quietly.
+ */
+export async function getGenericScrapers(
+  options: { batch?: number; batchSize?: number } = {}
+): Promise<GenericScraperBatch> {
+  const page = takeBatch(await enabledSources(), options)
+
+  return {
+    scrapers: page.items.map(makeSourceScraper),
+    totalSources: page.total,
+    batch: page.batch,
+    batchSize: page.batchSize,
+    hasMore: page.hasMore,
+  }
 }
 
 /**
@@ -71,28 +122,48 @@ export interface OrchestratorResult {
   totalEventsAdded: number
   totalEventsUpdated: number
   totalEventsDuplicate: number
+  /** Wall-clock time for the whole run, so the workflow log shows the trend. */
+  totalDurationMs: number
 }
 
 /**
- * Run all scrapers and save events to database
+ * Run a set of scrapers and save their events to the database.
+ *
+ * Defaults to every scraper (static, then generic), which is what a bare
+ * `POST /api/scrape` still does. The daily workflow instead passes one group at
+ * a time — `getStaticScrapers()`, then pages of `getGenericScrapers()` — so no
+ * single Vercel invocation has to fit the whole run into 300 s.
+ *
+ * Each scraper gets its own wall-clock budget (`Scraper.timeoutMs`, else
+ * `DEFAULT_SCRAPER_TIMEOUT_MS`). Blowing it is recorded as an ordinary error
+ * row in ScraperLog — so /admin/pulse shows it — and the run moves on.
  */
-export async function runAllScrapers(): Promise<OrchestratorResult> {
+export async function runAllScrapers(
+  scrapersToRun?: Scraper[],
+  options: { groupLabel?: string } = {}
+): Promise<OrchestratorResult> {
   const results: ScraperResult[] = []
   let totalEventsFound = 0
   let totalEventsAdded = 0
   let totalEventsUpdated = 0
   let totalEventsDuplicate = 0
+  const runStartedAt = Date.now()
 
-  // Run each scraper (static first, then the config-driven generic sources)
-  for (const scraper of await getAllScrapers()) {
-    console.log(`Running scraper: ${scraper.name}`)
+  const queue = scrapersToRun ?? (await getAllScrapers())
+
+  for (const scraper of queue) {
+    const timeoutMs = scraper.timeoutMs ?? DEFAULT_SCRAPER_TIMEOUT_MS
+    console.log(`Running scraper: ${scraper.name} (budget ${Math.round(timeoutMs / 1000)}s)`)
+    const startedAt = Date.now()
 
     try {
-      const result = await scraper.scrape()
+      const result = await withTimeout(scraper.scrape(), timeoutMs)
+      const durationMs = Date.now() - startedAt
+      result.durationMs = durationMs
       results.push(result)
       totalEventsFound += result.events.length
 
-      console.log(`  Found ${result.events.length} events (${result.status})`)
+      console.log(`  Found ${result.events.length} events (${result.status}) in ${durationMs}ms`)
 
       // AI-categorize the events that are new to us, in one batched call
       await categorizeScrapedEvents(result.events, scraper.name)
@@ -115,25 +186,30 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
         result.errorMessage
       )
     } catch (error) {
+      const durationMs = Date.now() - startedAt
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      console.error(`  Error running ${scraper.name}:`, errorMessage)
+      console.error(`  Error running ${scraper.name} after ${durationMs}ms:`, errorMessage)
 
       results.push({
         sourceName: scraper.name,
         events: [],
         status: 'error',
         errorMessage,
+        durationMs,
       })
 
       await logScraperRun(scraper.name, 'error', 0, 0, errorMessage)
     }
   }
 
-  console.log(`\nScraping complete:`)
+  const totalDurationMs = Date.now() - runStartedAt
+
+  console.log(`\nScraping complete${options.groupLabel ? ` (${options.groupLabel})` : ''}:`)
   console.log(`  Total found: ${totalEventsFound}`)
   console.log(`  Added: ${totalEventsAdded}`)
   console.log(`  Updated: ${totalEventsUpdated}`)
   console.log(`  Duplicates: ${totalEventsDuplicate}`)
+  console.log(`  Duration: ${totalDurationMs}ms`)
 
   // Send notification with summary
   const failedScrapers = results
@@ -145,6 +221,7 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
     totalEventsAdded,
     totalEventsUpdated,
     failedScrapers,
+    group: options.groupLabel,
   })
 
   return {
@@ -153,6 +230,7 @@ export async function runAllScrapers(): Promise<OrchestratorResult> {
     totalEventsAdded,
     totalEventsUpdated,
     totalEventsDuplicate,
+    totalDurationMs,
   }
 }
 
@@ -168,10 +246,29 @@ export async function runScraper(name: string): Promise<ScraperResult | null> {
     return null
   }
 
-  console.log(`Running scraper: ${scraper.name}`)
-  const result = await scraper.scrape()
+  const timeoutMs = scraper.timeoutMs ?? DEFAULT_SCRAPER_TIMEOUT_MS
+  console.log(`Running scraper: ${scraper.name} (budget ${Math.round(timeoutMs / 1000)}s)`)
+  const startedAt = Date.now()
 
-  console.log(`  Found ${result.events.length} events (${result.status})`)
+  let result: ScraperResult
+  try {
+    result = await withTimeout(scraper.scrape(), timeoutMs)
+  } catch (error) {
+    const durationMs = Date.now() - startedAt
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`  Error running ${scraper.name} after ${durationMs}ms:`, message)
+    await logScraperRun(scraper.name, 'error', 0, 0, message)
+    return {
+      sourceName: scraper.name,
+      events: [],
+      status: 'error',
+      errorMessage: message,
+      durationMs,
+    }
+  }
+
+  result.durationMs = Date.now() - startedAt
+  console.log(`  Found ${result.events.length} events (${result.status}) in ${result.durationMs}ms`)
 
   // AI-categorize the events that are new to us, in one batched call
   await categorizeScrapedEvents(result.events, scraper.name)
