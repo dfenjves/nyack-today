@@ -48,7 +48,7 @@ Categories: MUSIC, COMEDY, MOVIES, THEATER, FAMILY_KIDS, FOOD_DRINK, SPORTS_RECR
 - `src/lib/db.ts` - Singleton Prisma client
 - `src/lib/utils/dates.ts` - Date filtering (tonight, tomorrow, weekend, week)
 - `src/lib/utils/categories.ts` - Category labels, icons, colors, auto-categorization
-- `src/lib/scrapers/` - Individual scrapers per data source (to be built)
+- `src/lib/scrapers/` - One bespoke scraper per source, plus `generic.ts` (config-driven), `index.ts` (orchestrator), and `batching.ts` (pure batching/timeout helpers, unit-tested)
 - `data-sources.md` - Running list of scraping targets with tier classification
 
 ## Scrapers
@@ -67,6 +67,16 @@ includes iframe documents, which is how the Nyack Library's LocalHop widget is
 read). New sources default to `autoPublish = false`, so their events become
 `EventSubmission` rows for review in `/admin/submissions` instead of going live.
 See `data-sources.md` for the onboarded list.
+
+**Daily run.** `.github/workflows/daily-scrape.yml` (not a Vercel cron) calls
+`POST /api/scrape` several times so no single call nears Vercel's 300 s cap:
+`?group=static&cleanup=true` first, then `?group=generic&batch=N&batchSize=M`
+in a loop while the response says `hasMore`. No `group` still runs everything;
+`source=<name>` runs one scraper and wins over `group`. Cleanup runs only with
+`group=static` or no group. The orchestrator in `index.ts` gives every scraper
+a wall-clock budget (`Scraper.timeoutMs`, default 90 s; generic sources set it
+from their fetch mode) and records a timeout as an error `ScraperLog` row, so
+one hung site never takes down the rest.
 
 Bespoke scrapers (one file each in `src/lib/scrapers/`) fall into three tiers:
 

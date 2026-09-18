@@ -41,6 +41,19 @@ function getAIConfig(): AIConfig {
 }
 
 /**
+ * How long a single provider request may take before the SDK gives up.
+ *
+ * Both SDKs default to 10 minutes with 2 retries — up to half an hour for one
+ * stalled call. The scraper orchestrator gives each source a 60–100 s budget
+ * (see `DEFAULT_SCRAPER_TIMEOUT_MS` and `SOURCE_TIMEOUT_MS`), and its
+ * `Promise.race` can only stop *waiting*, not cancel the request, so without a
+ * bound here one stalled extraction can still outlive the whole Vercel
+ * invocation. 45 s leaves room to fail inside the source's own budget, where
+ * the error lands in that source's warnings instead of killing the run.
+ */
+const REQUEST_TIMEOUT_MS = parseInt(process.env.AI_REQUEST_TIMEOUT_MS || '45000', 10);
+
+/**
  * Creates Anthropic client
  */
 function createAnthropicClient(): Anthropic {
@@ -50,7 +63,7 @@ function createAnthropicClient(): Anthropic {
     throw new Error('ANTHROPIC_API_KEY not set in environment variables');
   }
 
-  return new Anthropic({ apiKey });
+  return new Anthropic({ apiKey, timeout: REQUEST_TIMEOUT_MS });
 }
 
 /**
@@ -63,7 +76,7 @@ function createOpenAIClient(): OpenAI {
     throw new Error('OPENAI_API_KEY not set in environment variables');
   }
 
-  return new OpenAI({ apiKey });
+  return new OpenAI({ apiKey, timeout: REQUEST_TIMEOUT_MS });
 }
 
 /**

@@ -33,6 +33,11 @@ import {
   stripHtml,
 } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
+import {
+  categorizeEvents,
+  resolveIngestCategory,
+  resolveIngestFamilyFriendly,
+} from '@/lib/ai/categorize'
 import { extractEventsFromWebPage } from '@/lib/ai/client'
 import { estimateTokenCount } from '@/lib/ai/prompts'
 import { ExtractedEvent } from '@/lib/ai/types'
@@ -44,6 +49,19 @@ export const MAX_URLS_PER_SOURCE = 3
 const FETCH_TIMEOUT_MS = 15_000
 const PUPPETEER_TIMEOUT_MS = 20_000
 const ROBOTS_TIMEOUT_MS = 5_000
+
+/**
+ * Per-source wall-clock budget the orchestrator enforces (see `runAllScrapers`).
+ * A Puppeteer source pays for a Chromium cold start on Vercel plus up to three
+ * page renders, so it gets a much larger slice than a feed fetch.
+ */
+export const SOURCE_TIMEOUT_MS: Record<SourceFetchMode, number> = {
+  CHEERIO: 60_000,
+  JSONLD: 60_000,
+  ICAL: 60_000,
+  RSS: 60_000,
+  PUPPETEER: 100_000,
+}
 
 /** Roughly 12k tokens of page text per AI call. */
 const MAX_PROMPT_TOKENS = 12_000
@@ -577,9 +595,9 @@ export function toScrapedEvent(
 
   const { price, isFree } = parsePrice(extracted.price)
 
-  // TODO: swap for categorizeEvent() from src/lib/ai/categorize.ts once
-  // docs/prompts/recategorize-other.md ships, so sources without a configured
-  // default get an AI category instead of keyword guessing.
+  // A keyword guess to start with. Sources without a configured default get an
+  // AI category later: auto-publish sources through `categorizeScrapedEvents`
+  // in the orchestrator, review-mode sources through `submitEventsForReview`.
   const category = config.defaultCategory ?? guessCategory(title, description)
 
   const eventUrl = absoluteUrl(extracted.eventUrl ?? undefined, pageUrl) ?? pageUrl
@@ -1113,11 +1131,10 @@ export async function submitEventsForReview(
   ])
 
   const seen = [...pendingSubmissions, ...existingEvents]
-  let created = 0
   let duplicates = 0
 
-  for (const event of events) {
-    const isDuplicate = seen.some((other) =>
+  const isDuplicate = (event: ScrapedEvent) =>
+    seen.some((other) =>
       areEventsDuplicates(
         event.title,
         event.venue,
@@ -1128,11 +1145,27 @@ export async function submitEventsForReview(
       )
     )
 
-    if (isDuplicate) {
+  const fresh: ScrapedEvent[] = []
+  for (const event of events) {
+    if (isDuplicate(event)) {
       duplicates++
       continue
     }
+    fresh.push(event)
+    // Later events in this run must also dedupe against the ones already kept.
+    seen.push({ title: event.title, venue: event.venue, startDate: event.startDate })
+  }
 
+  // Review-mode sources bypass saveEvent, and with it the orchestrator's
+  // categorize hook, so classify here — one batched call for the whole run —
+  // and the reviewer sees a real category instead of a keyword guess.
+  // A defaultCategory configured on the Source still wins: it is a human's
+  // statement about the source, which outranks the model.
+  await applyCategories(fresh, config)
+
+  let created = 0
+
+  for (const event of fresh) {
     try {
       await prisma.eventSubmission.create({
         data: {
@@ -1155,14 +1188,45 @@ export async function submitEventsForReview(
         },
       })
       created++
-      // Later events in this run must also dedupe against what we just created.
-      seen.push({ title: event.title, venue: event.venue, startDate: event.startDate })
     } catch (error) {
       console.error(`Error creating submission for "${event.title}":`, errorMessage(error))
     }
   }
 
   return { created, duplicates }
+}
+
+/**
+ * AI-categorize events headed for review, in place.
+ *
+ * Mirrors what `categorizeScrapedEvents` does on the auto-publish path and what
+ * the Discord/Instagram processors do for their submissions: the classifier's
+ * answer beats the keyword guess, `isFamilyFriendly` only ever flips
+ * false -> true at high confidence, and a Source-level `defaultCategory` beats
+ * both. Never throws — a classifier failure leaves the keyword guess in place.
+ */
+async function applyCategories(events: ScrapedEvent[], config: SourceConfig): Promise<void> {
+  if (events.length === 0) return
+
+  try {
+    const results = await categorizeEvents(
+      events.map((event) => ({
+        title: event.title,
+        description: event.description,
+        venue: event.venue,
+        sourceName: event.sourceName,
+      }))
+    )
+
+    events.forEach((event, i) => {
+      const result = results[i]
+      if (!result) return
+      event.category = config.defaultCategory ?? resolveIngestCategory(event.category, result)
+      event.isFamilyFriendly = resolveIngestFamilyFriendly(event.isFamilyFriendly, result)
+    })
+  } catch (error) {
+    console.error('[categorize] failed for review submissions:', errorMessage(error))
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1196,6 +1260,7 @@ export function makeSourceScraper(source: Source): Scraper {
 
   return {
     name: source.name,
+    timeoutMs: SOURCE_TIMEOUT_MS[source.fetchMode],
 
     async scrape(): Promise<ScraperResult> {
       try {
@@ -1243,21 +1308,29 @@ export function makeSourceScraper(source: Source): Scraper {
 }
 
 /**
- * Every enabled Source as a Scraper, loaded fresh on each call so a source
+ * Every enabled Source, ordered by name, loaded fresh on each call so a source
  * added through /admin/sources takes effect on the next run with no deploy.
+ *
+ * The stable ordering is what makes `?group=generic&batch=N` meaningful: the
+ * daily workflow pages through this list, so two batches of one run must see
+ * the sources in the same order.
  *
  * Returns [] if the Source table can't be read, so a database hiccup degrades
  * the nightly run to the static scrapers instead of failing it.
  */
-export async function genericSourceScrapers(): Promise<Scraper[]> {
+export async function enabledSources(): Promise<Source[]> {
   try {
-    const sources = await prisma.source.findMany({
+    return await prisma.source.findMany({
       where: { enabled: true },
       orderBy: { name: 'asc' },
     })
-    return sources.map(makeSourceScraper)
   } catch (error) {
     console.error('Failed to load generic sources:', errorMessage(error))
     return []
   }
+}
+
+/** Every enabled Source as a Scraper. */
+export async function genericSourceScrapers(): Promise<Scraper[]> {
+  return (await enabledSources()).map(makeSourceScraper)
 }
