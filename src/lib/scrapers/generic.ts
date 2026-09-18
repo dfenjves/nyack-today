@@ -34,7 +34,7 @@ import {
 } from './utils'
 import { guessCategory } from '@/lib/utils/categories'
 import {
-  categorizeEvents,
+  categorizeEventsWithStats,
   resolveIngestCategory,
   resolveIngestFamilyFriendly,
 } from '@/lib/ai/categorize'
@@ -1209,7 +1209,7 @@ async function applyCategories(events: ScrapedEvent[], config: SourceConfig): Pr
   if (events.length === 0) return
 
   try {
-    const results = await categorizeEvents(
+    const { results, stats } = await categorizeEventsWithStats(
       events.map((event) => ({
         title: event.title,
         description: event.description,
@@ -1224,6 +1224,14 @@ async function applyCategories(events: ScrapedEvent[], config: SourceConfig): Pr
       event.category = config.defaultCategory ?? resolveIngestCategory(event.category, result)
       event.isFamilyFriendly = resolveIngestFamilyFriendly(event.isFamilyFriendly, result)
     })
+
+    // Same line shape as `categorizeScrapedEvents`, so both ingest paths are
+    // greppable the same way in the Vercel logs.
+    console.log(
+      `[categorize] ${config.name}: ${stats.total} submissions, ${stats.apiCalls} API call${
+        stats.apiCalls === 1 ? '' : 's'
+      }, ${stats.cached} cached`
+    )
   } catch (error) {
     console.error('[categorize] failed for review submissions:', errorMessage(error))
   }
