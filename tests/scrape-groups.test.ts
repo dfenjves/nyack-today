@@ -113,3 +113,40 @@ test('synchronous work is NOT interrupted — the budget bounds waiting, not CPU
   assert.equal(result, 'finished anyway')
   assert.ok(Date.now() - started >= 300)
 })
+
+/* -------------------------------------------------------------------------- */
+/* Group membership                                                           */
+/* -------------------------------------------------------------------------- */
+
+test('an integration scraper is in exactly one of static / integrations', async () => {
+  // Imported lazily: src/lib/scrapers/index.ts pulls in every scraper.
+  const { getStaticScrapers, getIntegrationScrapers, scrapers, INTEGRATION_SCRAPER_NAMES } =
+    await import('../src/lib/scrapers')
+
+  const staticNames = getStaticScrapers().map((s) => s.name)
+  const integrationNames = getIntegrationScrapers().map((s) => s.name)
+
+  assert.deepEqual(
+    [...staticNames, ...integrationNames].sort(),
+    scrapers.map((s) => s.name).sort(),
+    'the two groups together must cover every registered scraper, with no overlap'
+  )
+  for (const name of INTEGRATION_SCRAPER_NAMES) {
+    assert.ok(integrationNames.includes(name), `${name} should be an integration`)
+    assert.ok(!staticNames.includes(name), `${name} must not also be in the static group`)
+  }
+})
+
+test('integration scrapers get the larger budget, and it stays under the function cap', async () => {
+  const { getIntegrationScrapers, INTEGRATION_TIMEOUT_MS } = await import('../src/lib/scrapers')
+
+  // Instagram's Apify fetch measured ~152 s on 2026-09-25; the default 90 s
+  // would cut it off, and a timeout doesn't record the 5-day interval, so it
+  // would re-run and re-bill every day.
+  assert.ok(INTEGRATION_TIMEOUT_MS > 152_000, 'must clear the observed Apify run time')
+  assert.ok(INTEGRATION_TIMEOUT_MS < 300_000, "must stay inside Vercel's function cap")
+
+  for (const scraper of getIntegrationScrapers()) {
+    assert.equal(scraper.timeoutMs, INTEGRATION_TIMEOUT_MS)
+  }
+})

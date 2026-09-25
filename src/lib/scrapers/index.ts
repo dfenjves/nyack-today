@@ -57,6 +57,29 @@ export const DEFAULT_SCRAPER_TIMEOUT_MS = 90_000
 export const DEFAULT_GENERIC_BATCH_SIZE = 4
 
 /**
+ * Scrapers that drive a rate-limited third-party job rather than fetching a
+ * page, so they get their own invocation (`?group=integrations`).
+ *
+ * Instagram is the reason this exists. Its Apify fetch runs on a 5-day
+ * interval, and on the days it is due it takes ~150 s — enough to push the
+ * static group past Vercel's 300 s cap on its own (that is what killed the
+ * 2026-09-25 run after 14 of 22 scrapers). Capping it at the default 90 s is
+ * not a fix either: `getLastApifyRunAt` only counts a `success`/`partial`
+ * ScraperLog row, so a timed-out run doesn't record the interval and Instagram
+ * would re-run — and re-bill Apify — every single day.
+ *
+ * So it runs alone, with room to finish. See INTEGRATION_TIMEOUT_MS.
+ */
+export const INTEGRATION_SCRAPER_NAMES: ReadonlySet<string> = new Set(['Instagram'])
+
+/**
+ * Budget for an integration scraper. Generous because the work is a remote job
+ * we are waiting on, not a page that might hang, and because a timeout here
+ * costs a wasted Apify run. Still under the 300 s function cap.
+ */
+export const INTEGRATION_TIMEOUT_MS = 240_000
+
+/**
  * Every scraper for this run: the static ones above, then one per enabled
  * `Source` row (see src/lib/scrapers/generic.ts). Generic sources run last so a
  * slow or newly added site can't starve the established scrapers of the 300 s
@@ -67,10 +90,26 @@ export async function getAllScrapers(): Promise<Scraper[]> {
 }
 
 /**
- * The statically registered scrapers only (`?group=static`).
+ * The statically registered scrapers (`?group=static`), minus the integration
+ * scrapers, which get their own invocation.
  */
 export function getStaticScrapers(): Scraper[] {
-  return [...scrapers]
+  return scrapers.filter((s) => !INTEGRATION_SCRAPER_NAMES.has(s.name))
+}
+
+/**
+ * The rate-limited third-party integrations (`?group=integrations`), each with
+ * a budget that reflects how long its remote job legitimately takes.
+ */
+export function getIntegrationScrapers(): Scraper[] {
+  return scrapers
+    .filter((s) => INTEGRATION_SCRAPER_NAMES.has(s.name))
+    .map((scraper) => ({
+      name: scraper.name,
+      timeoutMs: scraper.timeoutMs ?? INTEGRATION_TIMEOUT_MS,
+      // Delegate rather than spread, so a scraper that uses `this` keeps working.
+      scrape: () => scraper.scrape(),
+    }))
 }
 
 export interface GenericScraperBatch {

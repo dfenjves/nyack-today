@@ -6,9 +6,12 @@ name: Daily Event Scraper
 # bounded groups, each its own HTTP call and its own step, so one failure is
 # visible and does not hide the others.
 #
-#   1. group=static   — the 17 statically registered scrapers (+ the daily cleanup)
-#   2. group=generic  — the enabled Sources from /admin/sources, 4 at a time,
-#                       paged until the response says hasMore: false
+#   1. group=static       — the statically registered page scrapers (+ the daily cleanup)
+#   2. group=integrations — the rate-limited third-party pulls (Instagram). Its
+#                           Apify fetch takes ~150 s on the days it is due, which
+#                           is what blew the cap on 2026-09-25, so it runs alone.
+#   3. group=generic      — the enabled Sources from /admin/sources, 4 at a time,
+#                           paged until the response says hasMore: false
 
 on:
   schedule:
@@ -33,9 +36,12 @@ on:
         options:
           - 'all'
           - 'static'
+          - 'integrations'
           - 'generic'
 
 env:
+  # On a schedule run there are no inputs, so both fall back to their defaults.
+  GROUP: ${{ github.event.inputs.group || 'all' }}
   CLEANUP: ${{ github.event.inputs.cleanup || 'true' }}
   # Generic sources per invocation, and a hard cap on how many pages we walk so
   # a bad hasMore can never loop forever.
@@ -47,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Static scrapers
-        if: ${{ github.event.inputs.group != 'generic' }}
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'static' }}
         run: |
           set -euo pipefail
 
@@ -78,8 +84,38 @@ jobs:
           echo "=== Per-Source Results ==="
           echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) \(.eventsFound) found \(.durationMs)ms"'
 
+      - name: Integrations
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'integrations' }}
+        run: |
+          set -euo pipefail
+
+          echo "Running integration scrapers (Instagram)"
+
+          RESPONSE=$(curl -sL -w "\n%{http_code}" -X POST \
+            "${{ secrets.SITE_URL }}/api/scrape?group=integrations" \
+            -H "Content-Type: application/json" \
+            -H "x-scraper-key: ${{ secrets.SCRAPER_API_KEY }}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Integrations failed with status $HTTP_CODE"
+            echo "Response body: $BODY"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Summary ==="
+          echo "$BODY" | jq -r '.summary // empty'
+          echo ""
+          echo "=== Per-Source Results ==="
+          echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) \(.eventsFound) found \(.durationMs)ms"'
+
       - name: Generic sources
-        if: ${{ github.event.inputs.group != 'static' }}
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'generic' }}
         run: |
           set -euo pipefail
 

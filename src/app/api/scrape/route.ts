@@ -6,6 +6,7 @@ import {
   getScraperNames,
   getStaticScrapers,
   getGenericScrapers,
+  getIntegrationScrapers,
   DEFAULT_GENERIC_BATCH_SIZE,
 } from '@/lib/scrapers'
 import type { OrchestratorResult } from '@/lib/scrapers'
@@ -22,9 +23,10 @@ import { notifyScraperError } from '@/lib/utils/notifications'
  * Query params:
  * - source: Run a specific scraper (e.g., "Visit Nyack"). Takes precedence
  *   over `group`.
- * - group: "static" runs only the statically registered scrapers; "generic"
- *   runs only the enabled Sources from /admin/sources. Omit for everything,
- *   which is the pre-split behavior.
+ * - group: "static" runs the statically registered scrapers; "integrations"
+ *   runs the rate-limited third-party pulls that need their own invocation
+ *   (Instagram); "generic" runs the enabled Sources from /admin/sources. Omit
+ *   for everything, which is the pre-split behavior.
  * - batch / batchSize: with group=generic, run the Nth (0-based) slice of the
  *   enabled Sources, ordered by name. The response carries
  *   `{ batch, batchSize, totalSources, hasMore }` so the caller can page.
@@ -72,9 +74,10 @@ export async function POST(request: NextRequest) {
     const source = searchParams.get('source')
     const group = searchParams.get('group')
 
-    if (group && group !== 'static' && group !== 'generic') {
+    const GROUPS = ['static', 'integrations', 'generic'] as const
+    if (group && !GROUPS.includes(group as (typeof GROUPS)[number])) {
       return NextResponse.json(
-        { error: `Unknown group: ${group}. Expected "static" or "generic".` },
+        { error: `Unknown group: ${group}. Expected one of ${GROUPS.join(', ')}.` },
         { status: 400 }
       )
     }
@@ -136,14 +139,18 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const scrapersToRun = group === 'static' ? getStaticScrapers() : undefined
-    const result = await runAllScrapers(scrapersToRun, {
-      groupLabel: group === 'static' ? 'static' : undefined,
-    })
+    const scrapersToRun =
+      group === 'static'
+        ? getStaticScrapers()
+        : group === 'integrations'
+          ? getIntegrationScrapers()
+          : undefined
+
+    const result = await runAllScrapers(scrapersToRun, { groupLabel: group ?? undefined })
 
     return NextResponse.json({
-      message: group === 'static' ? 'Static scrapers completed' : 'All scrapers completed',
-      ...(group === 'static' ? { group: 'static' } : {}),
+      message: group ? `${group} scrapers completed` : 'All scrapers completed',
+      ...(group ? { group } : {}),
       ...summarize(result),
     })
   } catch (error) {
