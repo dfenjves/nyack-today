@@ -1,5 +1,18 @@
 name: Daily Event Scraper
 
+# The full run no longer fits in one Vercel invocation (300 s cap): the static
+# scrapers take ~2 minutes and the generic sources add ~2 more, and Chromium's
+# cold start on Vercel is slower than local. So the daily scrape is split into
+# bounded groups, each its own HTTP call and its own step, so one failure is
+# visible and does not hide the others.
+#
+#   1. group=static       — the statically registered page scrapers (+ the daily cleanup)
+#   2. group=integrations — the rate-limited third-party pulls (Instagram). Its
+#                           Apify fetch takes ~150 s on the days it is due, which
+#                           is what blew the cap on 2026-09-25, so it runs alone.
+#   3. group=generic      — the enabled Sources from /admin/sources, 4 at a time,
+#                           paged until the response says hasMore: false
+
 on:
   schedule:
     # Run daily at 6 AM ET (11:00 UTC)
@@ -15,19 +28,39 @@ on:
         options:
           - 'true'
           - 'false'
+      group:
+        description: 'Which scrapers to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'static'
+          - 'integrations'
+          - 'generic'
+
+env:
+  # On a schedule run there are no inputs, so both fall back to their defaults.
+  GROUP: ${{ github.event.inputs.group || 'all' }}
+  CLEANUP: ${{ github.event.inputs.cleanup || 'true' }}
+  # Generic sources per invocation, and a hard cap on how many pages we walk so
+  # a bad hasMore can never loop forever.
+  BATCH_SIZE: '4'
+  MAX_BATCHES: '10'
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger scraper
+      - name: Static scrapers
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'static' }}
         run: |
-          CLEANUP="${{ github.event.inputs.cleanup || 'true' }}"
+          set -euo pipefail
 
-          echo "Running scrapers with cleanup=$CLEANUP"
+          echo "Running static scrapers with cleanup=$CLEANUP"
 
           RESPONSE=$(curl -sL -w "\n%{http_code}" -X POST \
-            "${{ secrets.SITE_URL }}/api/scrape?cleanup=$CLEANUP" \
+            "${{ secrets.SITE_URL }}/api/scrape?group=static&cleanup=$CLEANUP" \
             -H "Content-Type: application/json" \
             -H "x-scraper-key: ${{ secrets.SCRAPER_API_KEY }}")
 
@@ -37,21 +70,98 @@ jobs:
           BODY=$(echo "$RESPONSE" | sed '$d')
 
           echo "Response status: $HTTP_CODE"
-          echo "Response body: $BODY"
 
-          # Check if request was successful
           if [ "$HTTP_CODE" -ne 200 ]; then
-            echo "Scraper failed with status $HTTP_CODE"
+            echo "Static scrapers failed with status $HTTP_CODE"
+            echo "Response body: $BODY"
             exit 1
           fi
 
-          # Parse and display results
           echo ""
-          echo "=== Scraper Results ==="
+          echo "=== Summary ==="
           echo "$BODY" | jq -r '.summary // empty'
           echo ""
           echo "=== Per-Source Results ==="
-          echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) - \(.eventsFound) events found"'
+          echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) \(.eventsFound) found \(.durationMs)ms"'
+
+      - name: Integrations
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'integrations' }}
+        run: |
+          set -euo pipefail
+
+          echo "Running integration scrapers (Instagram)"
+
+          RESPONSE=$(curl -sL -w "\n%{http_code}" -X POST \
+            "${{ secrets.SITE_URL }}/api/scrape?group=integrations" \
+            -H "Content-Type: application/json" \
+            -H "x-scraper-key: ${{ secrets.SCRAPER_API_KEY }}")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response status: $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "Integrations failed with status $HTTP_CODE"
+            echo "Response body: $BODY"
+            exit 1
+          fi
+
+          echo ""
+          echo "=== Summary ==="
+          echo "$BODY" | jq -r '.summary // empty'
+          echo ""
+          echo "=== Per-Source Results ==="
+          echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) \(.eventsFound) found \(.durationMs)ms"'
+
+      - name: Generic sources
+        if: ${{ env.GROUP == 'all' || env.GROUP == 'generic' }}
+        run: |
+          set -euo pipefail
+
+          BATCH=0
+          FAILED=0
+
+          # Page through the enabled Sources: each call runs BATCH_SIZE of them
+          # and reports whether more remain. MAX_BATCHES is a safety stop.
+          while [ "$BATCH" -lt "$MAX_BATCHES" ]; do
+            echo ""
+            echo "--- Generic batch $BATCH (size $BATCH_SIZE) ---"
+
+            RESPONSE=$(curl -sL -w "\n%{http_code}" -X POST \
+              "${{ secrets.SITE_URL }}/api/scrape?group=generic&batch=$BATCH&batchSize=$BATCH_SIZE" \
+              -H "Content-Type: application/json" \
+              -H "x-scraper-key: ${{ secrets.SCRAPER_API_KEY }}")
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | sed '$d')
+
+            echo "Response status: $HTTP_CODE"
+
+            if [ "$HTTP_CODE" -ne 200 ]; then
+              echo "Generic batch $BATCH failed with status $HTTP_CODE"
+              echo "Response body: $BODY"
+              FAILED=1
+              break
+            fi
+
+            echo "$BODY" | jq -r '"batch \(.batch) of \(.totalSources) sources, hasMore=\(.hasMore)"'
+            echo "$BODY" | jq -r '.summary // empty'
+            echo "$BODY" | jq -r '.results[]? | "\(.sourceName): \(.status) \(.eventsFound) found \(.durationMs)ms"'
+
+            HAS_MORE=$(echo "$BODY" | jq -r '.hasMore // false')
+            if [ "$HAS_MORE" != "true" ]; then
+              break
+            fi
+
+            BATCH=$((BATCH + 1))
+          done
+
+          if [ "$BATCH" -ge "$MAX_BATCHES" ]; then
+            echo "Stopped at the $MAX_BATCHES-batch cap; some sources may not have run."
+          fi
+
+          exit "$FAILED"
 
       - name: Notify on failure
         if: failure()
