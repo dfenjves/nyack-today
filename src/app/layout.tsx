@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
@@ -9,10 +10,17 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
 });
 
-const fraunces = Fraunces({
+// Self-hosted: on Vercel's build machines Google Fonts serves Fraunces from
+// fonts.gstatic.com/l/font?kit=...&skey=... URLs, which Turbopack's
+// next/font/google loader can't resolve, failing the build. This is the same
+// latin variable-weight file Google serves for weights 500-700.
+const fraunces = localFont({
+  src: "./fonts/fraunces-latin.woff2",
   variable: "--font-fraunces",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: "500 700",
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
+  fallback: ["serif"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://nyacktoday.com';
