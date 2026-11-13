@@ -1,106 +1,121 @@
-import * as cheerio from 'cheerio'
 import { Category } from '@prisma/client'
 import { Scraper, ScraperResult, ScrapedEvent } from './types'
-import { fetchWithTimeout, guessFamilyFriendly, makeEasternDate } from './utils'
+import { fetchWithTimeout, guessFamilyFriendly } from './utils'
 
 const SOURCE_NAME = 'Rockland County Chess Club'
-const SOURCE_URL = 'https://www.rocklandchess.org/events/'
+// rocklandchess.org now redirects to the club's page on chess67.com. The
+// /events sub-page embeds the club's full event list (past and upcoming).
+const CLUB_URL = 'https://chess67.com/club/the-rockland-county-chess-club'
+const SOURCE_URL = `${CLUB_URL}/events`
 const VENUE = 'Rockland County Chess Club'
-const ADDRESS = '7 N Broadway'
+const DEFAULT_ADDRESS = '70 Main St'
 const CITY = 'Nyack'
 
-interface RocklandChessEvent {
-  id: string
+interface Chess67Session {
+  starts_at: string
+  ends_at: string | null
+}
+
+/** One entry of `clubPageData.pageEvents` in the page's vike_pageContext JSON. */
+export interface Chess67Event {
   title: string
-  date: string   // "$D2026-03-24T23:00:00.000Z" (React RSC Date serialization)
-  time: string   // "19:00" (24h, local Eastern time)
-  category: string // "classes" | "casual"
-  description: string
-  location: string
+  slug: string
+  start_at: string // ISO instant with offset, e.g. "2026-11-20T00:00:00+00:00"
+  end_at: string | null
+  status: string // "scheduled" | "cancelled" | ...
+  cancelled_at: string | null
+  is_published: boolean
+  is_listed: boolean
+  description: string | null
+  address: string | null
+  image_url: string | null
+  require_payment: boolean
+  payment_mode: string // "disabled" | "required" | ...
+  event_sessions: Chess67Session[] | null
 }
 
 /**
- * Extract the events array from Next.js RSC payload embedded in script tags.
- * Next.js RSC serializes data into self.__next_f.push([N, "<json-string>"]) calls.
+ * Pull `clubPageData.pageEvents` out of the Vike page-context JSON blob that
+ * chess67.com server-renders into every page.
  */
-function extractEventsFromHtml(html: string): RocklandChessEvent[] {
-  const $ = cheerio.load(html)
-  let events: RocklandChessEvent[] = []
+export function extractChess67Events(html: string): Chess67Event[] {
+  const match = html.match(
+    /<script id="vike_pageContext" type="application\/json">([\s\S]*?)<\/script>/
+  )
+  if (!match) return []
+  try {
+    const ctx = JSON.parse(match[1])
+    const events = ctx?.clubPageData?.pageEvents
+    return Array.isArray(events) ? events : []
+  } catch {
+    return []
+  }
+}
 
-  $('script').each((_, el) => {
-    const text = $(el).html() || ''
-    // Only look at scripts with event data
-    if (!text.includes('"events":[') && !text.includes('\\"events\\":[')) return
+/** "70 Main St - 70 Main St, Nyack, NY 10960, 3rd Floor" → "70 Main St" */
+function streetAddress(raw: string | null): string {
+  if (!raw) return DEFAULT_ADDRESS
+  const street = raw.split(/\s+-\s+|,/)[0]?.trim()
+  return street || DEFAULT_ADDRESS
+}
 
-    // Match the JSON string argument: self.__next_f.push([N, "..."])
-    // Format is push([N,"<content>"]) — note the ] before ) closing the array.
-    // Uses a pattern that correctly handles escaped chars inside the string.
-    const match = text.match(/push\(\[\d+,"((?:[^"\\]|\\.)*)"\]\)/)
-    if (!match) return
+/**
+ * Turn chess67 events into ScrapedEvents. Timestamps on chess67 are true
+ * instants (with offset), so they are used as-is — no Eastern-time
+ * reconstruction. A multi-week class becomes one event per session.
+ */
+export function chess67ToScrapedEvents(raw: Chess67Event[], now: Date): ScrapedEvent[] {
+  const events: ScrapedEvent[] = []
 
-    try {
-      // match[1] is the raw (still-escaped) string content.
-      // Wrapping in quotes and JSON.parsing unescapes it.
-      const unescaped: string = JSON.parse('"' + match[1] + '"')
+  for (const e of raw) {
+    if (!e.title || !e.start_at) continue
+    if (!e.is_published || !e.is_listed) continue
+    if (e.cancelled_at || e.status === 'cancelled') continue
 
-      // Strip RSC chunk ID prefix, e.g. "12:[...]" → "[...]"
-      const jsonStr = unescaped.replace(/^\d+:/, '')
-      const parsed: unknown = JSON.parse(jsonStr)
+    const sessions: Chess67Session[] =
+      e.event_sessions && e.event_sessions.length > 0
+        ? e.event_sessions
+        : [{ starts_at: e.start_at, ends_at: e.end_at }]
 
-      // RSC array format: ["$", "$L1b", null, { events: [...] }]
-      if (
-        Array.isArray(parsed) &&
-        parsed[3] != null &&
-        Array.isArray((parsed[3] as Record<string, unknown>).events)
-      ) {
-        events = (parsed[3] as { events: RocklandChessEvent[] }).events
-        return false // break .each()
-      }
-    } catch {
-      // try next script tag
+    const isClass = /class|lesson|camp/i.test(e.title)
+    const isFree = !e.require_payment && e.payment_mode === 'disabled'
+
+    for (const s of sessions) {
+      const startDate = new Date(s.starts_at)
+      if (isNaN(startDate.getTime()) || startDate <= now) continue
+      const endDate = s.ends_at ? new Date(s.ends_at) : null
+
+      events.push({
+        title: e.title.trim(),
+        description: e.description?.trim() || null,
+        startDate,
+        endDate: endDate && !isNaN(endDate.getTime()) ? endDate : null,
+        venue: VENUE,
+        address: streetAddress(e.address),
+        city: CITY,
+        isNyackProper: true,
+        category: isClass ? Category.CLASSES_WORKSHOPS : Category.SPORTS_RECREATION,
+        price: isFree ? 'Free' : null,
+        isFree,
+        isFamilyFriendly: guessFamilyFriendly(e.title, e.description),
+        sourceUrl: `${CLUB_URL}/events/${e.slug}`,
+        sourceName: SOURCE_NAME,
+        imageUrl: e.image_url,
+      })
     }
-  })
+  }
 
   return events
 }
 
 /**
- * Build a Date from the RSC date string and 24h time string.
- * date: "$D2026-03-24T23:00:00.000Z" (UTC, represents 7 PM Eastern)
- * time: "19:00" (local Eastern time)
- * Uses UTC date components + local time to match the other scrapers' convention.
- */
-function parseEventDate(dateStr: string, timeStr: string): Date | null {
-  try {
-    const iso = dateStr.replace(/^\$D/, '')
-    const utc = new Date(iso)
-    if (isNaN(utc.getTime())) return null
-
-    const [h, m] = timeStr.split(':').map(Number)
-    return makeEasternDate(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate(), h, m)
-  } catch {
-    return null
-  }
-}
-
-function mapCategory(raw: string): Category {
-  switch (raw) {
-    case 'classes': return Category.CLASSES_WORKSHOPS
-    case 'casual':  return Category.SPORTS_RECREATION
-    default:        return Category.OTHER
-  }
-}
-
-/**
- * Scraper for Rockland County Chess Club
- * Uses Cheerio — event data is embedded in Next.js RSC payload script tags (SSR)
+ * Scraper for Rockland County Chess Club (hosted on chess67.com).
+ * Event data comes from the server-rendered vike_pageContext JSON.
  */
 export const rocklandChessScraper: Scraper = {
   name: SOURCE_NAME,
 
   async scrape(): Promise<ScraperResult> {
-    const events: ScrapedEvent[] = []
-
     try {
       const response = await fetchWithTimeout(SOURCE_URL, 15000)
       if (!response.ok) {
@@ -112,45 +127,17 @@ export const rocklandChessScraper: Scraper = {
         }
       }
 
-      const html = await response.text()
-      const rawEvents = extractEventsFromHtml(html)
-
+      const rawEvents = extractChess67Events(await response.text())
       if (rawEvents.length === 0) {
         return {
           sourceName: SOURCE_NAME,
           events: [],
-          status: 'partial',
-          errorMessage: 'No events found in RSC payload',
+          status: 'error',
+          errorMessage: 'No events found in chess67 page context (page format may have changed)',
         }
       }
 
-      const now = new Date()
-
-      for (const raw of rawEvents) {
-        if (!raw.title || !raw.date) continue
-
-        const startDate = parseEventDate(raw.date, raw.time)
-        if (!startDate || startDate <= now) continue
-
-        events.push({
-          title: raw.title.trim(),
-          description: raw.description?.trim() || null,
-          startDate,
-          endDate: null,
-          venue: VENUE,
-          address: ADDRESS,
-          city: CITY,
-          isNyackProper: true,
-          category: mapCategory(raw.category),
-          price: '$10',
-          isFree: false,
-          isFamilyFriendly: guessFamilyFriendly(raw.title, raw.description),
-          sourceUrl: SOURCE_URL,
-          sourceName: SOURCE_NAME,
-          imageUrl: null,
-        })
-      }
-
+      const events = chess67ToScrapedEvents(rawEvents, new Date())
       if (events.length === 0) {
         return {
           sourceName: SOURCE_NAME,
@@ -162,12 +149,11 @@ export const rocklandChessScraper: Scraper = {
 
       return { sourceName: SOURCE_NAME, events, status: 'success' }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown error'
       return {
         sourceName: SOURCE_NAME,
-        events,
-        status: events.length > 0 ? 'partial' : 'error',
-        errorMessage: message,
+        events: [],
+        status: 'error',
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
       }
     }
   },
