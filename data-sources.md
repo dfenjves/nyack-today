@@ -17,6 +17,7 @@ A running list of event and activity sources for the Nyack area.
 | Rivertown Film | https://rivertownfilm.org/ | Venue | ✅ Built | HTML parsing (no JSON-LD), MOVIES category |
 | Village of Nyack | https://www.nyack.gov/ | Government | ✅ Built | RSS feeds, COMMUNITY_GOVERNMENT category |
 | Maureen's Jazz Cellar | https://www.maureensjazzcellar.com/ | Venue | ✅ Built | Inffuse calendar API, MUSIC category, fixed timezone handling |
+| Rockland County Chess Club | https://chess67.com/club/the-rockland-county-chess-club/events | Club | ✅ Built | rocklandchess.org redirects to chess67; reads `clubPageData.pageEvents` from the vike_pageContext JSON (true UTC instants), one event per class session |
 
 ### Tier 2: JavaScript-Rendered (Puppeteer)
 | Source | URL | Type | Status | Notes |
@@ -143,7 +144,6 @@ Best for: Library programs, youth sports, and local community gatherings.
 ## Ideas / To Investigate
 
 Add new sources here as you discover them:
-Rockland Chess CLub (rocklandchess.org)
 
 
 ---
