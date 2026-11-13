@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { deletePastPendingSubmissions } from '@/lib/submissions'
 
 /**
  * GET /api/admin/submissions
@@ -9,6 +10,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const statusParam = searchParams.get('status')
+
+    // Past events can't be approved, so drop them before building the queue.
+    await deletePastPendingSubmissions()
 
     const where: Record<string, unknown> = {}
 

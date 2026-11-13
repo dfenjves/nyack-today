@@ -10,6 +10,7 @@ import {
   DEFAULT_GENERIC_BATCH_SIZE,
 } from '@/lib/scrapers'
 import type { OrchestratorResult } from '@/lib/scrapers'
+import { deletePastPendingSubmissions } from '@/lib/submissions'
 import { notifyScraperError } from '@/lib/utils/notifications'
 
 /**
@@ -30,8 +31,9 @@ import { notifyScraperError } from '@/lib/utils/notifications'
  * - batch / batchSize: with group=generic, run the Nth (0-based) slice of the
  *   enabled Sources, ordered by name. The response carries
  *   `{ batch, batchSize, totalSources, hasMore }` so the caller can page.
- * - cleanup: Set to "true" to also cleanup old events. This must happen exactly
- *   once per day, so it is honored only when `group` is absent or
+ * - cleanup: Set to "true" to also cleanup old events and past pending
+ *   submissions. This must happen exactly once per day, so it is honored
+ *   only when `group` is absent or
  *   `group=static` — i.e. on the first call of the daily sequence — and
  *   ignored on the generic batches that follow.
  *
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
     if (cleanup) {
       const cleaned = await cleanupOldEvents()
       console.log(`Cleaned up ${cleaned} old events`)
+      await deletePastPendingSubmissions()
     } else if (cleanupRequested) {
       console.log(`Skipping cleanup for group=${group}; it runs with group=static`)
     }
